@@ -1,0 +1,67 @@
+[gd_scene format=3 uid="uid://t1refngcvjl1"]
+
+[ext_resource type="Script" uid="uid://cp7cansj8bkkl" path="res://game_world.gd" id="1_hly68"]
+[ext_resource type="Script" uid="uid://7wqo01mkx50r" path="res://HUD.gd" id="2_bvgre"]
+[ext_resource type="Script" uid="uid://yvk17nf33pr" path="res://StrategyCamera.gd" id="3_ea1x0"]
+
+[node name="GameWorld" type="Node2D" unique_id=1651233416]
+position = Vector2(0, 10)
+script = ExtResource("1_hly68")
+
+[node name="MapContainer" type="Node2D" parent="." unique_id=558576273]
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=932151384]
+
+[node name="UI" type="Control" parent="CanvasLayer" unique_id=1289321786]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_bvgre")
+
+[node name="MenuBudowania" type="VBoxContainer" parent="CanvasLayer/UI" unique_id=393370301]
+layout_mode = 0
+offset_left = 1.0
+offset_top = 95.0
+offset_right = 234.0
+offset_bottom = 413.0
+
+[node name="BuildChata" type="Button" parent="CanvasLayer/UI/MenuBudowania" unique_id=396614336]
+layout_mode = 2
+text = "Chata drwala"
+
+[node name="BuildKopalniaZelaza" type="Button" parent="CanvasLayer/UI/MenuBudowania" unique_id=886524769]
+layout_mode = 2
+text = "Kopalnia żelaza"
+
+[node name="BuildKopalniaWegla" type="Button" parent="CanvasLayer/UI/MenuBudowania" unique_id=942856313]
+layout_mode = 2
+text = "Kopalnia węgla"
+
+[node name="TurnButton" type="Button" parent="CanvasLayer/UI" unique_id=1194572768]
+layout_mode = 0
+offset_left = 1008.0
+offset_top = 91.0
+offset_right = 1150.0
+offset_bottom = 145.0
+text = "Następna tura"
+
+[node name="Panel" type="Panel" parent="CanvasLayer/UI" unique_id=411600892]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 1.0
+offset_bottom = 88.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="ResourcesLabel" type="Label" parent="CanvasLayer/UI/Panel" unique_id=1786534778]
+layout_mode = 0
+offset_right = 288.0
+offset_bottom = 87.0
+
+[node name="StrategyCamera" type="Camera2D" parent="." unique_id=2022214429]
+script = ExtResource("3_ea1x0")
