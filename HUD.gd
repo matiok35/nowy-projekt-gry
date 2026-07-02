@@ -3,14 +3,14 @@ extends Control
 
 @onready var resources_label = $Panel/ResourcesLabel
 @onready var turn_button = $TurnButton
-<<<<<<< HEAD
 @onready var menu_budowania = $MenuBudowania
 
-# Szukamy przycisków wewnątrz kontenera
+# Szukamy przycisków wewnątrz kontenera (z wersji rozbudowanej)
 @onready var build_chata = $MenuBudowania/VBoxContainer/BuildChata
 @onready var build_iron = $MenuBudowania/VBoxContainer/BuildKopalniaZelaza
 @onready var build_coal = $MenuBudowania/VBoxContainer/BuildKopalniaWegla
 
+# Świat gry przekaże nam tablicę postawionych budynków przy końcu tury
 var world_ref: Node2D 
 var active_tile_pos: Vector2 = Vector2.ZERO
 
@@ -72,6 +72,9 @@ func _on_economy_updated(balances: Dictionary, turn: int, selected_build: String
 	resources_label.text = "🌟 TURA: %d   |   🪙 ZŁOTO: %d   |   🪵 DREWNO: %d   |   ⛓️ ŻELAZO: %d   |   🌋 WĘGIEL: %d" % [
 		turn, balances["Złoto"], balances["Drewno"], balances["Żelazo"], balances["Węgiel"]
 	]
+	# Utrzymano logikę z brancha o pokazywaniu wybranego budynku (jeśli mechanika wciąż tego używa)
+	if selected_build != "":
+		resources_label.text += " | Wybrano: " + selected_build
 
 func _on_turn_pressed():
 	menu_budowania.visible = false
@@ -159,39 +162,3 @@ func style_single_button(btn: Button, base_color: Color, hover_color: Color, new
 	btn.add_theme_stylebox_override("disabled", disabled)
 	btn.add_theme_color_override("font_color", Color.WHITE)
 	btn.add_theme_color_override("font_disabled_color", Color(0.5, 0.5, 0.5))
-=======
-@onready var build_chata = $MenuBudowania/BuildChata
-@onready var build_iron = $MenuBudowania/BuildKopalniaZelaza
-@onready var build_coal = $MenuBudowania/BuildKopalniaWegla
-
-# Świat gry przekaże nam tablicę postawionych budynków przy końcu tury
-var world_ref: Node2D 
-
-func _ready():
-	# Szukamy głównego świata w drzewie, aby móc pobrać stan budynków
-	world_ref = get_tree().current_scene
-	
-	# Podpinamy się pod globalny menadżer ekonomii
-	EconomyManager.economy_updated.connect(_on_economy_updated)
-	
-	# Podpinamy przyciski interfejsu
-	turn_button.pressed.connect(_on_turn_pressed)
-	build_chata.pressed.connect(func(): EconomyManager.select_building("Chata Drwala"))
-	build_iron.pressed.connect(func(): EconomyManager.select_building("Kopalnia Żelaza"))
-	build_coal.pressed.connect(func(): EconomyManager.select_building("Kopalnia Węgla"))
-	
-	# Wymuszamy pierwsze odświeżenie napisów na starcie
-	EconomyManager.notify_change()
-
-func _on_economy_updated(balances: Dictionary, turn: int, selected_build: String):
-	resources_label.text = " Tura: %d | Złoto: %d | Drewno: %d | Żelazo: %d | Węgiel: %d" % [
-		turn, balances["Złoto"], balances["Drewno"], balances["Żelazo"], balances["Węgiel"]
-	]
-	if selected_build != "":
-		resources_label.text += " | Wybrano: " + selected_build
-
-func _on_turn_pressed():
-	# Pobieramy listę postawionych budynków ze świata gry i zlecamy nową turę
-	var buildings = world_ref.get_active_buildings_list()
-	EconomyManager.next_turn(buildings)
->>>>>>> 984e8282779e960859e324d58ef809eaedf03205

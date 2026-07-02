@@ -16,7 +16,6 @@ var label_nodes = {}     # Słownik referencji do etykiet tekstowych: { Vector2(
 
 # --- REFERENCJE DO WĘZŁÓW DZIECIĘCYCH ---
 var map_container: Node2D
-<<<<<<< HEAD
 var hud_node: Control    # Dynamicznie wyszukiwana referencja do interfejsu
 
 func _ready():
@@ -29,10 +28,6 @@ func _ready():
 	if hud_node == null:
 		push_error("BŁĄD KRYTYCZNY: Nie znaleziono węzła interfejsu ('UI' lub 'HUD') w aktywnej scenie!")
 		
-=======
-
-func _ready():
->>>>>>> 984e8282779e960859e324d58ef809eaedf03205
 	map_container = get_node_or_null("MapContainer")
 	if map_container == null:
 		push_error("BŁĄD: Nie znaleziono węzła o nazwie 'MapContainer'!")
@@ -60,11 +55,8 @@ func generate_map():
 func create_procedural_hex(pos: Vector2, type: String):
 	var area = Area2D.new()
 	area.input_pickable = true
-<<<<<<< HEAD
 	area.monitoring = false
 	area.monitorable = false
-=======
->>>>>>> 984e8282779e960859e324d58ef809eaedf03205
 	
 	# MATEMATYKA POZYCJI (Siatka heksagonalna pionowa - pointy-topped)
 	var x_pos = pos.x * hex_width
@@ -101,11 +93,7 @@ func create_procedural_hex(pos: Vector2, type: String):
 	line.default_color = Color(0.05, 0.25, 0.05)
 	area.add_child(line)
 
-<<<<<<< HEAD
 	# 3. KOLIZJA DLA AREA2D (Precyzyjne klikanie kształtu przez system fizyki)
-=======
-	# 3. KOLIZJA DLA AREA2D (Precyzyjne klikanie kształtu)
->>>>>>> 984e8282779e960859e324d58ef809eaedf03205
 	var collision = CollisionPolygon2D.new()
 	collision.polygon = points
 	area.add_child(collision)
@@ -116,7 +104,6 @@ func create_procedural_hex(pos: Vector2, type: String):
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	
-<<<<<<< HEAD
 	label.size = Vector2(hex_width, hex_height)
 	label.position = Vector2(-hex_width / 2.0, -hex_height / 2.0)
 	label.add_theme_color_override("font_shadow_color", Color.BLACK)
@@ -130,29 +117,11 @@ func create_procedural_hex(pos: Vector2, type: String):
 			if hud_node:
 				var menu = hud_node.get_node_or_null("MenuBudowania")
 				if menu: menu.visible = false
-=======
-	# POPRAWKA POZYCJONOWANIA: Rozciągamy etykietę i przesuwamy jej punkt startowy,
-	# aby geometryczny środek tekstu pokrywał się ze środkiem Area2D (0,0)
-	label.size = Vector2(hex_width, hex_height)
-	label.position = Vector2(-hex_width / 2.0, -hex_height / 2.0)
-	
-	label.add_theme_color_override("font_shadow_color", Color.BLACK)
-	area.add_child(label)
-	
-	# Zapisujemy referencję do labela, żeby móc zmienić jego tekst przy budowaniu
-	label_nodes[pos] = label
-
-	# 5. OBSŁUGA KLIKNIĘCIA
-	area.input_event.connect(func(viewport, event, shape_idx):
-		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			on_tile_clicked(pos)
->>>>>>> 984e8282779e960859e324d58ef809eaedf03205
 	)
 
 	map_container.add_child(area)
 	tile_nodes[pos] = area
 
-<<<<<<< HEAD
 # --- PANCERNA OBSŁUGA PRAWEGO PRZYCISKU MYSZY (PPM) ---
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
@@ -195,46 +164,15 @@ func build_on_tile(pos: Vector2, building_name: String) -> void:
 		map_data[pos]["building"] = building_name
 		
 		# Zmiana koloru Polygon2D (pierwsze dziecko Area2D) na złoty dla zaznaczenia budowli
-=======
-# --- LOGIKA BUDOWANIA ---
-func on_tile_clicked(pos: Vector2):
-	var current_selection = EconomyManager.selected_building_to_place
-	if current_selection == "": return
-		
-	var tile = map_data[pos]
-	if tile["building"] != "Brak": 
-		print("To pole jest już zajęte!")
-		return
-	
-	if EconomyManager.can_afford_and_place(current_selection, tile["type"]):
-		EconomyManager.deduct_costs(current_selection)
-		
-		# Zapisujemy zmianę w danych
-		map_data[pos]["building"] = current_selection
-		
-		# Wizualna zmiana koloru kafelka na złoty
->>>>>>> 984e8282779e960859e324d58ef809eaedf03205
 		var poly = tile_nodes[pos].get_child(0) as Polygon2D
 		if poly:
 			poly.color = Color(0.85, 0.65, 0.15)
 		
-<<<<<<< HEAD
 		# Dynamiczna zamiana tekstu na kafelku z surowca na nazwę postawionego budynku
 		if label_nodes.has(pos):
 			label_nodes[pos].text = building_name
 
 # --- INTERFEJS TURY ---
-=======
-		# ZMIANA TEKSTU: Podmieniamy nazwę surowca na nazwę postawionego budynku
-		if label_nodes.has(pos):
-			label_nodes[pos].text = current_selection
-		
-		# Resetujemy wybór w menu budowania
-		EconomyManager.select_building("")
-	else:
-		print("Nie można wybudować!")
-
->>>>>>> 984e8282779e960859e324d58ef809eaedf03205
 func get_active_buildings_list() -> Array:
 	var list = []
 	for pos in map_data:
