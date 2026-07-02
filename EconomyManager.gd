@@ -19,6 +19,16 @@ var building_types = {
 	"Kopalnia Węgla": {"cost": {"Złoto": 50, "Drewno": 30}, "yield": {"Węgiel": 3}, "requires_tile": "Węgiel"}
 }
 
+# --- NOWE: KONFIGURACJA ZAKUPU PÓL TERYTORIUM ---
+const TILE_BUY_COST: int = 50 
+
+func can_afford_tile_purchase() -> bool:
+	return resources["Złoto"] >= TILE_BUY_COST
+
+func deduct_tile_purchase_costs():
+	resources["Złoto"] -= TILE_BUY_COST
+	notify_change()
+
 func select_building(building_name: String):
 	selected_building_to_place = building_name
 	notify_change()

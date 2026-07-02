@@ -77,7 +77,6 @@ offset_right = 40.0
 offset_bottom = 40.0
 
 [node name="KupPoleButton" type="Button" parent="CanvasLayer/UI/MenuZakupuPola" unique_id=365058213]
-visible = false
 layout_mode = 2
 
 [node name="StrategyCamera" type="Camera2D" parent="." unique_id=2022214429]
