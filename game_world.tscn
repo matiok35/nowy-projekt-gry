@@ -2,8 +2,7 @@
 
 [ext_resource type="Script" uid="uid://cp7cansj8bkkl" path="res://game_world.gd" id="1_hly68"]
 [ext_resource type="Script" uid="uid://7wqo01mkx50r" path="res://HUD.gd" id="2_bvgre"]
-[ext_resource type="Script" uid="uid://cocvr8sxkkini" path="res://strategy_camera.gd" id="4_e3xe6"]
-[ext_resource type="Script" uid="uid://dq2wpiwha02k4" path="res://character.gd" id="4_e08lw"]
+[ext_resource type="Script" uid="uid://yvk17nf33pr" path="res://StrategyCamera.gd" id="3_ea1x0"]
 
 [node name="GameWorld" type="Node2D" unique_id=1651233416]
 position = Vector2(0, 10)
@@ -20,6 +19,11 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+<<<<<<< HEAD
+mouse_filter = 1
+script = ExtResource("2_bvgre")
+
+=======
 mouse_filter = 2
 script = ExtResource("2_bvgre")
 
@@ -42,6 +46,7 @@ text = "Kopalnia żelaza"
 layout_mode = 2
 text = "Kopalnia węgla"
 
+>>>>>>> 984e8282779e960859e324d58ef809eaedf03205
 [node name="TurnButton" type="Button" parent="CanvasLayer/UI" unique_id=1194572768]
 layout_mode = 0
 offset_left = 1008.0
@@ -57,19 +62,37 @@ anchor_right = 1.0
 offset_top = 1.0
 offset_bottom = 88.0
 grow_horizontal = 2
+<<<<<<< HEAD
+mouse_filter = 1
+=======
 mouse_filter = 2
+>>>>>>> 984e8282779e960859e324d58ef809eaedf03205
 
 [node name="ResourcesLabel" type="Label" parent="CanvasLayer/UI/Panel" unique_id=1786534778]
 layout_mode = 0
 offset_right = 288.0
 offset_bottom = 87.0
 
-[node name="PathLine" type="Line2D" parent="." unique_id=2071460428]
+<<<<<<< HEAD
+[node name="MenuBudowania" type="PanelContainer" parent="CanvasLayer/UI" unique_id=39613217]
+visible = false
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
 
-[node name="Character" type="Node2D" parent="." unique_id=234026963]
-script = ExtResource("4_e08lw")
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/UI/MenuBudowania" unique_id=720993880]
+layout_mode = 2
 
-[node name="Polygon2D" type="Polygon2D" parent="Character" unique_id=437144059]
+[node name="BuildChata" type="Button" parent="CanvasLayer/UI/MenuBudowania/VBoxContainer" unique_id=1503933426]
+layout_mode = 2
 
-[node name="StrategyCamera" type="Camera2D" parent="." unique_id=785750205]
-script = ExtResource("4_e3xe6")
+[node name="BuildKopalniaZelaza" type="Button" parent="CanvasLayer/UI/MenuBudowania/VBoxContainer" unique_id=534637640]
+layout_mode = 2
+
+[node name="BuildKopalniaWegla" type="Button" parent="CanvasLayer/UI/MenuBudowania/VBoxContainer" unique_id=515929239]
+layout_mode = 2
+
+=======
+>>>>>>> 984e8282779e960859e324d58ef809eaedf03205
+[node name="StrategyCamera" type="Camera2D" parent="." unique_id=2022214429]
+script = ExtResource("3_ea1x0")
