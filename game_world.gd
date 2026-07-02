@@ -141,44 +141,62 @@ func create_procedural_hex(pos: Vector2, type: String):
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		var global_mouse_pos = get_global_mouse_position()
-		
-		var space_state = get_world_2d().direct_space_state
-		var query = PhysicsPointQueryParameters2D.new()
-		query.position = global_mouse_pos
-		query.collide_with_areas = true
-		
-		var results = space_state.intersect_point(query)
-		
-		if not results.is_empty():
-			var hit_area = results[0]["collider"] as Area2D
-			
-			for pos in tile_nodes:
-				if tile_nodes[pos] == hit_area:
-					# --- DODANE: lewy przycisk rusza postacią ---
-					if event.button_index == MOUSE_BUTTON_LEFT:
-						# --- DODANE: blokada ruchu gdy menu jest otwarte ---
+		# --- NOWE: Prawy klik zawsze odznacza postać i (opcjonalnie) otwiera menu tylko jeśli nie jest zaznaczona
+		if event.button_index == MOUSE_BUTTON_RIGHT:
+			if character:
+				character.set_selected(false)
+			# Prawy klik otwiera menu kontekstowe TYLKO gdy postać nie jest zaznaczona
+			var space_state = get_world_2d().direct_space_state
+			var query = PhysicsPointQueryParameters2D.new()
+			query.position = global_mouse_pos
+			query.collide_with_areas = true
+			var results = space_state.intersect_point(query)
+			if not results.is_empty():
+				var hit_area = results[0]["collider"] as Area2D
+				for pos in tile_nodes:
+					if tile_nodes[pos] == hit_area:
+						var tile_type = map_data[pos]["type"]
+						var has_building = map_data[pos]["building"] != "Brak"
+						# --- BLOKADA BUDOWANIA gdy postać jest zaznaczona
+						if character and character.selected:
+							return
+						var screen_mouse_pos = get_viewport().get_mouse_position()
+						if hud_node and hud_node.has_method("show_context_menu"):
+							hud_node.show_context_menu(screen_mouse_pos, pos, tile_type, has_building)
+						return
+			return
+		# --- Dalsza obsługa lewego kliknięcia ---
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			var space_state = get_world_2d().direct_space_state
+			var query = PhysicsPointQueryParameters2D.new()
+			query.position = global_mouse_pos
+			query.collide_with_areas = true
+			var results = space_state.intersect_point(query)
+			if not results.is_empty():
+				var hit_area = results[0]["collider"] as Area2D
+				for pos in tile_nodes:
+					if tile_nodes[pos] == hit_area:
+						# Blokada ruchu gdy menu jest otwarte
 						if hud_node:
 							var menu = hud_node.get_node_or_null("MenuBudowania")
 							if menu and menu.visible:
 								return
-
-						if character and cell_to_id.has(pos):
+						# Klik na postać (LEWY) => zaznaczenie/odznaczenie (TOGGLE)
+						if character and global_mouse_pos.distance_to(character.global_position) < 20.0:
+							# --- NOWE: przełącznik zaznaczenia lewym kliknięciem na postać
+							character.set_selected(not character.selected)
+							return
+						# Ruch tylko gdy postać jest zaznaczona
+						if character and character.selected and cell_to_id.has(pos):
 							var world_path = get_world_path_to(pos)
 							if not world_path.is_empty():
 								character.follow_path(world_path)
 						return
 
-					# Prawy przycisk otwiera menu kontekstowe
-					if event.button_index == MOUSE_BUTTON_RIGHT:
-						var tile_type = map_data[pos]["type"]
-						var has_building = map_data[pos]["building"] != "Brak"
-						var screen_mouse_pos = get_viewport().get_mouse_position()
-						if hud_node and hud_node.has_method("show_context_menu"):
-							hud_node.show_context_menu(screen_mouse_pos, pos, tile_type, has_building)
-						return
-
 # --- FUNKCJA WYWOŁYWANA PRZEZ HUD PO KLIKNIĘCIU PRZYCISKU W POPUPIE ---
 func build_on_tile(pos: Vector2, building_name: String) -> void:
+	if character and character.selected:
+		return
 	var tile = map_data[pos]
 	
 	if EconomyManager.can_afford_and_place(building_name, tile["type"]):
@@ -296,12 +314,16 @@ func _process(_delta: float) -> void:
 	if not character or not path_line:
 		return
 
-	# --- DODANE: ukryj linię gdy menu kontekstowe jest otwarte ---
 	if hud_node:
 		var menu = hud_node.get_node_or_null("MenuBudowania")
 		if menu and menu.visible:
 			path_line.clear_points()
 			return
+
+	# --- DODANE: nic nie rób jeśli postać nie jest zaznaczona ---
+	if not character.selected:
+		path_line.clear_points()
+		return
 
 	if not character.path.is_empty():
 		draw_path_line(character.path)
