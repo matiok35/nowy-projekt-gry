@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://cp7cansj8bkkl" path="res://game_world.gd" id="1_hly68"]
 [ext_resource type="Script" uid="uid://7wqo01mkx50r" path="res://HUD.gd" id="2_bvgre"]
 [ext_resource type="Script" uid="uid://yvk17nf33pr" path="res://StrategyCamera.gd" id="3_ea1x0"]
+[ext_resource type="Script" uid="uid://dq2wpiwha02k4" path="res://character.gd" id="4_e08lw"]
 
 [node name="GameWorld" type="Node2D" unique_id=1651233416]
 position = Vector2(0, 10)
@@ -64,3 +65,10 @@ layout_mode = 2
 
 [node name="StrategyCamera" type="Camera2D" parent="." unique_id=2022214429]
 script = ExtResource("3_ea1x0")
+
+[node name="PathLine" type="Line2D" parent="." unique_id=885739978]
+
+[node name="Character" type="Node2D" parent="." unique_id=2077451359]
+script = ExtResource("4_e08lw")
+
+[node name="Polygon2D" type="Polygon2D" parent="Character" unique_id=299314696]

@@ -19,8 +19,6 @@ var map_container: Node2D
 var hud_node: Control    # Dynamicznie wyszukiwana referencja do interfejsu
 
 func _ready():
-	# AUTOMATYCZNE LOKALIZOWANIE INTERFEJSU (Naprawa błędu z zrzutu ekranu image_61ed1f.png)
-	# Szuka w aktywnym drzewie węzła o nazwie "UI", a jeśli go nie ma - szuka "HUD"
 	hud_node = get_tree().current_scene.find_child("UI", true, false)
 	if hud_node == null:
 		hud_node = get_tree().current_scene.find_child("HUD", true, false)
@@ -35,6 +33,21 @@ func _ready():
 		
 	randomize()
 	generate_map()
+
+	# --- DODANE: inicjalizacja pathfindingu i postaci ---
+	build_astar_graph()
+	character = get_node_or_null("Character")
+	path_line = get_node_or_null("PathLine")
+	if path_line:
+		path_line.width = 4.0
+		path_line.default_color = Color(1.0, 0.85, 0.0, 0.85)
+		path_line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+		path_line.end_cap_mode = Line2D.LINE_CAP_ROUND
+		path_line.joint_mode = Line2D.LINE_JOINT_ROUND
+	if character:
+		var start_pos = Vector2(MAP_SIZE / 2, MAP_SIZE / 2)
+		if cell_to_world.has(start_pos):
+			character.global_position = cell_to_world[start_pos]
 
 # --- GENEROWANIE MAPY ---
 func generate_map():
@@ -65,6 +78,9 @@ func create_procedural_hex(pos: Vector2, type: String):
 	var y_pos = pos.y * (hex_height * 0.75)
 	
 	area.position = Vector2(x_pos, y_pos) + Vector2(200, 150)
+
+	# --- DODANE: zapamiętaj pozycję świata ---
+	cell_to_world[pos] = area.position
 
 	# 1. RYSUJEMY KSZTAŁT HEKSAGONU
 	var polygon = Polygon2D.new()
@@ -111,7 +127,6 @@ func create_procedural_hex(pos: Vector2, type: String):
 	label_nodes[pos] = label
 
 	# 5. NASŁUCH NA LEWY PRZYCISK (Zamykanie menu)
-	# Dodane przedrostki "_" usuwają żółte ostrzeżenia z konsoli (Warnings)
 	area.input_event.connect(func(_viewport, event, _shape_idx):
 		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 			if hud_node:
@@ -122,13 +137,11 @@ func create_procedural_hex(pos: Vector2, type: String):
 	map_container.add_child(area)
 	tile_nodes[pos] = area
 
-# --- PANCERNA OBSŁUGA PRAWEGO PRZYCISKU MYSZY (PPM) ---
+# --- PANCERNA OBSŁUGA PRZYCISKÓW MYSZY ---
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
-		# Pobieramy pozycję myszy z uwzględnieniem ewentualnego ruchu kamery
+	if event is InputEventMouseButton and event.pressed:
 		var global_mouse_pos = get_global_mouse_position()
 		
-		# Przepychanie zapytania punktowego przez system fizyki 2D
 		var space_state = get_world_2d().direct_space_state
 		var query = PhysicsPointQueryParameters2D.new()
 		query.position = global_mouse_pos
@@ -136,23 +149,33 @@ func _unhandled_input(event: InputEvent) -> void:
 		
 		var results = space_state.intersect_point(query)
 		
-		# Jeśli kursor znajduje się bezpośrednio nad heksagonem (Area2D):
 		if not results.is_empty():
 			var hit_area = results[0]["collider"] as Area2D
 			
-			# Szukamy, do której współrzędnej Vector2 w słowniku należy to Area2D
 			for pos in tile_nodes:
 				if tile_nodes[pos] == hit_area:
-					var tile_type = map_data[pos]["type"]
-					var has_building = map_data[pos]["building"] != "Brak"
-					
-					# Pobieramy czystą pozycję pikselową na monitorze (idealną dla UI)
-					var screen_mouse_pos = get_viewport().get_mouse_position()
-					
-					# Wywołujemy menu kontekstowe w HUD
-					if hud_node and hud_node.has_method("show_context_menu"):
-						hud_node.show_context_menu(screen_mouse_pos, pos, tile_type, has_building)
-					return
+					# --- DODANE: lewy przycisk rusza postacią ---
+					if event.button_index == MOUSE_BUTTON_LEFT:
+						# --- DODANE: blokada ruchu gdy menu jest otwarte ---
+						if hud_node:
+							var menu = hud_node.get_node_or_null("MenuBudowania")
+							if menu and menu.visible:
+								return
+
+						if character and cell_to_id.has(pos):
+							var world_path = get_world_path_to(pos)
+							if not world_path.is_empty():
+								character.follow_path(world_path)
+						return
+
+					# Prawy przycisk otwiera menu kontekstowe
+					if event.button_index == MOUSE_BUTTON_RIGHT:
+						var tile_type = map_data[pos]["type"]
+						var has_building = map_data[pos]["building"] != "Brak"
+						var screen_mouse_pos = get_viewport().get_mouse_position()
+						if hud_node and hud_node.has_method("show_context_menu"):
+							hud_node.show_context_menu(screen_mouse_pos, pos, tile_type, has_building)
+						return
 
 # --- FUNKCJA WYWOŁYWANA PRZEZ HUD PO KLIKNIĘCIU PRZYCISKU W POPUPIE ---
 func build_on_tile(pos: Vector2, building_name: String) -> void:
@@ -163,12 +186,10 @@ func build_on_tile(pos: Vector2, building_name: String) -> void:
 		
 		map_data[pos]["building"] = building_name
 		
-		# Zmiana koloru Polygon2D (pierwsze dziecko Area2D) na złoty dla zaznaczenia budowli
 		var poly = tile_nodes[pos].get_child(0) as Polygon2D
 		if poly:
 			poly.color = Color(0.85, 0.65, 0.15)
 		
-		# Dynamiczna zamiana tekstu na kafelku z surowca na nazwę postawionego budynku
 		if label_nodes.has(pos):
 			label_nodes[pos].text = building_name
 
@@ -179,3 +200,115 @@ func get_active_buildings_list() -> Array:
 		if map_data[pos]["building"] != "Brak":
 			list.append(map_data[pos]["building"])
 	return list
+
+
+# =============================================================
+# --- DODANE: PATHFINDING I POSTAĆ ---
+# =============================================================
+
+var astar: AStar2D = AStar2D.new()
+var cell_to_id: Dictionary = {}
+var cell_to_world: Dictionary = {}
+
+var character: Node2D
+var path_line: Line2D
+
+func get_cell_id(pos: Vector2) -> int:
+	return int(pos.x) + 1000 + (int(pos.y) + 1000) * 2000
+
+func get_hex_neighbors(pos: Vector2) -> Array[Vector2]:
+	var x: int = int(pos.x)
+	var y: int = int(pos.y)
+	var neighbors: Array[Vector2]
+
+	if y % 2 == 0:
+		neighbors = [
+			Vector2(x + 1, y), Vector2(x - 1, y),
+			Vector2(x,     y - 1), Vector2(x - 1, y - 1),
+			Vector2(x,     y + 1), Vector2(x - 1, y + 1),
+		]
+	else:
+		neighbors = [
+			Vector2(x + 1, y), Vector2(x - 1, y),
+			Vector2(x + 1, y - 1), Vector2(x,     y - 1),
+			Vector2(x + 1, y + 1), Vector2(x,     y + 1),
+		]
+
+	return neighbors
+
+func build_astar_graph() -> void:
+	astar.clear()
+	cell_to_id.clear()
+
+	for pos in map_data:
+		var id: int = get_cell_id(pos)
+		astar.add_point(id, cell_to_world[pos])
+		cell_to_id[pos] = id
+
+	for pos in map_data:
+		for neighbor in get_hex_neighbors(pos):
+			if cell_to_id.has(neighbor):
+				var from_id: int = cell_to_id[pos]
+				var to_id: int = cell_to_id[neighbor]
+				if not astar.are_points_connected(from_id, to_id):
+					astar.connect_points(from_id, to_id)
+
+func world_to_nearest_cell(world_pos: Vector2) -> Vector2:
+	var best_pos: Vector2 = Vector2.ZERO
+	var best_dist: float = INF
+	for pos in cell_to_world:
+		var dist = world_pos.distance_to(cell_to_world[pos])
+		if dist < best_dist:
+			best_dist = dist
+			best_pos = pos
+	return best_pos
+
+func get_world_path_to(target_pos: Vector2) -> Array[Vector2]:
+	if not character:
+		return []
+
+	var start_pos: Vector2 = world_to_nearest_cell(character.global_position)
+
+	if not cell_to_id.has(start_pos) or not cell_to_id.has(target_pos):
+		return []
+
+	var id_path: PackedInt64Array = astar.get_id_path(cell_to_id[start_pos], cell_to_id[target_pos])
+
+	if id_path.is_empty():
+		return []
+
+	var max_steps: int = mini(id_path.size(), character.move_range + 1)
+	var world_path: Array[Vector2] = []
+	for i in range(max_steps):
+		world_path.append(astar.get_point_position(id_path[i]))
+
+	return world_path
+
+func draw_path_line(world_path: Array[Vector2]) -> void:
+	if not path_line:
+		return
+	path_line.clear_points()
+	for point in world_path:
+		path_line.add_point(point)
+
+
+func _process(_delta: float) -> void:
+	if not character or not path_line:
+		return
+
+	# --- DODANE: ukryj linię gdy menu kontekstowe jest otwarte ---
+	if hud_node:
+		var menu = hud_node.get_node_or_null("MenuBudowania")
+		if menu and menu.visible:
+			path_line.clear_points()
+			return
+
+	if not character.path.is_empty():
+		draw_path_line(character.path)
+		return
+
+	var hovered_pos: Vector2 = world_to_nearest_cell(get_global_mouse_position())
+	if cell_to_world.has(hovered_pos) and get_global_mouse_position().distance_to(cell_to_world[hovered_pos]) < HEX_RADIUS:
+		draw_path_line(get_world_path_to(hovered_pos))
+	else:
+		path_line.clear_points()
