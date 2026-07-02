@@ -1,3 +1,9 @@
+<<<<<<< HEAD
+.godot/
+.import/
+export_presets.cfg
+=======
 # Godot 4+ specific ignores
 .godot/
 /android/
+>>>>>>> 984e8282779e960859e324d58ef809eaedf03205
