@@ -11,7 +11,6 @@ var map_data = {}
 var tile_nodes = {}      
 var label_nodes = {}     
 
-# --- SYSTEM TERYTORIUM I MIAST ---
 var owned_tiles: Dictionary = {}         
 var city_centers: Array[Vector2] = []      
 var territory_overlays: Dictionary = {}   
@@ -24,7 +23,7 @@ var astar: AStar2D = AStar2D.new()
 var cell_to_id: Dictionary = {}
 var cell_to_world: Dictionary = {}
 
-var character: Node2D # Zmiana typu na Node2D w celu unikania błędów scope parsera
+var character: Node2D 
 var path_line: Line2D
 
 func _ready():
@@ -43,9 +42,6 @@ func _ready():
 	if path_line:
 		path_line.width = 4.0
 		path_line.default_color = Color(1.0, 0.85, 0.0, 0.85)
-		path_line.begin_cap_mode = Line2D.LINE_CAP_ROUND
-		path_line.end_cap_mode = Line2D.LINE_CAP_ROUND
-		path_line.joint_mode = Line2D.LINE_JOINT_ROUND
 		
 	if character:
 		var start_pos = Vector2(MAP_SIZE / 2, MAP_SIZE / 2)
@@ -57,6 +53,7 @@ func _ready():
 	EconomyManager.economy_updated.connect(_on_economy_turn_changed)
 
 func generate_map():
+	var sizes = ["Małe", "Średnie", "Duże"]
 	for x in range(MAP_SIZE):
 		for y in range(MAP_SIZE):
 			var pos = Vector2(x, y)
@@ -66,10 +63,25 @@ func generate_map():
 			elif rand < 0.07: type = "Żelazo"
 			elif rand < 0.09: type = "Węgiel"
 				
-			map_data[pos] = {"type": type, "building": "Brak"}
-			create_procedural_hex(pos, type)
+			# Generowanie cech unikalnych dla pola
+			var deposit_size = ""
+			var fertility = 0.0
+			
+			if type == "Trawa":
+				# Żyzność od 50% do 150%
+				fertility = snapped(randf_range(0.5, 1.5), 0.1)
+			else:
+				deposit_size = sizes[randi() % sizes.size()]
+				
+			map_data[pos] = {
+				"type": type, 
+				"building": "Brak",
+				"deposit_size": deposit_size,
+				"fertility": fertility
+			}
+			create_procedural_hex(pos, type, deposit_size)
 
-func create_procedural_hex(pos: Vector2, type: String):
+func create_procedural_hex(pos: Vector2, type: String, deposit_size: String):
 	var area = Area2D.new()
 	area.input_pickable = true
 	area.monitoring = false
@@ -111,7 +123,12 @@ func create_procedural_hex(pos: Vector2, type: String):
 	area.add_child(collision)
 
 	var label = Label.new()
-	label.text = type
+	# Wyświetlanie nazwy i wielkości złoża na mapie
+	if type != "Trawa":
+		label.text = "%s\n(%s)" % [type, deposit_size]
+	else:
+		label.text = type
+		
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.size = Vector2(hex_width, hex_height)
@@ -133,13 +150,10 @@ func _on_character_city_creation_requested(char_global_pos: Vector2) -> void:
 	if map_data.has(cell_pos):
 		if city_centers.has(cell_pos): return 
 		if hud_node and hud_node.has_method("show_city_creation_menu"):
-			var screen_pos = get_viewport().get_canvas_transform() * cell_to_world[cell_pos]
-			hud_node.show_city_creation_menu(screen_pos, cell_pos)
+			hud_node.show_city_creation_menu(Vector2.ZERO, cell_pos)
 
-# --- ZMIANA: ZAKŁADANIE MIASTA (USUWA LUDZIKA Z MAPY) ---
 func create_city_at(pos: Vector2) -> void:
 	if city_centers.has(pos): return
-	
 	city_centers.append(pos)
 	map_data[pos]["building"] = "Centrum Miasta"
 	if label_nodes.has(pos):
@@ -153,14 +167,12 @@ func create_city_at(pos: Vector2) -> void:
 		if map_data.has(neighbor):
 			claim_tile(neighbor)
 
-	# LUDZIK ZNIKA PO ZAŁOŻENIU MIASTA:
 	if character:
 		character.queue_free()
 		character = null
 
 func claim_tile(pos: Vector2) -> void:
 	if owned_tiles.has(pos): return
-	
 	owned_tiles[pos] = true
 	var tile_area = tile_nodes[pos]
 	var base_poly = tile_area.get_child(0) as Polygon2D
@@ -173,7 +185,6 @@ func claim_tile(pos: Vector2) -> void:
 		tile_area.add_child(overlay)
 		territory_overlays[pos] = overlay
 
-# --- ZMIANA: ROZSZERZANIE TERENU O JEDNO POLE (ZAMYKANIE PIERŚCIENI) ---
 func _on_economy_turn_changed(_balances: Dictionary, current_turn: int, _selected_build: String) -> void:
 	if current_turn >= last_expansion_turn + 5:
 		last_expansion_turn = current_turn
@@ -181,23 +192,18 @@ func _on_economy_turn_changed(_balances: Dictionary, current_turn: int, _selecte
 
 func expand_territory_by_single_tile() -> void:
 	if city_centers.is_empty(): return
-	
 	var candidates: Array[Vector2] = []
 	var candidate_distances: Array[int] = []
 	
-	# Szukamy wszystkich nieprzypisanych pól, które graniczą z naszym terenem
 	for owned in owned_tiles:
 		for neighbor in get_hex_neighbors(owned):
 			if map_data.has(neighbor) and not owned_tiles.has(neighbor):
 				if not candidates.has(neighbor):
-					# Obliczamy minimalną odległość (w siatce heksów) do najbliższego centrum miasta
 					var min_dist = get_hex_distance_to_nearest_city(neighbor)
 					candidates.append(neighbor)
 					candidate_distances.append(min_dist)
 					
 	if candidates.is_empty(): return
-	
-	# Znajdujemy pole o najmniejszym dystansie (domykanie obecnego koła/pierścienia)
 	var best_index = 0
 	var min_distance = candidate_distances[0]
 	
@@ -206,10 +212,8 @@ func expand_territory_by_single_tile() -> void:
 			min_distance = candidate_distances[i]
 			best_index = i
 			
-	# Przejmujemy dokładnie jedno, najbliższe centrum miasta pole
 	claim_tile(candidates[best_index])
 
-# Funkcja pomocnicza wyliczająca odległość w strukturze heksagonalnej (promień koła)
 func get_hex_distance_to_nearest_city(tile: Vector2) -> int:
 	var min_d = 99999
 	for city in city_centers:
@@ -218,42 +222,33 @@ func get_hex_distance_to_nearest_city(tile: Vector2) -> int:
 	return min_d
 
 func get_hex_distance(a: Vector2, b: Vector2) -> int:
-	# Konwersja współrzędnych siatki przesuniętej (offset) na współrzędne osiowe (axial) do wyliczenia dystansu
 	var az = a.y
 	var ax = a.x - (int(a.y) / 2)
 	var ay = -ax - az
-	
 	var bz = b.y
 	var bx = b.x - (int(b.y) / 2)
 	var by = -bx - bz
-	
 	return int((abs(ax - bx) + abs(ay - by) + abs(az - bz)) / 2.0)
 
-# --- ZAKUP POLA ZA ZŁOTO ---
 func buy_tile(pos: Vector2) -> void:
 	if owned_tiles.has(pos): return
-	
 	var borders_owned_territory = false
 	for neighbor in get_hex_neighbors(pos):
 		if owned_tiles.has(neighbor):
 			borders_owned_territory = true
 			break
-			
 	if not borders_owned_territory: return 
-		
 	if EconomyManager.can_afford_tile_purchase():
 		EconomyManager.deduct_tile_purchase_costs()
 		claim_tile(pos)
 
-# --- INPUT HANDLING (LEWY / PRAWY KLIK) ---
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		var global_mouse_pos = get_global_mouse_position()
 		
-		# --- PRAWY KLIK (POŁĄCZONE MENU BUDOWANIA I KUPNA) ---
+		# --- PRAWY KLIK ---
 		if event.button_index == MOUSE_BUTTON_RIGHT:
 			if character: character.call("set_selected", false)
-				
 			var space_state = get_world_2d().direct_space_state
 			var query = PhysicsPointQueryParameters2D.new()
 			query.position = global_mouse_pos
@@ -266,11 +261,10 @@ func _unhandled_input(event: InputEvent) -> void:
 					if tile_nodes[pos] == hit_area:
 						if character and character.get("selected"): return
 						
-						var tile_type = map_data[pos]["type"]
-						var has_building = map_data[pos]["building"] != "Brak"
+						var tile = map_data[pos]
+						var has_building = tile["building"] != "Brak"
 						var is_owned = owned_tiles.has(pos)
 						
-						# Sprawdź, czy pole sąsiaduje z naszym państwem
 						var borders_owned = false
 						for n in get_hex_neighbors(pos):
 							if owned_tiles.has(n):
@@ -279,7 +273,11 @@ func _unhandled_input(event: InputEvent) -> void:
 								
 						var screen_mouse_pos = get_viewport().get_mouse_position()
 						if hud_node and hud_node.has_method("show_context_menu"):
-							hud_node.show_context_menu(screen_mouse_pos, pos, tile_type, has_building, is_owned, borders_owned)
+							# Przekazujemy dodatkowe informacje o złożu i żyzności do HUD
+							hud_node.show_context_menu(
+								screen_mouse_pos, pos, tile["type"], has_building, 
+								is_owned, borders_owned, tile["deposit_size"], tile["fertility"]
+							)
 						return
 			return
 			
@@ -297,12 +295,10 @@ func _unhandled_input(event: InputEvent) -> void:
 					if tile_nodes[pos] == hit_area:
 						if hud_node and hud_node.has_method("any_menu_visible") and hud_node.any_menu_visible():
 							return
-							
 						if character and global_mouse_pos.distance_to(character.global_position) < 20.0:
 							var current_state = character.get("selected")
 							character.call("set_selected", not current_state)
 							return
-							
 						if character and character.get("selected") and cell_to_id.has(pos):
 							var world_path = get_world_path_to(pos)
 							if not world_path.is_empty():
@@ -319,15 +315,24 @@ func build_on_tile(pos: Vector2, building_name: String) -> void:
 		map_data[pos]["building"] = building_name
 		
 		var poly = tile_nodes[pos].get_child(0) as Polygon2D
-		if poly: poly.color = Color(0.85, 0.65, 0.15)
+		if poly:
+			if building_name == "Farma": poly.color = Color(0.7, 0.6, 0.2)
+			else: poly.color = Color(0.85, 0.65, 0.15)
+			
 		if label_nodes.has(pos):
 			label_nodes[pos].text = building_name
 
+# Tworzy kompletną listę budynków z ich modyfikatorami środowiskowymi dla EconomyManager
 func get_active_buildings_list() -> Array:
 	var list = []
 	for pos in map_data:
-		if map_data[pos]["building"] != "Brak":
-			list.append(map_data[pos]["building"])
+		var tile = map_data[pos]
+		if tile["building"] != "Brak":
+			list.append({
+				"name": tile["building"],
+				"deposit_size": tile["deposit_size"],
+				"fertility": tile["fertility"]
+			})
 	return list
 
 func get_cell_id(pos: Vector2) -> int:
@@ -337,7 +342,6 @@ func get_hex_neighbors(pos: Vector2) -> Array[Vector2]:
 	var x: int = int(pos.x)
 	var y: int = int(pos.y)
 	var neighbors: Array[Vector2]
-
 	if y % 2 == 0:
 		neighbors = [
 			Vector2(x + 1, y), Vector2(x - 1, y),
@@ -381,10 +385,8 @@ func get_world_path_to(target_pos: Vector2) -> Array[Vector2]:
 	if not character: return []
 	var start_pos: Vector2 = world_to_nearest_cell(character.global_position)
 	if not cell_to_id.has(start_pos) or not cell_to_id.has(target_pos): return []
-
 	var id_path: PackedInt64Array = astar.get_id_path(cell_to_id[start_pos], cell_to_id[target_pos])
 	if id_path.is_empty(): return []
-
 	var m_range = character.get("move_range") if character.get("move_range") else 4
 	var max_steps: int = mini(id_path.size(), m_range + 1)
 	var world_path: Array[Vector2] = []
@@ -400,20 +402,16 @@ func draw_path_line(world_path: Array[Vector2]) -> void:
 
 func _process(_delta: float) -> void:
 	if not character or not path_line: return
-
 	if hud_node and hud_node.has_method("any_menu_visible") and hud_node.any_menu_visible():
 		path_line.clear_points()
 		return
-
 	if not character.get("selected"):
 		path_line.clear_points()
 		return
-
 	var char_path = character.get("path")
 	if char_path and not char_path.is_empty():
 		draw_path_line(char_path)
 		return
-
 	var hovered_pos: Vector2 = world_to_nearest_cell(get_global_mouse_position())
 	if cell_to_world.has(hovered_pos) and get_global_mouse_position().distance_to(cell_to_world[hovered_pos]) < HEX_RADIUS:
 		draw_path_line(get_world_path_to(hovered_pos))

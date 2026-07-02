@@ -10,10 +10,12 @@ extends Control
 @onready var build_iron = $MenuBudowania/VBoxContainer/BuildKopalniaZelaza
 @onready var build_coal = $MenuBudowania/VBoxContainer/BuildKopalniaWegla
 
-# --- SYSTEM MIAST I ZAKUPU PÓL ---
-var menu_zalozenia_miasta: PanelContainer
+# --- SYSTEM DYNAMICZNYCH ELEMENTÓW ---
+var build_farma: Button # Nowy przycisk farmy tworzony proceduralnie
+var info_label: Label   # Etykieta wyświetlająca parametry pola nad przyciskami
+var menu_zalozenia_miasta: PopupPanel 
 var zaloz_miasto_button: Button
-var kup_pole_button: Button # Przeniesiony do wspólnego menu kontekstowego
+var kup_pole_button: Button 
 
 var world_ref: Node2D 
 var active_tile_pos: Vector2 = Vector2.ZERO
@@ -46,16 +48,38 @@ func setup_custom_popups():
 	style_box.set_corner_radius_all(10)
 	style_box.set_content_margin_all(8)
 
-	# 1. Menu zakładania miasta (otwierane z podwójnego kliknięcia w ludzika)
-	menu_zalozenia_miasta = PanelContainer.new()
+	# 1. Nagłówek informacyjny w menu budowania (Żyzność / Wielkość złoża)
+	var vbox = $MenuBudowania/VBoxContainer
+	info_label = Label.new()
+	info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	info_label.add_theme_color_override("font_color", Color(0.0, 0.9, 1.0))
+	info_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	vbox.add_child(info_label)
+	vbox.move_child(info_label, 0) # Zawsze na samej górze menu
+
+	# 2. Przycisk budowy farmy
+	build_farma = Button.new()
+	vbox.add_child(build_farma)
+	build_farma.pressed.connect(func(): execute_build("Farma"))
+	style_single_button(build_farma, Color(0.45, 0.4, 0.15), Color(0.65, 0.55, 0.2), "🌾 Buduj Farmę")
+
+	# 3. Menu zakładania miasta
+	menu_zalozenia_miasta = PopupPanel.new()
 	menu_zalozenia_miasta.visible = false
 	menu_zalozenia_miasta.add_theme_stylebox_override("panel", style_box)
+	
+	var margin_container = MarginContainer.new()
+	margin_container.add_theme_constant_override("margin_left", 4)
+	margin_container.add_theme_constant_override("margin_right", 4)
+	margin_container.add_theme_constant_override("margin_top", 4)
+	margin_container.add_theme_constant_override("margin_bottom", 4)
 	
 	zaloz_miasto_button = Button.new()
 	zaloz_miasto_button.text = "👑 Załóż Miasto tutaj"
 	zaloz_miasto_button.custom_minimum_size = Vector2(160, 35)
 	
-	menu_zalozenia_miasta.add_child(zaloz_miasto_button)
+	margin_container.add_child(zaloz_miasto_button)
+	menu_zalozenia_miasta.add_child(margin_container)
 	add_child(menu_zalozenia_miasta)
 	
 	zaloz_miasto_button.pressed.connect(func():
@@ -64,7 +88,7 @@ func setup_custom_popups():
 		hide_all_menus()
 	)
 
-	# 2. Dynamiczny przycisk zakupu pola wstrzykiwany do menu budowania
+	# 4. Dynamiczny przycisk zakupu pola
 	kup_pole_button = Button.new()
 	kup_pole_button.text = "🪙 Kup to pole (50 złota)"
 	kup_pole_button.custom_minimum_size = Vector2(180, 35)
@@ -75,10 +99,8 @@ func setup_custom_popups():
 	style_buy.set_content_margin_all(12)
 	kup_pole_button.add_theme_stylebox_override("normal", style_buy)
 	
-	# Dodajemy przycisk zakupu pola na samą górę listy budynków w menu budowania
-	var vbox = $MenuBudowania/VBoxContainer
 	vbox.add_child(kup_pole_button)
-	vbox.move_child(kup_pole_button, 0) # Przycisk kupna jako pierwszy element
+	vbox.move_child(kup_pole_button, 1) # Pod napisem informacyjnym
 	
 	kup_pole_button.pressed.connect(func():
 		if world_ref and world_ref.has_method("buy_tile"):
@@ -86,44 +108,50 @@ func setup_custom_popups():
 		hide_all_menus()
 	)
 
-# --- ZINTEGROWANE MENU KONTEKSTOWE (Budowanie + Zakup pola razem) ---
-func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String, has_building: bool, is_owned: bool, borders_owned: bool) -> void:
+# --- SPERSONALIZOWANE MENU KONTEKSTOWE ---
+func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String, has_building: bool, is_owned: bool, borders_owned: bool, deposit_size: String = "", fertility: float = 0.0) -> void:
 	hide_all_menus()
 	active_tile_pos = tile_pos
 	
 	menu_budowania.visible = true
 	_reposition_menu(menu_budowania, mouse_pos)
 	
+	# Aktualizacja tekstu informacyjnego nad przyciskami
+	if tile_type == "Trawa":
+		info_label.text = "🌱 Typ: Trawa\n✨ Żyzność pola: %d%%" % [int(fertility * 100)]
+	else:
+		info_label.text = "⛰️ Typ: Złoże %s\n📦 Wielkość: %s" % [tile_type, deposit_size]
+
 	# Zarządzanie przyciskiem kupna pola
 	if is_owned or has_building:
 		kup_pole_button.visible = false
 	else:
 		kup_pole_button.visible = true
-		var can_afford = EconomyManager.can_afford_tile_purchase() if EconomyManager.has_method("can_afford_tile_purchase") else EconomyManager.resources["Złoto"] >= 50
+		var can_afford = EconomyManager.resources["Złoto"] >= 50
 		var can_buy = can_afford and borders_owned
-		
 		kup_pole_button.disabled = not can_buy
 		kup_pole_button.modulate.a = 1.0 if can_buy else 0.35
 
-	# Zarządzanie przyciskami budynków (dostępne tylko jeśli pole jest nasze i puste)
+	# Zarządzanie przyciskami budynków
 	var show_buildings = is_owned and not has_building
 	build_chata.visible = show_buildings
 	build_iron.visible = show_buildings
 	build_coal.visible = show_buildings
+	build_farma.visible = show_buildings
 	
 	if show_buildings:
 		update_button_state(build_chata, "Chata Drwala", tile_type)
 		update_button_state(build_iron, "Kopalnia Żelaza", tile_type)
 		update_button_state(build_coal, "Kopalnia Węgla", tile_type)
+		update_button_state(build_farma, "Farma", tile_type)
 
-# --- WYŚWIETLANIE MENU MIASTA ---
-func show_city_creation_menu(screen_pos: Vector2, tile_pos: Vector2) -> void:
+func show_city_creation_menu(_screen_pos: Vector2, tile_pos: Vector2) -> void:
 	hide_all_menus()
 	active_tile_pos = tile_pos
-	menu_zalozenia_miasta.visible = true
-	_reposition_menu(menu_zalozenia_miasta, screen_pos)
+	var current_mouse_pos = get_viewport().get_mouse_position()
+	var popup_rect = Rect2(current_mouse_pos + Vector2(10, 10), Vector2(170, 45))
+	menu_zalozenia_miasta.popup(popup_rect)
 
-# --- POMOCNICZE CZYSZCZENIE INTERFEJSU ---
 func hide_all_menus():
 	menu_budowania.visible = false
 	if menu_zalozenia_miasta: menu_zalozenia_miasta.visible = false
@@ -132,9 +160,7 @@ func any_menu_visible() -> bool:
 	return menu_budowania.visible or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible)
 
 func _reposition_menu(menu: Control, base_pos: Vector2):
-	# Wymuszamy natychmiastowe przeliczenie rozmiarów minimalnych kontenera przed pozycjonowaniem
 	menu.reset_size()
-	
 	var screen_size = get_viewport_rect().size
 	var menu_size = menu.size
 	var final_x = base_pos.x + 10
@@ -144,10 +170,6 @@ func _reposition_menu(menu: Control, base_pos: Vector2):
 		final_x = base_pos.x - menu_size.x - 10
 	if final_y + menu_size.y > screen_size.y:
 		final_y = base_pos.y - menu_size.y - 10
-		
-	# Zabezpieczenie przed ujemnymi pozycjami (wyjście poza lewą/górną krawędź)
-	final_x = max(10, final_x)
-	final_y = max(10, final_y)
 		
 	menu.global_position = Vector2(final_x, final_y)
 
@@ -161,9 +183,10 @@ func execute_build(building_name: String) -> void:
 		world_ref.build_on_tile(active_tile_pos, building_name)
 	hide_all_menus()
 
-func _on_economy_updated(balances: Dictionary, turn: int, selected_build: String):
-	resources_label.text = "🌟 TURA: %d   |   🪙 ZŁOTO: %d   |   🪵 DREWNO: %d   |   ⛓️ ŻELAZO: %d   |   🌋 WĘGIEL: %d" % [
-		turn, balances["Złoto"], balances["Drewno"], balances["Żelazo"], balances["Węgiel"]
+func _on_economy_updated(balances: Dictionary, turn: int, _selected_build: String):
+	# Zaktualizowano interfejs o wyświetlanie zasobów Jedzenia
+	resources_label.text = "🌟 TURA: %d   |   🪙 ZŁOTO: %d   |   🌾 JEDZENIE: %d   |   🪵 DREWNO: %d   |   ⛓️ ŻELAZO: %d   |   🌋 WĘGIEL: %d" % [
+		turn, balances["Złoto"], balances["Jedzenie"], balances["Drewno"], balances["Żelazo"], balances["Węgiel"]
 	]
 
 func _on_turn_pressed():
