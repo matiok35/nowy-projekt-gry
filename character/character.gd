@@ -13,10 +13,7 @@ const ARRIVAL_THRESHOLD: float = 4.0
 # GŁÓWNA ZMIENNA STANU (Kluczowa dla naprawy błędów scope w game_world.gd)
 var selected: bool = false  
 
-var _polygon: Polygon2D
-
-# Tablica punktów Vector2 do przebycia (używana przez pathfinding)
-var path: Array[Vector2] = []
+var _polygon: Polygon2D  
 
 func _ready() -> void:
 	# Tworzenie wizualnego kształtu postaci (koło) z kodu
@@ -43,6 +40,9 @@ func is_selected() -> bool:
 # Przypisanie nowej ścieżki ruchu do celu
 func follow_path(new_path: Array[Vector2]) -> void:
 	path = new_path
+
+# Tablica punktów Vector2 do przebycia (używana przez pathfinding)
+var path: Array[Vector2] = []
 
 func _physics_process(_delta: float) -> void:
 	if path.is_empty():

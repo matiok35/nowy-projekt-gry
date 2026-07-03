@@ -1,0 +1,102 @@
+[gd_scene format=3 uid="uid://t1refngcvjl1"]
+
+[ext_resource type="Script" uid="uid://cp7cansj8bkkl" path="res://game_world/game_world.gd" id="1_uufbk"]
+[ext_resource type="Script" uid="uid://yvk17nf33pr" path="res://StrategyCamera.gd" id="2_fbx2b"]
+[ext_resource type="Script" uid="uid://dq2wpiwha02k4" path="res://character.gd" id="3_qeltc"]
+[ext_resource type="Script" uid="uid://7wqo01mkx50r" path="res://HUD.gd" id="4_uufbk"]
+
+[node name="GameWorld" type="Node2D" unique_id=1651233416]
+position = Vector2(0, 10)
+script = ExtResource("1_uufbk")
+
+[node name="MapContainer" type="Node2D" parent="." unique_id=558576273]
+
+[node name="StrategyCamera" type="Camera2D" parent="." unique_id=2022214429]
+script = ExtResource("2_fbx2b")
+
+[node name="PathLine" type="Line2D" parent="." unique_id=885739978]
+
+[node name="Character" type="Node2D" parent="." unique_id=2077451359]
+script = ExtResource("3_qeltc")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=932151384]
+
+[node name="UI" type="Control" parent="CanvasLayer" unique_id=1289321786]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+script = ExtResource("4_uufbk")
+
+[node name="Panel" type="Panel" parent="CanvasLayer/UI" unique_id=411600892]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 1.0
+offset_bottom = 88.0
+grow_horizontal = 2
+mouse_filter = 1
+
+[node name="ResourcesLabel" type="Label" parent="CanvasLayer/UI/Panel" unique_id=1786534778]
+layout_mode = 0
+offset_right = 288.0
+offset_bottom = 87.0
+
+[node name="TurnButton" type="Button" parent="CanvasLayer/UI" unique_id=1194572768]
+layout_mode = 0
+offset_left = 15.0
+offset_top = 570.0
+offset_right = 157.0
+offset_bottom = 624.0
+text = "Następna tura"
+
+[node name="MenuBudowania" type="PanelContainer" parent="CanvasLayer/UI" unique_id=39613217]
+visible = false
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/UI/MenuBudowania" unique_id=720993880]
+layout_mode = 2
+
+[node name="BuildChata" type="Button" parent="CanvasLayer/UI/MenuBudowania/VBoxContainer" unique_id=672522631]
+layout_mode = 2
+
+[node name="BuildKopalniaZelaza" type="Button" parent="CanvasLayer/UI/MenuBudowania/VBoxContainer" unique_id=427077347]
+layout_mode = 2
+
+[node name="BuildKopalniaWegla" type="Button" parent="CanvasLayer/UI/MenuBudowania/VBoxContainer" unique_id=1662054787]
+layout_mode = 2
+
+[node name="TechTreeWindow" type="Panel" parent="CanvasLayer/UI" unique_id=754247474]
+visible = false
+layout_mode = 0
+offset_left = 200.0
+offset_top = 100.0
+offset_right = 1000.0
+offset_bottom = 600.0
+
+[node name="CloseButton" type="Button" parent="CanvasLayer/UI/TechTreeWindow" unique_id=1138045853]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_bottom = 40.0
+grow_horizontal = 0
+text = "X"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="CanvasLayer/UI/TechTreeWindow" unique_id=1515570807]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 50.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TechTreeMap" type="Control" parent="CanvasLayer/UI/TechTreeWindow/ScrollContainer" unique_id=1443365614]
+layout_mode = 2
