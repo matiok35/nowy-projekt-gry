@@ -86,7 +86,7 @@ func setup_custom_popups():
 	build_farma = Button.new()
 	vbox.add_child(build_farma)
 	build_farma.pressed.connect(func(): execute_build("Farma"))
-	style_single_button(build_farma, Color(0.45, 0.4, 0.15), Color(0.65, 0.55, 0.2), "🌾 Buduj Farmę")
+	style_single_button(build_farma, Color(0.45, 0.4, 0.15), Color(0.65, 0.55, 0.2), "🌾 Buduj Farmę","Farma")
 
 	cat_zasobowe = Button.new()
 	cat_tech = Button.new()
@@ -110,8 +110,8 @@ func setup_custom_popups():
 	vbox.add_child(btn_tech_2)
 	btn_tech_1.pressed.connect(func(): execute_build("Laboratorium"))
 	btn_tech_2.pressed.connect(func(): execute_build("Warsztat"))
-	style_single_button(btn_tech_1, Color(0.3, 0.4, 0.6), Color(0.4, 0.5, 0.8), "⚙️ Laboratorium")
-	style_single_button(btn_tech_2, Color(0.4, 0.3, 0.2), Color(0.5, 0.4, 0.3), "⚙️ Warsztat")
+	style_single_button(btn_tech_1, Color(0.3, 0.4, 0.6), Color(0.4, 0.5, 0.8), "⚙️ Laboratorium", "Laboratorium")
+	style_single_button(btn_tech_2, Color(0.4, 0.3, 0.2), Color(0.5, 0.4, 0.3), "⚙️ Warsztat",  "Warsztat")
 
 	btn_naukowy_1 = Button.new()
 	btn_naukowy_2 = Button.new()
@@ -119,8 +119,8 @@ func setup_custom_popups():
 	vbox.add_child(btn_naukowy_2)
 	btn_naukowy_1.pressed.connect(func(): execute_build("Biblioteka"))
 	btn_naukowy_2.pressed.connect(func(): execute_build("Świątynia"))
-	style_single_button(btn_naukowy_1, Color(0.4, 0.2, 0.4), Color(0.5, 0.3, 0.5), "📜 Biblioteka")
-	style_single_button(btn_naukowy_2, Color(0.6, 0.5, 0.2), Color(0.7, 0.6, 0.3), "📜 Świątynia")
+	style_single_button(btn_naukowy_1, Color(0.4, 0.2, 0.4), Color(0.5, 0.3, 0.5), "📜 Biblioteka","Biblioteka")
+	style_single_button(btn_naukowy_2, Color(0.6, 0.5, 0.2), Color(0.7, 0.6, 0.3), "📜 Świątynia","Świątynia")
 
 	menu_zalozenia_miasta = PopupPanel.new()
 	menu_zalozenia_miasta.visible = false
@@ -537,11 +537,17 @@ func style_context_popup():
 	$MenuBudowania/VBoxContainer.add_theme_constant_override("separation", 6)
 
 func style_individual_buttons():
-	style_single_button(build_chata, Color(0.15, 0.5, 0.15), Color(0.2, 0.7, 0.2), "🪵 Buduj Chatę Drwala")
-	style_single_button(build_iron, Color(0.2, 0.35, 0.5), Color(0.3, 0.5, 0.75), "⛓️ Kopalnia Żelaza")
-	style_single_button(build_coal, Color(0.7, 0.3, 0.0), Color(0.9, 0.45, 0.1), "🌋 Kopalnia Węgla")
+	style_single_button(build_chata, Color(0.15, 0.5, 0.15), Color(0.2, 0.7, 0.2), "🪵 Buduj Chatę Drwala", "Chata Drwala")
+	style_single_button(build_iron, Color(0.2, 0.35, 0.5), Color(0.3, 0.5, 0.75), "⛓️ Kopalnia Żelaza", "Kopalnia Żelaza")
+	style_single_button(build_coal, Color(0.7, 0.3, 0.0), Color(0.9, 0.45, 0.1), "🌋 Kopalnia Węgla", "Kopalnia Węgla")
 
-func style_single_button(btn: Button, base_color: Color, hover_color: Color, new_text: String):
+func style_single_button(
+	btn: Button,
+	base_color: Color,
+	hover_color: Color,
+	new_text: String,
+	building_name := ""
+):
 	btn.text = new_text
 	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	btn.custom_minimum_size.y = 38 
@@ -566,3 +572,6 @@ func style_single_button(btn: Button, base_color: Color, hover_color: Color, new
 	btn.add_theme_stylebox_override("disabled", disabled)
 	btn.add_theme_color_override("font_color", Color.WHITE)
 	btn.add_theme_color_override("font_disabled_color", Color(0.5, 0.5, 0.5))
+	
+	if building_name != "":
+		btn.tooltip_text = EconomyManager.get_building_tooltip(building_name)

@@ -77,6 +77,36 @@ var technology_tree: Dictionary = {
 	}
 }
 
+
+# aby pokazać wymagania 
+func get_building_tooltip(building_name: String) -> String:
+	if not building_costs.has(building_name):
+		return ""
+
+	var text = "Wymagania\n"
+
+	match building_name:
+		"Chata Drwala":
+			text += "• Musi zostać wybudowana na drewnie\n"
+		"Kopalnia Żelaza":
+			text += "• Musi zostać wybudowana na żelazie\n"
+		"Kopalnia Węgla":
+			text += "• Musi zostać wybudowana na węglu\n"
+		"Farma":
+			text += "• Musi zostać wybudowana na trawie\n"
+		"Laboratorium", "Warsztat", "Biblioteka", "Świątynia":
+			text += "• Musi zostać wybudowana na trawie\n"
+
+	text += "\nKoszt\n"
+
+	for resource in building_costs[building_name]:
+		text += "• %s: %d\n" % [
+			resource,
+			building_costs[building_name][resource]
+		]
+
+	return text
+
 func can_afford_and_place(building_name: String, tile_type: String) -> bool:
 	if not building_costs.has(building_name): return false
 	
