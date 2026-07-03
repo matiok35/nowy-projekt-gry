@@ -1,9 +1,9 @@
-[gd_scene format=3 uid="uid://t1refngcvjl1"]
+[gd_scene format=3 uid="uid://brkvg5whgb0os"]
 
 [ext_resource type="Script" uid="uid://cp7cansj8bkkl" path="res://game_world/game_world.gd" id="1_uufbk"]
-[ext_resource type="Script" uid="uid://yvk17nf33pr" path="res://StrategyCamera.gd" id="2_fbx2b"]
-[ext_resource type="Script" uid="uid://dq2wpiwha02k4" path="res://character.gd" id="3_qeltc"]
-[ext_resource type="Script" uid="uid://7wqo01mkx50r" path="res://HUD.gd" id="4_uufbk"]
+[ext_resource type="Script" uid="uid://yvk17nf33pr" path="res://camera/StrategyCamera.gd" id="2_uufbk"]
+[ext_resource type="Script" uid="uid://dq2wpiwha02k4" path="res://character/character.gd" id="3_fbx2b"]
+[ext_resource type="Script" uid="uid://7wqo01mkx50r" path="res://ui/hud.gd" id="4_qeltc"]
 
 [node name="GameWorld" type="Node2D" unique_id=1651233416]
 position = Vector2(0, 10)
@@ -12,12 +12,12 @@ script = ExtResource("1_uufbk")
 [node name="MapContainer" type="Node2D" parent="." unique_id=558576273]
 
 [node name="StrategyCamera" type="Camera2D" parent="." unique_id=2022214429]
-script = ExtResource("2_fbx2b")
+script = ExtResource("2_uufbk")
 
 [node name="PathLine" type="Line2D" parent="." unique_id=885739978]
 
 [node name="Character" type="Node2D" parent="." unique_id=2077451359]
-script = ExtResource("3_qeltc")
+script = ExtResource("3_fbx2b")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=932151384]
 
@@ -29,7 +29,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
-script = ExtResource("4_uufbk")
+script = ExtResource("4_qeltc")
 
 [node name="Panel" type="Panel" parent="CanvasLayer/UI" unique_id=411600892]
 layout_mode = 1

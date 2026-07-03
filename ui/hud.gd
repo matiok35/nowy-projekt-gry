@@ -11,9 +11,9 @@ extends Control
 
 var build_farma: Button
 var info_label: Label
-var menu_zalozenia_miasta: PopupPanel 
+var menu_zalozenia_miasta: PopupPanel
 var zaloz_miasto_button: Button
-var kup_pole_button: Button 
+var kup_pole_button: Button
 
 var cat_zasobowe: Button
 var cat_tech: Button
@@ -34,7 +34,7 @@ const X_SPACING: float = 280.0
 const Y_SPACING: float = 90.0
 const OFFSET_POS: Vector2 = Vector2(80, 50)
 
-var world_ref: Node2D 
+var world_ref: Node2D
 var active_tile_pos: Vector2 = Vector2.ZERO
 var active_tile_type: String = ""
 var last_mouse_pos: Vector2 = Vector2.ZERO
@@ -115,7 +115,7 @@ func setup_points_panel():
 	var c_bg = StyleBoxFlat.new()
 	c_bg.bg_color = Color(0.2, 0.15, 0.25)
 	var c_fg = StyleBoxFlat.new()
-	c_fg.bg_color = Color(0.65, 0.35, 0.75) 
+	c_fg.bg_color = Color(0.65, 0.35, 0.75)  
 	culture_bar.add_theme_stylebox_override("background", c_bg)
 	culture_bar.add_theme_stylebox_override("fill", c_fg)
 	culture_vbox.add_child(culture_bar)
@@ -154,7 +154,7 @@ func setup_points_panel():
 
 func setup_custom_popups():
 	var style_box = StyleBoxFlat.new()
-	style_box.bg_color = Color(0.05, 0.05, 0.07, 0.95) 
+	style_box.bg_color = Color(0.05, 0.05, 0.07, 0.95)  
 	style_box.set_border_width_all(2) 
 	style_box.border_color = Color(0.0, 0.75, 1.0, 0.8) 
 	style_box.set_corner_radius_all(10)
@@ -283,6 +283,10 @@ func setup_tech_tree_ui():
 	# Konfiguracja bazowa wczytanego z pliku .tscn węzła TechTreeWindow
 	if tech_tree_window:
 		tech_tree_window.visible = false
+		
+		# POPRAWKA 1: Wymuszenie wysokiego z_index, aby paski w tle nie prześwitywały
+		tech_tree_window.z_index = 10
+		
 		var style_tree = StyleBoxFlat.new()
 		style_tree.bg_color = Color(0.14, 0.13, 0.11, 0.98) 
 		style_tree.set_border_width_all(3)
@@ -294,6 +298,12 @@ func setup_tech_tree_ui():
 		if close_btn:
 			close_btn.pressed.connect(func(): tech_tree_window.visible = false)
 			
+		# POPRAWKA 2: Upewnienie się, że tryb przewijania kontenera jest włączony automatycznie
+		var scroll = tech_tree_window.get_node_or_null("ScrollContainer")
+		if scroll:
+			scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+			scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+			
 	if tech_tree_map:
 		tech_tree_map.draw.connect(_draw_tech_connections)
 	
@@ -301,8 +311,13 @@ func setup_tech_tree_ui():
 		hide_all_menus()
 		if tech_tree_window:
 			tech_tree_window.visible = true
+			
+			# POPRAWKA 3: Wymuszenie konkretnego i rzeczywistego rozmiaru okna do kalkulacji środka
+			tech_tree_window.custom_minimum_size = Vector2(900, 600)
+			tech_tree_window.size = Vector2(900, 600)
+			
 			var screen_center = get_viewport_rect().size / 2
-			tech_tree_window.global_position = screen_center - (tech_tree_window.custom_minimum_size / 2)
+			tech_tree_window.global_position = screen_center - (tech_tree_window.size / 2)
 			refresh_technology_tree_view()
 	)
 
@@ -329,7 +344,7 @@ func _draw_tech_connections():
 					line_color = Color(0.32, 0.68, 0.85, 0.9) 
 					line_width = 3.5
 				elif req_tech["unlocked"] and EconomyManager.current_research == tech_name:
-					line_color = Color(0.72, 0.55, 0.25, 0.8) 
+					line_color = Color(0.72, 0.55, 0.25, 0.8)  
 				
 				var mid_x = start_pos.x + (end_pos.x - start_pos.x) / 2.0
 				
@@ -345,9 +360,17 @@ func refresh_technology_tree_view():
 		
 	tech_tree_map.queue_redraw()
 	
+	# POPRAWKA 4: Śledzenie krańcowych punktów drzewka w celu wyznaczenia wielkości Scrolla
+	var max_size := Vector2.ZERO
+	
 	for tech_name in EconomyManager.technology_tree:
 		var tech = EconomyManager.technology_tree[tech_name]
 		var node_pos = _get_tech_node_position(tech["grid_coords"])
+		
+		# Dodanie bezpiecznego marginesu (np. szerokość kafelka 210 + odstęp 90, wysokość 64 + 86), by nic nie ucięło
+		var node_end = node_pos + Vector2(300, 150)
+		max_size.x = max(max_size.x, node_end.x)
+		max_size.y = max(max_size.y, node_end.y)
 		
 		var node_panel = PanelContainer.new()
 		node_panel.position = node_pos
@@ -355,7 +378,7 @@ func refresh_technology_tree_view():
 		
 		var node_style = StyleBoxFlat.new()
 		node_style.bg_color = Color(0.18, 0.16, 0.14)
-		node_style.set_corner_radius_all(32) 
+		node_style.set_corner_radius_all(32)  
 		node_style.set_border_width_all(2)
 		node_style.border_color = Color(0.35, 0.3, 0.24)
 		node_style.set_content_margin_all(6)
@@ -438,6 +461,9 @@ func refresh_technology_tree_view():
 			)
 			
 		tech_tree_map.add_child(node_panel)
+
+	# Przypisujemy obliczony rozmiar mapy, aby ScrollContainer włączył suwaki
+	tech_tree_map.custom_minimum_size = max_size
 
 func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String, building_name: String, is_owned: bool, borders_owned: bool, deposit_size: String = "", fertility: float = 0.0) -> void:
 	hide_all_menus()
@@ -631,7 +657,7 @@ func style_main_hud_elements():
 	style_turn.bg_color = Color(0.5, 0.1, 0.7) 
 	style_turn.set_corner_radius_all(12)
 	style_turn.border_width_bottom = 4
-	style_turn.border_color = Color(0.35, 0.05, 0.5) 
+	style_turn.border_color = Color(0.35, 0.05, 0.5)  
 	
 	var style_turn_hover = style_turn.duplicate() as StyleBoxFlat
 	style_turn_hover.bg_color = Color(0.65, 0.15, 0.85) 
