@@ -17,8 +17,20 @@ var menu_zalozenia_miasta: PopupPanel
 var zaloz_miasto_button: Button
 var kup_pole_button: Button 
 
+# --- KATEGORIE BUDYNKÓW ---
+var cat_zasobowe: Button
+var cat_tech: Button
+var cat_naukowe: Button
+
+# --- BUDYNKI ZASTĘPCZE ---
+var btn_tech_1: Button
+var btn_tech_2: Button
+var btn_naukowy_1: Button
+var btn_naukowy_2: Button
+
 var world_ref: Node2D 
 var active_tile_pos: Vector2 = Vector2.ZERO
+var last_mouse_pos: Vector2 = Vector2.ZERO
 
 func _ready():
 	world_ref = get_tree().current_scene
@@ -50,18 +62,62 @@ func setup_custom_popups():
 
 	# 1. Nagłówek informacyjny w menu budowania (Żyzność / Wielkość złoża)
 	var vbox = $MenuBudowania/VBoxContainer
+	
+	var info_panel = PanelContainer.new()
+	var info_style = StyleBoxFlat.new()
+	info_style.bg_color = Color(0.12, 0.15, 0.22, 0.95)
+	info_style.set_corner_radius_all(8)
+	info_style.set_content_margin_all(10)
+	info_panel.add_theme_stylebox_override("panel", info_style)
+	
 	info_label = Label.new()
 	info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	info_label.add_theme_color_override("font_color", Color(0.0, 0.9, 1.0))
-	info_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	vbox.add_child(info_label)
-	vbox.move_child(info_label, 0) # Zawsze na samej górze menu
+	info_label.add_theme_color_override("font_color", Color(0.4, 0.9, 1.0))
+	
+	info_panel.add_child(info_label)
+	vbox.add_child(info_panel)
+	vbox.move_child(info_panel, 0) # Zawsze na samej górze menu
 
 	# 2. Przycisk budowy farmy
 	build_farma = Button.new()
 	vbox.add_child(build_farma)
 	build_farma.pressed.connect(func(): execute_build("Farma"))
 	style_single_button(build_farma, Color(0.45, 0.4, 0.15), Color(0.65, 0.55, 0.2), "🌾 Buduj Farmę")
+
+	# 2.5 Kategorie budynków
+	cat_zasobowe = Button.new()
+	cat_tech = Button.new()
+	cat_naukowe = Button.new()
+	
+	vbox.add_child(cat_zasobowe)
+	vbox.add_child(cat_tech)
+	vbox.add_child(cat_naukowe)
+	
+	style_single_button(cat_zasobowe, Color(0.2, 0.4, 0.6), Color(0.3, 0.5, 0.8), "🛠️ Budynki Zasobowe")
+	style_single_button(cat_tech, Color(0.4, 0.2, 0.6), Color(0.5, 0.3, 0.8), "⚙️ Budynki Technologiczne")
+	style_single_button(cat_naukowe, Color(0.6, 0.2, 0.4), Color(0.8, 0.3, 0.5), "📜 Budynki Naukowe")
+
+	cat_zasobowe.pressed.connect(func(): _show_building_category("zasobowe"))
+	cat_tech.pressed.connect(func(): _show_building_category("tech"))
+	cat_naukowe.pressed.connect(func(): _show_building_category("naukowe"))
+	
+	btn_tech_1 = Button.new()
+	btn_tech_2 = Button.new()
+	vbox.add_child(btn_tech_1)
+	vbox.add_child(btn_tech_2)
+	btn_tech_1.pressed.connect(func(): execute_build("Laboratorium"))
+	btn_tech_2.pressed.connect(func(): execute_build("Warsztat"))
+	style_single_button(btn_tech_1, Color(0.3, 0.4, 0.6), Color(0.4, 0.5, 0.8), "⚙️ Laboratorium")
+	style_single_button(btn_tech_2, Color(0.4, 0.3, 0.2), Color(0.5, 0.4, 0.3), "⚙️ Warsztat")
+
+	btn_naukowy_1 = Button.new()
+	btn_naukowy_2 = Button.new()
+	vbox.add_child(btn_naukowy_1)
+	vbox.add_child(btn_naukowy_2)
+	btn_naukowy_1.pressed.connect(func(): execute_build("Biblioteka"))
+	btn_naukowy_2.pressed.connect(func(): execute_build("Świątynia"))
+	style_single_button(btn_naukowy_1, Color(0.4, 0.2, 0.4), Color(0.5, 0.3, 0.5), "📜 Biblioteka")
+	style_single_button(btn_naukowy_2, Color(0.6, 0.5, 0.2), Color(0.7, 0.6, 0.3), "📜 Świątynia")
 
 	# 3. Menu zakładania miasta
 	menu_zalozenia_miasta = PopupPanel.new()
@@ -109,15 +165,19 @@ func setup_custom_popups():
 	)
 
 # --- SPERSONALIZOWANE MENU KONTEKSTOWE ---
-func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String, has_building: bool, is_owned: bool, borders_owned: bool, deposit_size: String = "", fertility: float = 0.0) -> void:
+func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String, building_name: String, is_owned: bool, borders_owned: bool, deposit_size: String = "", fertility: float = 0.0) -> void:
 	hide_all_menus()
 	active_tile_pos = tile_pos
+	last_mouse_pos = mouse_pos
 	
 	menu_budowania.visible = true
-	_reposition_menu(menu_budowania, mouse_pos)
+	
+	var has_building = building_name != "Brak"
 	
 	# Aktualizacja tekstu informacyjnego nad przyciskami
-	if tile_type == "Trawa":
+	if has_building:
+		info_label.text = "🏢 Budynek: %s\nPodłoże: %s" % [building_name, tile_type]
+	elif tile_type == "Trawa":
 		info_label.text = "🌱 Typ: Trawa\n✨ Żyzność pola: %d%%" % [int(fertility * 100)]
 	else:
 		info_label.text = "⛰️ Typ: Złoże %s\n📦 Wielkość: %s" % [tile_type, deposit_size]
@@ -134,16 +194,54 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 
 	# Zarządzanie przyciskami budynków
 	var show_buildings = is_owned and not has_building
-	build_chata.visible = show_buildings
-	build_iron.visible = show_buildings
-	build_coal.visible = show_buildings
-	build_farma.visible = show_buildings
+	
+	# Wyświetlamy tylko kategorie na start
+	cat_zasobowe.visible = show_buildings
+	cat_tech.visible = show_buildings
+	cat_naukowe.visible = show_buildings
+	
+	# Ukrywamy szczegółowe budynki
+	build_chata.visible = false
+	build_iron.visible = false
+	build_coal.visible = false
+	build_farma.visible = false
+	btn_tech_1.visible = false
+	btn_tech_2.visible = false
+	btn_naukowy_1.visible = false
+	btn_naukowy_2.visible = false
 	
 	if show_buildings:
 		update_button_state(build_chata, "Chata Drwala", tile_type)
 		update_button_state(build_iron, "Kopalnia Żelaza", tile_type)
 		update_button_state(build_coal, "Kopalnia Węgla", tile_type)
 		update_button_state(build_farma, "Farma", tile_type)
+		update_button_state(btn_tech_1, "Laboratorium", tile_type)
+		update_button_state(btn_tech_2, "Warsztat", tile_type)
+		update_button_state(btn_naukowy_1, "Biblioteka", tile_type)
+		update_button_state(btn_naukowy_2, "Świątynia", tile_type)
+		
+	_reposition_menu(menu_budowania, mouse_pos)
+
+func _show_building_category(category: String):
+	cat_zasobowe.visible = false
+	cat_tech.visible = false
+	cat_naukowe.visible = false
+	
+	var is_zasobowe = (category == "zasobowe")
+	build_chata.visible = is_zasobowe
+	build_iron.visible = is_zasobowe
+	build_coal.visible = is_zasobowe
+	build_farma.visible = is_zasobowe
+	
+	var is_tech = (category == "tech")
+	btn_tech_1.visible = is_tech
+	btn_tech_2.visible = is_tech
+	
+	var is_naukowe = (category == "naukowe")
+	btn_naukowy_1.visible = is_naukowe
+	btn_naukowy_2.visible = is_naukowe
+	
+	_reposition_menu(menu_budowania, last_mouse_pos)
 
 func show_city_creation_menu(_screen_pos: Vector2, tile_pos: Vector2) -> void:
 	hide_all_menus()
@@ -184,9 +282,9 @@ func execute_build(building_name: String) -> void:
 	hide_all_menus()
 
 func _on_economy_updated(balances: Dictionary, turn: int, _selected_build: String):
-	# Zaktualizowano interfejs o wyświetlanie zasobów Jedzenia
-	resources_label.text = "🌟 TURA: %d   |   🪙 ZŁOTO: %d   |   🌾 JEDZENIE: %d   |   🪵 DREWNO: %d   |   ⛓️ ŻELAZO: %d   |   🌋 WĘGIEL: %d" % [
-		turn, balances["Złoto"], balances["Jedzenie"], balances["Drewno"], balances["Żelazo"], balances["Węgiel"]
+	# Zaktualizowano interfejs o wyświetlanie zasobów Jedzenia, Nauki i Kultury
+	resources_label.text = "🌟 TURA: %d   |   🪙 ZŁOTO: %d   |   🌾 JEDZENIE: %d   |   🪵 DREWNO: %d   |   ⛓️ ŻELAZO: %d   |   🌋 WĘGIEL: %d   |   🔬 NAUKA: %d   |   🎭 KULTURA: %d" % [
+		turn, balances["Złoto"], balances["Jedzenie"], balances["Drewno"], balances["Żelazo"], balances["Węgiel"], balances["Nauka"], balances["Kultura"]
 	]
 
 func _on_turn_pressed():

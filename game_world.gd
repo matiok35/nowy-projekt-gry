@@ -275,7 +275,7 @@ func _unhandled_input(event: InputEvent) -> void:
 						if hud_node and hud_node.has_method("show_context_menu"):
 							# Przekazujemy dodatkowe informacje o złożu i żyzności do HUD
 							hud_node.show_context_menu(
-								screen_mouse_pos, pos, tile["type"], has_building, 
+								screen_mouse_pos, pos, tile["type"], tile["building"], 
 								is_owned, borders_owned, tile["deposit_size"], tile["fertility"]
 							)
 						return
@@ -317,6 +317,10 @@ func build_on_tile(pos: Vector2, building_name: String) -> void:
 		var poly = tile_nodes[pos].get_child(0) as Polygon2D
 		if poly:
 			if building_name == "Farma": poly.color = Color(0.7, 0.6, 0.2)
+			elif building_name == "Laboratorium": poly.color = Color(0.2, 0.5, 0.8)
+			elif building_name == "Warsztat": poly.color = Color(0.5, 0.4, 0.2)
+			elif building_name == "Biblioteka": poly.color = Color(0.6, 0.3, 0.6)
+			elif building_name == "Świątynia": poly.color = Color(0.8, 0.7, 0.3)
 			else: poly.color = Color(0.85, 0.65, 0.15)
 			
 		if label_nodes.has(pos):
