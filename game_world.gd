@@ -312,7 +312,13 @@ func build_on_tile(pos: Vector2, building_name: String) -> void:
 	var tile = map_data[pos]
 	if EconomyManager.can_afford_and_place(building_name, tile["type"]):
 		EconomyManager.deduct_costs(building_name)
-		map_data[pos]["building"] = building_name
+		
+		if building_name in ["Farma", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia"] and tile["type"] != "Trawa":
+			tile["type"] = "Trawa"
+			tile["deposit_size"] = ""
+			tile["fertility"] = 1.0 # Domyślna żyzność po zniszczeniu
+		
+		tile["building"] = building_name
 		
 		var poly = tile_nodes[pos].get_child(0) as Polygon2D
 		if poly:

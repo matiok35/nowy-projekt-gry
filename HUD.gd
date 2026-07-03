@@ -36,7 +36,16 @@ const OFFSET_POS: Vector2 = Vector2(80, 50)
 
 var world_ref: Node2D 
 var active_tile_pos: Vector2 = Vector2.ZERO
+var active_tile_type: String = ""
 var last_mouse_pos: Vector2 = Vector2.ZERO
+var confirm_dialog: ConfirmationDialog
+var pending_building: String = ""
+
+var points_panel: PanelContainer
+var culture_label: Label
+var culture_bar: ProgressBar
+var tech_label: Label
+var tech_bar: ProgressBar
 
 func _ready():
 	world_ref = get_tree().current_scene
@@ -45,18 +54,104 @@ func _ready():
 		
 	EconomyManager.economy_updated.connect(_on_economy_updated)
 	
+	# Podpięcie logiki przycisków głównych
 	turn_button.pressed.connect(_on_turn_pressed)
 	build_chata.pressed.connect(func(): execute_build("Chata Drwala"))
 	build_iron.pressed.connect(func(): execute_build("Kopalnia Żelaza"))
 	build_coal.pressed.connect(func(): execute_build("Kopalnia Węgla"))
 	
+	setup_points_panel()
 	setup_custom_popups()
-	setup_tech_tree_ui() 
+	if has_method("setup_tech_tree_ui"):
+		setup_tech_tree_ui()
 	style_main_hud_elements()
 	style_context_popup()
 	style_individual_buttons()
 	
 	EconomyManager.notify_change()
+
+func setup_points_panel():
+	points_panel = PanelContainer.new()
+	points_panel.anchor_left = 1.0
+	points_panel.anchor_right = 1.0
+	points_panel.anchor_top = 0.0
+	points_panel.anchor_bottom = 0.0
+	points_panel.offset_left = -320
+	points_panel.offset_right = -20
+	points_panel.offset_top = 60
+
+	var style_panel = StyleBoxFlat.new()
+	style_panel.bg_color = Color(0.12, 0.16, 0.18, 0.85)
+	style_panel.set_corner_radius_all(10)
+	style_panel.set_border_width_all(2)
+	style_panel.border_color = Color(0.2, 0.3, 0.4, 0.5)
+	style_panel.content_margin_left = 12
+	style_panel.content_margin_right = 12
+	style_panel.content_margin_top = 12
+	style_panel.content_margin_bottom = 12
+	points_panel.add_theme_stylebox_override("panel", style_panel)
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 15)
+	points_panel.add_child(vbox)
+	
+	# CULTURE ROW
+	var culture_vbox = VBoxContainer.new()
+	culture_vbox.add_theme_constant_override("separation", 2)
+	var culture_hbox = HBoxContainer.new()
+	var c_icon = Label.new()
+	c_icon.text = "🎭"
+	culture_label = Label.new()
+	culture_label.text = "Punkty Kultury: 0/100"
+	culture_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	culture_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	culture_label.add_theme_font_size_override("font_size", 14)
+	culture_hbox.add_child(c_icon)
+	culture_hbox.add_child(culture_label)
+	culture_vbox.add_child(culture_hbox)
+	
+	culture_bar = ProgressBar.new()
+	culture_bar.custom_minimum_size = Vector2(0, 4)
+	culture_bar.show_percentage = false
+	var c_bg = StyleBoxFlat.new()
+	c_bg.bg_color = Color(0.2, 0.15, 0.25)
+	var c_fg = StyleBoxFlat.new()
+	c_fg.bg_color = Color(0.65, 0.35, 0.75) # Fioletowy z obrazka
+	culture_bar.add_theme_stylebox_override("background", c_bg)
+	culture_bar.add_theme_stylebox_override("fill", c_fg)
+	culture_vbox.add_child(culture_bar)
+	
+	vbox.add_child(culture_vbox)
+	
+	# TECH ROW
+	var tech_vbox = VBoxContainer.new()
+	tech_vbox.add_theme_constant_override("separation", 2)
+	var tech_hbox = HBoxContainer.new()
+	var t_icon = Label.new()
+	t_icon.text = "🧪"
+	tech_label = Label.new()
+	tech_label.text = "Punkty Technologii: 0/100"
+	tech_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tech_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	tech_label.add_theme_font_size_override("font_size", 14)
+	tech_hbox.add_child(t_icon)
+	tech_hbox.add_child(tech_label)
+	tech_vbox.add_child(tech_hbox)
+	
+	tech_bar = ProgressBar.new()
+	tech_bar.custom_minimum_size = Vector2(0, 4)
+	tech_bar.show_percentage = false
+	var t_bg = StyleBoxFlat.new()
+	t_bg.bg_color = Color(0.1, 0.25, 0.25)
+	var t_fg = StyleBoxFlat.new()
+	t_fg.bg_color = Color(0.25, 0.7, 0.65) # Morski z obrazka
+	tech_bar.add_theme_stylebox_override("background", t_bg)
+	tech_bar.add_theme_stylebox_override("fill", t_fg)
+	tech_vbox.add_child(tech_bar)
+	
+	vbox.add_child(tech_vbox)
+	
+	add_child(points_panel)
 
 func setup_custom_popups():
 	var style_box = StyleBoxFlat.new()
@@ -165,20 +260,26 @@ func setup_custom_popups():
 		hide_all_menus()
 	)
 
+	# 5. Okno dialogowe potwierdzenia zniszczenia surowca
+	confirm_dialog = ConfirmationDialog.new()
+	confirm_dialog.title = "Uwaga: Zniszczenie Złoża!"
+	confirm_dialog.dialog_text = "Czy na pewno chcesz postawić ten budynek na tym polu?\nPostawienie go tutaj bezpowrotnie zniszczy obecne złoże i zamieni pole w trawę."
+	confirm_dialog.confirmed.connect(_on_confirm_build_on_resource)
+	add_child(confirm_dialog)
+
 # --- ZAAWANSOWANE DRZEWO TECHNOLOGICZNE W STYLU GRAFICZNYM Z LINIAMI ---
 func setup_tech_tree_ui():
 	tech_tree_button = Button.new()
-	tech_tree_button.text = "🔬 Otwórz Drzewo Rozwoju"
-	tech_tree_button.custom_minimum_size = Vector2(210, 26)
-	tech_tree_button.position = Vector2(15, 52)
-	
+	tech_tree_button.text = "Drzewo Rozwoju"
+	tech_tree_button.custom_minimum_size = Vector2(0, 40)
 	var btn_style = StyleBoxFlat.new()
 	btn_style.bg_color = Color(0.18, 0.24, 0.35)
 	btn_style.set_border_width_all(1)
 	btn_style.border_color = Color(0.38, 0.55, 0.78)
 	btn_style.set_corner_radius_all(4)
 	tech_tree_button.add_theme_stylebox_override("normal", btn_style)
-	$Panel.add_child(tech_tree_button)
+	var vbox = points_panel.get_child(0)
+	vbox.add_child(tech_tree_button)
 	
 	# Główne okno stylizowane na pergaminowo-kamienne tło
 	tech_tree_window = Panel.new()
@@ -381,6 +482,7 @@ func refresh_technology_tree_view():
 func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String, building_name: String, is_owned: bool, borders_owned: bool, deposit_size: String = "", fertility: float = 0.0) -> void:
 	hide_all_menus()
 	active_tile_pos = tile_pos
+	active_tile_type = tile_type
 	last_mouse_pos = mouse_pos
 	
 	menu_budowania.visible = true
@@ -485,14 +587,44 @@ func update_button_state(btn: Button, b_name: String, tile_type: String):
 	btn.modulate.a = 1.0 if can_place else 0.35
 
 func execute_build(building_name: String) -> void:
+	if active_tile_type != "Trawa" and building_name in ["Farma", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia"]:
+		pending_building = building_name
+		confirm_dialog.popup_centered()
+		hide_all_menus()
+	else:
+		_do_execute_build(building_name)
+
+func _on_confirm_build_on_resource() -> void:
+	if pending_building != "":
+		_do_execute_build(pending_building)
+		pending_building = ""
+
+func _do_execute_build(building_name: String) -> void:
 	if world_ref and world_ref.has_method("build_on_tile"):
 		world_ref.build_on_tile(active_tile_pos, building_name)
 	hide_all_menus()
 
 func _on_economy_updated(balances: Dictionary, turn: int, _selected_build: String):
-	resources_label.text = "🌟 TURA: %d   |   🪙 ZŁOTO: %d   |   🌾 JEDZENIE: %d   |   🪵 DREWNO: %d   |   ⛓️ ŻELAZO: %d   |   🌋 WĘGIEL: %d   |   🔬 NAUKA: %d   |   🎭 KULTURA: %d" % [
-		turn, balances["Złoto"], balances["Jedzenie"], balances["Drewno"], balances["Żelazo"], balances["Węgiel"], balances["Nauka"], balances["Kultura"]
+	# Pokazujemy same surowce w odpowiedniej kolejności i odstępach (wzorowane na obrazku)
+	resources_label.text = "🪵 Drewno: %d      ⛓️ Żelazo: %d      🌋 Węgiel: %d      🌾 Jedzenie: %d      🪙 Złoto: %d" % [
+		balances["Drewno"], balances["Żelazo"], balances["Węgiel"], balances["Jedzenie"], balances["Złoto"]
 	]
+	turn_button.text = "Następna tura (%d)" % turn
+	
+	if culture_label and tech_label:
+		var c_val = balances.get("Kultura", 0)
+		var t_val = balances.get("Nauka", 0)
+		var c_max = EconomyManager.max_culture_points
+		var t_max = EconomyManager.max_tech_points
+		
+		culture_label.text = "Punkty Kultury:    %d/%d" % [c_val, int(c_max)]
+		culture_bar.max_value = c_max
+		culture_bar.value = c_val
+		
+		tech_label.text = "Punkty Technologii:    %d/%d" % [t_val, int(t_max)]
+		tech_bar.max_value = t_max
+		tech_bar.value = t_val
+	
 	if tech_tree_window and tech_tree_window.visible:
 		refresh_technology_tree_view()
 
@@ -504,13 +636,40 @@ func _on_turn_pressed():
 
 func style_main_hud_elements():
 	var top_panel = $Panel
+	
+	# Przypinamy panel na środku u góry ekranu jako "zakładkę"
+	top_panel.anchor_left = 0.5
+	top_panel.anchor_right = 0.5
+	top_panel.anchor_top = 0.0
+	top_panel.anchor_bottom = 0.0
+	top_panel.offset_left = -480
+	top_panel.offset_right = 480
+	top_panel.offset_top = 0
+	top_panel.offset_bottom = 45
+	
 	var style_top = StyleBoxFlat.new()
-	style_top.bg_color = Color(0.07, 0.08, 0.1, 0.85) 
+	style_top.bg_color = Color(0.12, 0.13, 0.14, 0.98) # Ciemne tło
 	style_top.border_width_bottom = 3
-	style_top.border_color = Color(0.0, 0.75, 1.0) 
-	style_top.content_margin_left = 15
-	style_top.content_margin_top = 10
+	style_top.border_width_left = 3
+	style_top.border_width_right = 3
+	style_top.border_width_top = 0
+	style_top.border_color = Color(0.4, 0.38, 0.33) # Kamienno-złotawa ramka z obrazka
+	style_top.corner_radius_bottom_left = 12
+	style_top.corner_radius_bottom_right = 12
+	
+	# Delikatny cień
+	style_top.shadow_color = Color(0, 0, 0, 0.6)
+	style_top.shadow_size = 4
+	style_top.shadow_offset = Vector2(0, 3)
+	
 	top_panel.add_theme_stylebox_override("panel", style_top)
+	
+	# Ustawienia czcionki na wzór obrazka (lekko złotawy odcień)
+	resources_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	resources_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	resources_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	resources_label.add_theme_font_size_override("font_size", 16)
+	resources_label.add_theme_color_override("font_color", Color(0.9, 0.88, 0.8))
 	
 	var style_turn = StyleBoxFlat.new()
 	style_turn.bg_color = Color(0.5, 0.1, 0.7) 
