@@ -10,21 +10,27 @@ var resources: Dictionary = {
 	"Drewno": 40,
 	"Żelazo": 0,
 	"Węgiel": 0,
-	"Jedzenie": 10 # Dodany nowy surowiec
+	"Jedzenie": 10, # Dodany nowy surowiec
+	"Nauka": 0,
+	"Kultura": 0
 }
 
 var building_costs: Dictionary = {
 	"Chata Drwala": {"Złoto": 30, "Drewno": 10},
 	"Kopalnia Żelaza": {"Złoto": 50, "Drewno": 20},
 	"Kopalnia Węgla": {"Złoto": 60, "Drewno": 25},
-	"Farma": {"Złoto": 25, "Drewno": 15} # Koszt Farmy
+	"Farma": {"Złoto": 25, "Drewno": 15}, # Koszt Farmy
+	"Laboratorium": {"Złoto": 100, "Drewno": 50, "Żelazo": 10},
+	"Warsztat": {"Złoto": 80, "Drewno": 40, "Żelazo": 5},
+	"Biblioteka": {"Złoto": 70, "Drewno": 30},
+	"Świątynia": {"Złoto": 150, "Drewno": 40, "Żelazo": 15}
 }
 
 func can_afford_and_place(building_name: String, tile_type: String) -> bool:
 	if not building_costs.has(building_name): return false
 	
 	# Sprawdzanie poprawności podłoża
-	if building_name == "Farma" and tile_type != "Trawa":
+	if building_name in ["Farma", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia"] and tile_type != "Trawa":
 		return false
 	if building_name == "Chata Drwala" and tile_type != "Drewno":
 		return false
@@ -88,6 +94,15 @@ func next_turn(active_buildings_data: Array) -> void:
 				# Produkcja zależna bezpośrednio od żyzności (np. 4 * współczynnik żyzności)
 				var fertility = b_data.get("fertility", 1.0)
 				resources["Jedzenie"] += int(6 * fertility)
+			"Laboratorium":
+				resources["Nauka"] += 3
+			"Warsztat":
+				resources["Nauka"] += 1
+			"Biblioteka":
+				resources["Nauka"] += 2
+				resources["Kultura"] += 1
+			"Świątynia":
+				resources["Kultura"] += 3
 
 	# Zabezpieczenie przed ujemnym jedzeniem (głód niszczy gospodarkę)
 	if resources["Jedzenie"] < 0:
