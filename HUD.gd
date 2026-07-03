@@ -5,28 +5,34 @@ extends Control
 @onready var turn_button = $TurnButton
 @onready var menu_budowania = $MenuBudowania
 
-# Przyciski budynków wewnątrz VBoxContainer
 @onready var build_chata = $MenuBudowania/VBoxContainer/BuildChata
 @onready var build_iron = $MenuBudowania/VBoxContainer/BuildKopalniaZelaza
 @onready var build_coal = $MenuBudowania/VBoxContainer/BuildKopalniaWegla
 
-# --- SYSTEM DYNAMICZNYCH ELEMENTÓW ---
-var build_farma: Button # Nowy przycisk farmy tworzony proceduralnie
-var info_label: Label   # Etykieta wyświetlająca parametry pola nad przyciskami
+var build_farma: Button
+var info_label: Label
 var menu_zalozenia_miasta: PopupPanel 
 var zaloz_miasto_button: Button
 var kup_pole_button: Button 
 
-# --- KATEGORIE BUDYNKÓW ---
 var cat_zasobowe: Button
 var cat_tech: Button
 var cat_naukowe: Button
 
-# --- BUDYNKI ZASTĘPCZE ---
 var btn_tech_1: Button
 var btn_tech_2: Button
 var btn_naukowy_1: Button
 var btn_naukowy_2: Button
+
+# --- NOWE ELEMENTY STRUKTURALNE DRZEWKA Z ZALEŻNOŚCIAMI ---
+var tech_tree_button: Button
+var tech_tree_window: Panel
+var tech_tree_map: Control # Panel rysowania linii i węzłów
+
+# Stałe pozycjonowania siatki 2D
+const X_SPACING: float = 280.0
+const Y_SPACING: float = 90.0
+const OFFSET_POS: Vector2 = Vector2(80, 50)
 
 var world_ref: Node2D 
 var active_tile_pos: Vector2 = Vector2.ZERO
@@ -39,13 +45,13 @@ func _ready():
 		
 	EconomyManager.economy_updated.connect(_on_economy_updated)
 	
-	# Podpięcie logiki przycisków głównych
 	turn_button.pressed.connect(_on_turn_pressed)
 	build_chata.pressed.connect(func(): execute_build("Chata Drwala"))
 	build_iron.pressed.connect(func(): execute_build("Kopalnia Żelaza"))
 	build_coal.pressed.connect(func(): execute_build("Kopalnia Węgla"))
 	
 	setup_custom_popups()
+	setup_tech_tree_ui() 
 	style_main_hud_elements()
 	style_context_popup()
 	style_individual_buttons()
@@ -60,7 +66,6 @@ func setup_custom_popups():
 	style_box.set_corner_radius_all(10)
 	style_box.set_content_margin_all(8)
 
-	# 1. Nagłówek informacyjny w menu budowania (Żyzność / Wielkość złoża)
 	var vbox = $MenuBudowania/VBoxContainer
 	
 	var info_panel = PanelContainer.new()
@@ -76,15 +81,13 @@ func setup_custom_popups():
 	
 	info_panel.add_child(info_label)
 	vbox.add_child(info_panel)
-	vbox.move_child(info_panel, 0) # Zawsze na samej górze menu
+	vbox.move_child(info_panel, 0)
 
-	# 2. Przycisk budowy farmy
 	build_farma = Button.new()
 	vbox.add_child(build_farma)
 	build_farma.pressed.connect(func(): execute_build("Farma"))
 	style_single_button(build_farma, Color(0.45, 0.4, 0.15), Color(0.65, 0.55, 0.2), "🌾 Buduj Farmę")
 
-	# 2.5 Kategorie budynków
 	cat_zasobowe = Button.new()
 	cat_tech = Button.new()
 	cat_naukowe = Button.new()
@@ -119,7 +122,6 @@ func setup_custom_popups():
 	style_single_button(btn_naukowy_1, Color(0.4, 0.2, 0.4), Color(0.5, 0.3, 0.5), "📜 Biblioteka")
 	style_single_button(btn_naukowy_2, Color(0.6, 0.5, 0.2), Color(0.7, 0.6, 0.3), "📜 Świątynia")
 
-	# 3. Menu zakładania miasta
 	menu_zalozenia_miasta = PopupPanel.new()
 	menu_zalozenia_miasta.visible = false
 	menu_zalozenia_miasta.add_theme_stylebox_override("panel", style_box)
@@ -144,7 +146,6 @@ func setup_custom_popups():
 		hide_all_menus()
 	)
 
-	# 4. Dynamiczny przycisk zakupu pola
 	kup_pole_button = Button.new()
 	kup_pole_button.text = "🪙 Kup to pole (50 złota)"
 	kup_pole_button.custom_minimum_size = Vector2(180, 35)
@@ -156,7 +157,7 @@ func setup_custom_popups():
 	kup_pole_button.add_theme_stylebox_override("normal", style_buy)
 	
 	vbox.add_child(kup_pole_button)
-	vbox.move_child(kup_pole_button, 1) # Pod napisem informacyjnym
+	vbox.move_child(kup_pole_button, 1)
 	
 	kup_pole_button.pressed.connect(func():
 		if world_ref and world_ref.has_method("buy_tile"):
@@ -164,17 +165,227 @@ func setup_custom_popups():
 		hide_all_menus()
 	)
 
-# --- SPERSONALIZOWANE MENU KONTEKSTOWE ---
+# --- ZAAWANSOWANE DRZEWO TECHNOLOGICZNE W STYLU GRAFICZNYM Z LINIAMI ---
+func setup_tech_tree_ui():
+	tech_tree_button = Button.new()
+	tech_tree_button.text = "🔬 Otwórz Drzewo Rozwoju"
+	tech_tree_button.custom_minimum_size = Vector2(210, 26)
+	tech_tree_button.position = Vector2(15, 52)
+	
+	var btn_style = StyleBoxFlat.new()
+	btn_style.bg_color = Color(0.18, 0.24, 0.35)
+	btn_style.set_border_width_all(1)
+	btn_style.border_color = Color(0.38, 0.55, 0.78)
+	btn_style.set_corner_radius_all(4)
+	tech_tree_button.add_theme_stylebox_override("normal", btn_style)
+	$Panel.add_child(tech_tree_button)
+	
+	# Główne okno stylizowane na pergaminowo-kamienne tło
+	tech_tree_window = Panel.new()
+	tech_tree_window.name = "TechTreeWindow"
+	tech_tree_window.custom_minimum_size = Vector2(1000, 520)
+	tech_tree_window.visible = false
+	
+	var style_tree = StyleBoxFlat.new()
+	style_tree.bg_color = Color(0.14, 0.13, 0.11, 0.98) # Cieplejszy odcień (jak tło z drugiego obrazka)
+	style_tree.set_border_width_all(3)
+	style_tree.border_color = Color(0.45, 0.38, 0.28)
+	style_tree.set_corner_radius_all(4)
+	tech_tree_window.add_theme_stylebox_override("panel", style_tree)
+	
+	var title = Label.new()
+	title.text = "DRZEWO ROZWOJU TECHNOLOGICZNEGO"
+	title.position = Vector2(30, 20)
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", Color(0.85, 0.76, 0.6))
+	tech_tree_window.add_child(title)
+	
+	var close_btn = Button.new()
+	close_btn.name = "CloseButton"
+	close_btn.text = "✕ ZAMKNIJ"
+	close_btn.position = Vector2(880, 15)
+	close_btn.custom_minimum_size = Vector2(90, 30)
+	tech_tree_window.add_child(close_btn)
+	close_btn.pressed.connect(func(): tech_tree_window.visible = false)
+	
+	var scroll = ScrollContainer.new()
+	scroll.position = Vector2(30, 70)
+	scroll.custom_minimum_size = Vector2(940, 420)
+	
+	# Obiekt mapy rysującej linie i przechowującej węzły
+	tech_tree_map = Control.new()
+	tech_tree_map.name = "TechTreeMap"
+	tech_tree_map.custom_minimum_size = Vector2(1100, 400)
+	
+	# Przypisujemy zachowanie rysowania bezpośrednio przez funkcję anonimową lub skrypt
+	tech_tree_map.draw.connect(_draw_tech_connections)
+	
+	scroll.add_child(tech_tree_map)
+	tech_tree_window.add_child(scroll)
+	add_child(tech_tree_window)
+	
+	tech_tree_button.pressed.connect(func():
+		hide_all_menus()
+		tech_tree_window.visible = true
+		var screen_center = get_viewport_rect().size / 2
+		tech_tree_window.global_position = screen_center - (tech_tree_window.custom_minimum_size / 2)
+		refresh_technology_tree_view()
+	)
+
+# Obliczanie pozycji węzła na podstawie jego współrzędnych w gridzie
+func _get_tech_node_position(grid_coords: Vector2) -> Vector2:
+	return Vector2(
+		grid_coords.x * X_SPACING + OFFSET_POS.x,
+		grid_coords.y * Y_SPACING + OFFSET_POS.y
+	)
+
+# Metoda rysująca linie połączeń w tle kafelków
+func _draw_tech_connections():
+	for tech_name in EconomyManager.technology_tree:
+		var tech = EconomyManager.technology_tree[tech_name]
+		var start_pos = _get_tech_node_position(tech["grid_coords"]) + Vector2(210, 32) # Środek prawego brzegu owalu
+		
+		for req_name in tech["req"]:
+			if EconomyManager.technology_tree.has(req_name):
+				var req_tech = EconomyManager.technology_tree[req_name]
+				var end_pos = _get_tech_node_position(req_tech["grid_coords"]) + Vector2(0, 32) # Środek lewego brzegu celu
+				
+				# Określenie stanu linii podświetlenia
+				var line_color = Color(0.25, 0.22, 0.18, 1.0) # Domyślny ciemny szary/brąz
+				var line_width = 2.5
+				
+				if req_tech["unlocked"] and tech["unlocked"]:
+					line_color = Color(0.32, 0.68, 0.85, 0.9) # Jasnoniebieska poświata (Zbadane)
+					line_width = 3.5
+				elif req_tech["unlocked"] and EconomyManager.current_research == tech_name:
+					line_color = Color(0.72, 0.55, 0.25, 0.8) # Pomarańczowy impuls (W trakcie)
+				
+				# Rysowanie łamanej linii (ścieżka z zakrętem pod kątem prostym, estetyka Civ)
+				var mid_x = start_pos.x + (end_pos.x - start_pos.x) / 2.0
+				
+				tech_tree_map.draw_line(start_pos, Vector2(mid_x, start_pos.y), line_color, line_width)
+				tech_tree_map.draw_line(Vector2(mid_x, start_pos.y), Vector2(mid_x, end_pos.y), line_color, line_width)
+				tech_tree_map.draw_line(Vector2(mid_x, end_pos.y), end_pos, line_color, line_width)
+
+func refresh_technology_tree_view():
+	if not tech_tree_map: return
+	
+	# Usuwamy stare przyciski węzłów, zostawiając logikę rysowania linii
+	for child in tech_tree_map.get_children():
+		child.queue_free()
+		
+	# Ponowne wywołanie draw linii
+	tech_tree_map.queue_redraw()
+	
+	for tech_name in EconomyManager.technology_tree:
+		var tech = EconomyManager.technology_tree[tech_name]
+		var node_pos = _get_tech_node_position(tech["grid_coords"])
+		
+		# Karta pojedynczego węzła technologii (owalny kształt zbliżony do grafiki)
+		var node_panel = PanelContainer.new()
+		node_panel.position = node_pos
+		node_panel.custom_minimum_size = Vector2(210, 64)
+		
+		var node_style = StyleBoxFlat.new()
+		node_style.bg_color = Color(0.18, 0.16, 0.14)
+		node_style.set_corner_radius_all(32) # Pełne zaokrąglenie rogów -> Owal
+		node_style.set_border_width_all(2)
+		node_style.border_color = Color(0.35, 0.3, 0.24)
+		node_style.set_content_margin_all(6)
+		node_panel.add_theme_stylebox_override("panel", node_style)
+		
+		var hbox = HBoxContainer.new()
+		hbox.add_theme_constant_override("separation", 8)
+		node_panel.add_child(hbox)
+		
+		# Kontener ikony (Okrągły avatar przed tekstem)
+		var icon_panel = PanelContainer.new()
+		icon_panel.custom_minimum_size = Vector2(46, 46)
+		var icon_style = StyleBoxFlat.new()
+		icon_style.bg_color = Color(0.24, 0.22, 0.18)
+		icon_style.set_corner_radius_all(23) # Koło
+		icon_style.set_border_width_all(1)
+		icon_style.border_color = Color(0.5, 0.44, 0.35)
+		icon_panel.add_theme_stylebox_override("panel", icon_style)
+		
+		var icon_label = Label.new()
+		icon_label.text = tech["icon"]
+		icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		icon_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		icon_label.add_theme_font_size_override("font_size", 18)
+		icon_panel.add_child(icon_label)
+		hbox.add_child(icon_panel)
+		
+		# Sekcja tekstowa
+		var vbox = VBoxContainer.new()
+		vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+		hbox.add_child(vbox)
+		
+		var lbl_title = Label.new()
+		lbl_title.text = tech_name
+		lbl_title.add_theme_font_size_override("font_size", 12)
+		lbl_title.add_theme_color_override("font_color", Color(0.9, 0.85, 0.75))
+		vbox.add_child(lbl_title)
+		
+		var lbl_desc = Label.new()
+		lbl_desc.text = tech["desc"]
+		lbl_desc.add_theme_font_size_override("font_size", 9)
+		lbl_desc.add_theme_color_override("font_color", Color(0.6, 0.58, 0.53))
+		vbox.add_child(lbl_desc)
+		
+		# Mini-pasek postępu badania wkomponowany pod spód owalu
+		var bar = ProgressBar.new()
+		var progress = EconomyManager.research_progress.get(tech_name, 0)
+		bar.max_value = tech["cost"]
+		bar.value = progress
+		bar.show_percentage = false
+		bar.custom_minimum_size.y = 4
+		vbox.add_child(bar)
+		
+		# Interakcja kliknięcia na owal (wybór badania)
+		var invisible_button = Button.new()
+		invisible_button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		invisible_button.flat = true
+		node_panel.add_child(invisible_button)
+		
+		# Logika weryfikacji i blokad węzłów
+		var reqs_ok = true
+		for r in tech["req"]:
+			if not EconomyManager.technology_tree[r]["unlocked"]:
+				reqs_ok = false
+				
+		if tech["unlocked"]:
+			node_style.border_color = Color(0.3, 0.75, 0.45) # Zielona obwódka
+			node_style.bg_color = Color(0.12, 0.22, 0.15)
+			invisible_button.disabled = true
+		elif EconomyManager.current_research == tech_name:
+			node_style.border_color = Color(0.85, 0.64, 0.22) # Złota aktywna obwódka
+			node_style.bg_color = Color(0.24, 0.2, 0.14)
+			var current_science = EconomyManager.resources["Nauka"]
+			var turns_left = ceil(float(tech["cost"] - progress) / max(1, current_science))
+			lbl_title.text = "%s (%dt)" % [tech_name, turns_left]
+			invisible_button.disabled = true
+		elif not reqs_ok:
+			node_panel.modulate.a = 0.35 # Rozmycie dla zablokowanych (Mgła wojny)
+			invisible_button.disabled = true
+		else:
+			# Dostępny do kliknięcia
+			invisible_button.pressed.connect(func():
+				EconomyManager.current_research = tech_name
+				refresh_technology_tree_view()
+			)
+			
+		tech_tree_map.add_child(node_panel)
+
 func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String, building_name: String, is_owned: bool, borders_owned: bool, deposit_size: String = "", fertility: float = 0.0) -> void:
 	hide_all_menus()
 	active_tile_pos = tile_pos
 	last_mouse_pos = mouse_pos
 	
 	menu_budowania.visible = true
-	
 	var has_building = building_name != "Brak"
 	
-	# Aktualizacja tekstu informacyjnego nad przyciskami
 	if has_building:
 		info_label.text = "🏢 Budynek: %s\nPodłoże: %s" % [building_name, tile_type]
 	elif tile_type == "Trawa":
@@ -182,7 +393,6 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 	else:
 		info_label.text = "⛰️ Typ: Złoże %s\n📦 Wielkość: %s" % [tile_type, deposit_size]
 
-	# Zarządzanie przyciskiem kupna pola
 	if is_owned or has_building:
 		kup_pole_button.visible = false
 	else:
@@ -192,15 +402,12 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 		kup_pole_button.disabled = not can_buy
 		kup_pole_button.modulate.a = 1.0 if can_buy else 0.35
 
-	# Zarządzanie przyciskami budynków
 	var show_buildings = is_owned and not has_building
 	
-	# Wyświetlamy tylko kategorie na start
 	cat_zasobowe.visible = show_buildings
 	cat_tech.visible = show_buildings
 	cat_naukowe.visible = show_buildings
 	
-	# Ukrywamy szczegółowe budynki
 	build_chata.visible = false
 	build_iron.visible = false
 	build_coal.visible = false
@@ -253,9 +460,10 @@ func show_city_creation_menu(_screen_pos: Vector2, tile_pos: Vector2) -> void:
 func hide_all_menus():
 	menu_budowania.visible = false
 	if menu_zalozenia_miasta: menu_zalozenia_miasta.visible = false
+	if tech_tree_window: tech_tree_window.visible = false
 
 func any_menu_visible() -> bool:
-	return menu_budowania.visible or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible)
+	return menu_budowania.visible or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) or (tech_tree_window and tech_tree_window.visible)
 
 func _reposition_menu(menu: Control, base_pos: Vector2):
 	menu.reset_size()
@@ -282,10 +490,11 @@ func execute_build(building_name: String) -> void:
 	hide_all_menus()
 
 func _on_economy_updated(balances: Dictionary, turn: int, _selected_build: String):
-	# Zaktualizowano interfejs o wyświetlanie zasobów Jedzenia, Nauki i Kultury
 	resources_label.text = "🌟 TURA: %d   |   🪙 ZŁOTO: %d   |   🌾 JEDZENIE: %d   |   🪵 DREWNO: %d   |   ⛓️ ŻELAZO: %d   |   🌋 WĘGIEL: %d   |   🔬 NAUKA: %d   |   🎭 KULTURA: %d" % [
 		turn, balances["Złoto"], balances["Jedzenie"], balances["Drewno"], balances["Żelazo"], balances["Węgiel"], balances["Nauka"], balances["Kultura"]
 	]
+	if tech_tree_window and tech_tree_window.visible:
+		refresh_technology_tree_view()
 
 func _on_turn_pressed():
 	hide_all_menus()
