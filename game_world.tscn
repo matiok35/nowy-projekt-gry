@@ -25,9 +25,9 @@ script = ExtResource("2_bvgre")
 
 [node name="TurnButton" type="Button" parent="CanvasLayer/UI" unique_id=1194572768]
 layout_mode = 0
-offset_left = 1008.0
+offset_left = 20.0
 offset_top = 91.0
-offset_right = 1150.0
+offset_right = 162.0
 offset_bottom = 145.0
 text = "Następna tura"
 
@@ -52,8 +52,9 @@ offset_bottom = 8.0
 
 [node name="PanelContainer" type="PanelContainer" parent="CanvasLayer/UI" unique_id=368437563]
 layout_mode = 0
+offset_top = 100.0
 offset_right = 40.0
-offset_bottom = 40.0
+offset_bottom = 140.0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/UI/PanelContainer" unique_id=1803143607]
 layout_mode = 2

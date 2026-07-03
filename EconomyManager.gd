@@ -110,8 +110,6 @@ func get_building_tooltip(building_name: String) -> String:
 func can_afford_and_place(building_name: String, tile_type: String) -> bool:
 	if not building_costs.has(building_name): return false
 	
-	if building_name in ["Farma", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia"] and tile_type != "Trawa":
-		return false
 	if building_name == "Chata Drwala" and tile_type != "Drewno":
 		return false
 	if building_name == "Kopalnia Żelaza" and tile_type != "Żelazo":
