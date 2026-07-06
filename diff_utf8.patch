@@ -1,0 +1,1927 @@
+﻿diff --git a/autoloads/EconomyManager.gd b/autoloads/EconomyManager.gd
+index 1cc17ab..c865257 100644
+--- a/autoloads/EconomyManager.gd
++++ b/autoloads/EconomyManager.gd
+@@ -25,7 +25,6 @@ var building_costs: Dictionary = {
+ 	"Kopalnia ┼╗elaza": {"Z┼éoto": 50, "Drewno": 20},
+ 	"Kopalnia W─Ögla": {"Z┼éoto": 60, "Drewno": 25},
+ 	"Farma": {"Z┼éoto": 25, "Drewno": 15},
+-	"Pastwisko": {"Z┼éoto": 30, "Drewno": 15},
+ 	"Dom mieszkalny": {"Z┼éoto": 40, "Drewno": 20},
+ 	"Laboratorium": {"Z┼éoto": 100, "Drewno": 50, "┼╗elazo": 10},
+ 	"Warsztat": {"Z┼éoto": 80, "Drewno": 40, "┼╗elazo": 5},
+@@ -33,12 +32,16 @@ var building_costs: Dictionary = {
+ 	"┼Üwi─ůtynia": {"Z┼éoto": 150, "Drewno": 40, "┼╗elazo": 15}
+ }
+ 
+-var current_research: String = ""
+-var research_progress: Dictionary = {}
++var current_research := ""
++var research_turns_left := 0
++
++var current_culture_research := ""
++var culture_turns_left := 0
+ 
+ var technology_tree: Dictionary = {
+ 	"G├│rnictwo": {
+-		"cost": 15,
++		"research_cost": 15,
++		"research_time": 2,
+ 		"req": [],
+ 		"unlocked": false,
+ 		"desc": "Podstawy wydobycia.",
+@@ -46,7 +49,8 @@ var technology_tree: Dictionary = {
+ 		"icon": "ÔŤĆ´ŞĆ"
+ 	},
+ 	"Wydajne Maszyny": {
+-		"cost": 45,
++		"research_cost": 45,
++		"research_time": 4,
+ 		"req": ["G├│rnictwo"],
+ 		"unlocked": false,
+ 		"desc": "+3 ┼╗elaza, +2 W─Ögla.",
+@@ -54,7 +58,8 @@ var technology_tree: Dictionary = {
+ 		"icon": "ÔÜÖ´ŞĆ"
+ 	},
+ 	"Melioracja": {
+-		"cost": 30,
++		"research_cost": 30,
++		"research_time": 3,
+ 		"req": [],
+ 		"unlocked": false,
+ 		"desc": "Nawadnianie p├│l.",
+@@ -62,7 +67,8 @@ var technology_tree: Dictionary = {
+ 		"icon": "­čĺž"
+ 	},
+ 	"P┼éodozmian": {
+-		"cost": 50,
++		"research_cost": 50,
++		"research_time": 5,
+ 		"req": ["Melioracja"],
+ 		"unlocked": false,
+ 		"desc": "+3 Jedzenia dla Farm.",
+@@ -70,7 +76,8 @@ var technology_tree: Dictionary = {
+ 		"icon": "­čîż"
+ 	},
+ 	"Industrializacja": {
+-		"cost": 100,
++		"research_cost": 100,
++		"research_time": 8,
+ 		"req": ["Wydajne Maszyny", "P┼éodozmian"],
+ 		"unlocked": false,
+ 		"desc": "+10 Z┼éota z Centrum Miasta.",
+@@ -79,61 +86,113 @@ var technology_tree: Dictionary = {
+ 	}
+ }
+ 
++var culture_tree: Dictionary = {
++	"Tradycje": {
++		"research_cost": 15,
++		"research_time": 2,
++		"req": [],
++		"unlocked": false,
++		"desc": "Podstawy kultury.",
++		"grid_coords": Vector2(0,1),
++		"icon": "­čÄş"
++	},
++
++	"Sztuka": {
++		"research_cost": 35,
++		"research_time": 4,
++		"req": ["Tradycje"],
++		"unlocked": false,
++		"desc": "Rozw├│j sztuki.",
++		"grid_coords": Vector2(1,0),
++		"icon": "­čÄĘ"
++	},
++
++	"Filozofia": {
++		"research_cost": 40,
++		"research_time": 4,
++		"req": ["Tradycje"],
++		"unlocked": false,
++		"desc": "Rozw├│j my┼Ťli.",
++		"grid_coords": Vector2(1,2),
++		"icon": "­čôť"
++	},
++
++	"Teatr": {
++		"research_cost": 55,
++		"research_time": 6,
++		"req": ["Sztuka"],
++		"unlocked": false,
++		"desc": "+2 Kultury.",
++		"grid_coords": Vector2(2,0),
++		"icon": "­čÄş"
++	},
++
++	"Edukacja": {
++		"research_cost": 70,
++		"research_time": 6,
++		"req": ["Filozofia"],
++		"unlocked": false,
++		"desc": "+1 Nauki.",
++		"grid_coords": Vector2(2,2),
++		"icon": "­čôÜ"
++	},
++
++	"Renesans": {
++		"research_cost": 110,
++		"research_time": 10,
++		"req": ["Teatr","Edukacja"],
++		"unlocked": false,
++		"desc": "Z┼éoty wiek kultury.",
++		"grid_coords": Vector2(3,1),
++		"icon": "­čĆŤ´ŞĆ"
++	}
++}
++
++
+ func get_building_tooltip(building_name: String) -> String:
+ 	if not building_costs.has(building_name):
+ 		return ""
+ 
+ 	var text = "Wymagania\n"
++
+ 	match building_name:
+-		"Chata Drwala": text += "ÔÇó Wymaga: Drewno\n"
+-		"Kopalnia ┼╗elaza": text += "ÔÇó Wymaga: ┼╗elazo\n"
+-		"Kopalnia W─Ögla": text += "ÔÇó Wymaga: W─Ögiel\n"
+-		"Farma": text += "ÔÇó Wymaga: Pszenica\n"
+-		"Pastwisko": text += "ÔÇó Wymaga: Byd┼éo\n"
++		"Chata Drwala":
++			text += "ÔÇó Musi zosta─ç wybudowana na drewnie\n"
++		"Kopalnia ┼╗elaza":
++			text += "ÔÇó Musi zosta─ç wybudowana na ┼╝elazie\n"
++		"Kopalnia W─Ögla":
++			text += "ÔÇó Musi zosta─ç wybudowana na w─Öglu\n"
++		"Farma":
++			text += "ÔÇó Musi zosta─ç wybudowana na trawie\n"
+ 		"Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "┼Üwi─ůtynia":
+-			text += "ÔÇó Wymaga: Trawa\n"
++			text += "ÔÇó Musi zosta─ç wybudowana na trawie\n"
++
++	text += "\nKoszt\n"
+ 
+-	text += "\nKoszt poziomu 1\n"
+ 	for resource in building_costs[building_name]:
+-		text += "ÔÇó %s: %d\n" % [resource, building_costs[building_name][resource]]
++		text += "ÔÇó %s: %d\n" % [
++			resource,
++			building_costs[building_name][resource]
++		]
++
+ 	return text
+ 
+ func can_afford_and_place(building_name: String, tile_type: String) -> bool:
+ 	if not building_costs.has(building_name): return false
+ 	
+-	if building_name == "Chata Drwala" and tile_type != "Drewno": return false
+-	if building_name == "Kopalnia ┼╗elaza" and tile_type != "┼╗elazo": return false
+-	if building_name == "Kopalnia W─Ögla" and tile_type != "W─Ögiel": return false
+-	if building_name == "Farma" and tile_type != "Pszenica": return false
+-	if building_name == "Pastwisko" and tile_type != "Byd┼éo": return false
+-	if building_name in ["Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "┼Üwi─ůtynia"] and tile_type != "Trawa": return false
++	if building_name == "Chata Drwala" and tile_type != "Drewno":
++		return false
++	if building_name == "Kopalnia ┼╗elaza" and tile_type != "┼╗elazo":
++		return false
++	if building_name == "Kopalnia W─Ögla" and tile_type != "W─Ögiel":
++		return false
+ 
+ 	var costs = building_costs[building_name]
+ 	for res in costs:
+-		if resources.get(res, 0) < costs[res]:
++		if resources[res] < costs[res]:
+ 			return false
+ 	return true
+ 
+-func get_upgrade_cost(b_name: String, current_level: int) -> Dictionary:
+-	var cost = {}
+-	if building_costs.has(b_name):
+-		for res in building_costs[b_name]:
+-			cost[res] = building_costs[b_name][res] * (current_level + 1)
+-	return cost
+-
+-func can_afford_upgrade(b_name: String, current_level: int) -> bool:
+-	if current_level >= 3: return false
+-	var cost = get_upgrade_cost(b_name, current_level)
+-	for res in cost:
+-		if resources.get(res, 0) < cost[res]: return false
+-	return true
+-
+-func deduct_upgrade_costs(b_name: String, current_level: int) -> void:
+-	var cost = get_upgrade_cost(b_name, current_level)
+-	for res in cost:
+-		resources[res] -= cost[res]
+-	notify_change()
+-
+ func can_afford_tile_purchase() -> bool:
+ 	return resources["Z┼éoto"] >= 50
+ 
+@@ -148,17 +207,58 @@ func deduct_costs(building_name: String) -> void:
+ 			resources[res] -= costs[res]
+ 		notify_change()
+ 
++func start_research(tech_name:String):
++
++	if current_research != "":
++		return
++
++	var tech = technology_tree[tech_name]
++
++	if resources["Nauka"] < tech["research_cost"]:
++		return
++
++	resources["Nauka"] -= tech["research_cost"]
++
++	current_research = tech_name
++
++	research_turns_left = tech["research_time"]
++
++	notify_change()
++
++
++func start_culture_research(tech_name:String):
++
++	if current_culture_research != "":
++		return
++
++	var tech = culture_tree[tech_name]
++
++	if resources["Kultura"] < tech["research_cost"]:
++		return
++
++	resources["Kultura"] -= tech["research_cost"]
++
++	current_culture_research = tech_name
++
++	culture_turns_left = tech["research_time"]
++
++	notify_change()
++
+ func next_turn(active_buildings_data: Array) -> void:
+ 	current_turn += 1
++	
++	# Obliczanie maksymalnej populacji na podstawie budynk├│w mieszkalnych (Centrum = 5, ka┼╝dy Dom = +5)
+ 	var max_pop = 5
+ 	for b_data in active_buildings_data:
+ 		if b_data["name"] == "Dom mieszkalny":
+-			max_pop += 5 * b_data.get("level", 1)
++			max_pop += 5
+ 	resources["Maks_Populacja"] = max_pop
+ 	
++	# Konsumpcja jedzenia przez populacj─Ö (1 jedzenie na 1 punkt populacji)
+ 	var food_consumption = resources["Populacja"] * 1
+ 	resources["Jedzenie"] -= food_consumption
+ 	
++	# Generowanie populacji co 3 rundy, je┼Ťli jest jedzenie i wolne miejsca mieszkalne
+ 	if current_turn % 3 == 0:
+ 		if resources["Jedzenie"] > 0 and resources["Populacja"] < resources["Maks_Populacja"]:
+ 			resources["Populacja"] += 1
+@@ -168,7 +268,6 @@ func next_turn(active_buildings_data: Array) -> void:
+ 	
+ 	for b_data in active_buildings_data:
+ 		var b_name = b_data["name"]
+-		var b_level = b_data.get("level", 1)
+ 		var size_modifier = 1.0
+ 		
+ 		if b_data.has("deposit_size"):
+@@ -179,58 +278,88 @@ func next_turn(active_buildings_data: Array) -> void:
+ 
+ 		match b_name:
+ 			"Centrum Miasta":
+-				var gold_bonus = 10 * b_level
++				var gold_bonus = 10
+ 				if technology_tree["Industrializacja"]["unlocked"]:
+-					gold_bonus += 10 * b_level
++					gold_bonus += 10
+ 				resources["Z┼éoto"] += gold_bonus
+-				resources["Jedzenie"] += 2 * b_level
++				resources["Jedzenie"] += 2
+ 			"Chata Drwala":
+-				resources["Drewno"] += int(8 * size_modifier * b_level)
++				resources["Drewno"] += int(8 * size_modifier)
+ 			"Kopalnia ┼╗elaza":
+ 				var iron_yield = 5
+-				if technology_tree["Wydajne Maszyny"]["unlocked"]: iron_yield += 3
+-				resources["┼╗elazo"] += int(iron_yield * size_modifier * b_level)
+-				resources["Z┼éoto"] -= 2 * b_level
++				if technology_tree["Wydajne Maszyny"]["unlocked"]:
++					iron_yield += 3
++				resources["┼╗elazo"] += int(iron_yield * size_modifier)
++				resources["Z┼éoto"] -= 2
+ 			"Kopalnia W─Ögla":
+ 				var coal_yield = 4
+-				if technology_tree["Wydajne Maszyny"]["unlocked"]: coal_yield += 2
+-				resources["W─Ögiel"] += int(coal_yield * size_modifier * b_level)
+-				resources["Z┼éoto"] -= 2 * b_level
++				if technology_tree["Wydajne Maszyny"]["unlocked"]:
++					coal_yield += 2
++				resources["W─Ögiel"] += int(coal_yield * size_modifier)
++				resources["Z┼éoto"] -= 2
+ 			"Farma":
++				var fertility = b_data.get("fertility", 1.0)
+ 				var farm_yield = 6
+-				if technology_tree["P┼éodozmian"]["unlocked"]: farm_yield += 3
+-				resources["Jedzenie"] += int(farm_yield * size_modifier * b_level)
+-			"Pastwisko":
+-				resources["Jedzenie"] += int(5 * size_modifier * b_level)
++				if technology_tree["P┼éodozmian"]["unlocked"]:
++					farm_yield += 3
++				resources["Jedzenie"] += int(farm_yield * fertility)
+ 			"Laboratorium":
+-				turn_science += 3 * b_level
++				turn_science += 3
+ 			"Warsztat":
+-				turn_science += 1 * b_level
++				turn_science += 1
+ 			"Biblioteka":
+-				turn_science += 2 * b_level
+-				turn_culture += 1 * b_level
++				turn_science += 2
++				turn_culture += 1
+ 			"┼Üwi─ůtynia":
+-				turn_culture += 3 * b_level
++				turn_culture += 3
+ 
+ 	var total_science = 1 + turn_science
+-	resources["Nauka"] = total_science
+-	resources["Kultura"] = min(100, resources["Kultura"] + total_science + turn_culture) 
++	
++	resources["Nauka"] = min(
++		max_tech_points,
++		resources["Nauka"] + total_science
++	)
+ 
++	resources["Kultura"] = min(
++		max_culture_points,
++		resources["Kultura"] + turn_culture
++	)
++
++	# G┼é├│d - brak jedzenia obni┼╝a z┼éoto i mo┼╝e zredukowa─ç populacj─Ö
+ 	if resources["Jedzenie"] < 0:
+ 		resources["Jedzenie"] = 0
+ 		resources["Z┼éoto"] = max(0, resources["Z┼éoto"] - 5)
+ 		if resources["Populacja"] > 1 and randf() < 0.25:
+ 			resources["Populacja"] -= 1
+ 
+-	if current_research != "" and technology_tree.has(current_research):
+-		if not research_progress.has(current_research):
+-			research_progress[current_research] = 0
+-		research_progress[current_research] += total_science
+-		if research_progress[current_research] >= technology_tree[current_research]["cost"]:
++	if current_research != "":
++	
++		research_turns_left -= 1
++	
++		if research_turns_left <= 0:
++	
+ 			technology_tree[current_research]["unlocked"] = true
+-			research_progress[current_research] = technology_tree[current_research]["cost"]
++	
++			match current_research:
++				"Industrializacja":
++					max_tech_points += 25
++	
+ 			current_research = ""
+-
++	
++	
++	if current_culture_research != "":
++	
++		culture_turns_left -= 1
++	
++		if culture_turns_left <= 0:
++	
++			culture_tree[current_culture_research]["unlocked"] = true
++	
++			match current_culture_research:
++				"Renesans":
++					max_culture_points += 25
++	
++			current_culture_research = ""
+ 	notify_change()
+ 
+ func notify_change() -> void:
+diff --git a/game_world/game_world.gd b/game_world/game_world.gd
+index bcdf479..3540cd5 100644
+--- a/game_world/game_world.gd
++++ b/game_world/game_world.gd
+@@ -1,52 +1,75 @@
+ extends Node2D
+ # game_world.gd (Podpi─Öty pod g┼é├│wny w─Öze┼é sceny GameWorld)
+ 
++# ============================================================
++# STA┼üE I ZMIENNE
++# ============================================================
++
+ const MAP_SIZE = 25
+-const HEX_RADIUS = 80.0
++const HEX_RADIUS = 80.0 # POWI─śKSZONY ROZMIAR KAFELKA
+ 
+ var hex_width: float = sqrt(3) * HEX_RADIUS
+ var hex_height: float = 2.0 * HEX_RADIUS
+ 
++# --- Dane mapy ---
+ var map_data = {}
+ var tile_nodes = {}
+-var tile_sprites = {}
+ var label_nodes = {}
++
++# --- Terytorium ---
+ var owned_tiles: Dictionary = {}
+ var city_centers: Array[Vector2] = []
+ var territory_overlays: Dictionary = {}
+ var last_expansion_turn: int = 1
+ 
++# --- Referencje do w─Öz┼é├│w ---
+ var map_container: Node2D
+ var hud_node: Control
+ var character: Character
+ var path_line: Line2D
+ 
++# --- Pathfinding ---
+ var astar: AStar2D = AStar2D.new()
+ var cell_to_id: Dictionary = {}
+ var cell_to_world: Dictionary = {}
+ 
+-const BUILDINGS_RESET_TILE_TO_GRASS = ["Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "┼Üwi─ůtynia"]
++const BUILDINGS_RESET_TILE_TO_GRASS = ["Farma", "Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "┼Üwi─ůtynia"]
++
++
++# ============================================================
++# INICJALIZACJA
++# ============================================================
+ 
+ func _ready() -> void:
+ 	hud_node = get_tree().current_scene.find_child("UI", true, false)
+-	if hud_node == null: hud_node = get_tree().current_scene.find_child("HUD", true, false)
++	if hud_node == null:
++		hud_node = get_tree().current_scene.find_child("HUD", true, false)
++
+ 	map_container = get_node_or_null("MapContainer")
+ 	randomize()
+ 	generate_map()
+ 	build_astar_graph()
++
+ 	character = get_node_or_null("Character")
+ 	path_line = get_node_or_null("PathLine")
++
+ 	if path_line:
+ 		path_line.width = 4.0
+ 		path_line.default_color = Color(1.0, 0.85, 0.0, 0.85)
++
+ 	if character:
+ 		var start_pos = Vector2(MAP_SIZE / 2, MAP_SIZE / 2)
+-		if map_data.has(start_pos): map_data[start_pos]["type"] = "Trawa"
+ 		if cell_to_world.has(start_pos):
+ 			character.global_position = cell_to_world[start_pos]
+ 		character.city_creation_requested.connect(_on_character_city_creation_requested)
++
+ 	EconomyManager.economy_updated.connect(_on_economy_turn_changed)
+ 
++
++# ============================================================
++# GENEROWANIE MAPY
++# ============================================================
++
+ func generate_map() -> void:
+ 	var sizes = ["Ma┼ée", "┼Ürednie", "Du┼╝e"]
+ 	for x in range(MAP_SIZE):
+@@ -57,8 +80,6 @@ func generate_map() -> void:
+ 			if rand < 0.04: type = "Drewno"
+ 			elif rand < 0.07: type = "┼╗elazo"
+ 			elif rand < 0.09: type = "W─Ögiel"
+-			elif rand < 0.14: type = "Pszenica"
+-			elif rand < 0.19: type = "Byd┼éo"
+ 
+ 			var deposit_size = ""
+ 			var fertility = 0.0
+@@ -71,7 +92,6 @@ func generate_map() -> void:
+ 			map_data[pos] = {
+ 				"type": type,
+ 				"building": "Brak",
+-				"level": 1,
+ 				"deposit_size": deposit_size,
+ 				"fertility": fertility
+ 			}
+@@ -84,24 +104,20 @@ func create_procedural_hex(pos: Vector2, type: String, deposit_size: String) ->
+ 	area.monitorable = false
+ 
+ 	var x_pos = pos.x * hex_width
+-	if int(pos.y) % 2 == 1: x_pos += hex_width / 2.0
++	if int(pos.y) % 2 == 1:
++		x_pos += hex_width / 2.0
+ 	var y_pos = pos.y * (hex_height * 0.75)
+ 
+ 	area.position = Vector2(x_pos, y_pos) + Vector2(200, 150)
+ 	cell_to_world[pos] = area.position
+ 
+ 	var points = _build_hex_points()
++
+ 	var polygon = Polygon2D.new()
+ 	polygon.polygon = points
+ 	polygon.color = _get_tile_color(type)
+ 	area.add_child(polygon)
+ 
+-	var sprite = Sprite2D.new()
+-	sprite.texture = null
+-	sprite.scale = Vector2(0.6, 0.6)
+-	area.add_child(sprite)
+-	tile_sprites[pos] = sprite
+-
+ 	var line = Line2D.new()
+ 	var line_points = points.duplicate()
+ 	line_points.append(points[0])
+@@ -115,7 +131,7 @@ func create_procedural_hex(pos: Vector2, type: String, deposit_size: String) ->
+ 	area.add_child(collision)
+ 
+ 	var label = Label.new()
+-	label.text = "%s\n(%s)" % [type, deposit_size] if deposit_size != "" else type
++	label.text = "%s\n(%s)" % [type, deposit_size] if type != "Trawa" else type
+ 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+ 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+ 	label.size = Vector2(hex_width, hex_height)
+@@ -124,8 +140,10 @@ func create_procedural_hex(pos: Vector2, type: String, deposit_size: String) ->
+ 	area.add_child(label)
+ 	label_nodes[pos] = label
+ 
+-	if map_container: map_container.add_child(area)
+-	else: add_child(area)
++	if map_container:
++		map_container.add_child(area)
++	else:
++		add_child(area)
+ 	tile_nodes[pos] = area
+ 
+ func _build_hex_points() -> PackedVector2Array:
+@@ -140,10 +158,13 @@ func _get_tile_color(type: String) -> Color:
+ 		"Drewno": return Color(0.15, 0.6, 0.15)
+ 		"┼╗elazo": return Color(0.45, 0.45, 0.45)
+ 		"W─Ögiel": return Color(0.18, 0.18, 0.18)
+-		"Pszenica": return Color(0.85, 0.75, 0.2)
+-		"Byd┼éo": return Color(0.45, 0.55, 0.2)
+ 		_: return Color(0.1, 0.45, 0.1)
+ 
++
++# ============================================================
++# MIASTA I TERYTORIUM
++# ============================================================
++
+ func _on_character_city_creation_requested(char_global_pos: Vector2) -> void:
+ 	var cell_pos = world_to_nearest_cell(char_global_pos)
+ 	if map_data.has(cell_pos):
+@@ -155,15 +176,16 @@ func create_city_at(pos: Vector2) -> void:
+ 	if city_centers.has(pos): return
+ 	city_centers.append(pos)
+ 	map_data[pos]["building"] = "Centrum Miasta"
+-	map_data[pos]["level"] = 1
+-	if label_nodes.has(pos): label_nodes[pos].text = "­čĆó Centrum"
++	if label_nodes.has(pos):
++		label_nodes[pos].text = "­čĆó Centrum"
+ 
+ 	var poly = tile_nodes[pos].get_child(0) as Polygon2D
+ 	if poly: poly.color = Color(0.2, 0.5, 0.8)
+ 
+ 	claim_tile(pos)
+ 	for neighbor in HexUtils.get_neighbors(pos):
+-		if map_data.has(neighbor): claim_tile(neighbor)
++		if map_data.has(neighbor):
++			claim_tile(neighbor)
+ 
+ 	if character:
+ 		character.queue_free()
+@@ -174,6 +196,7 @@ func claim_tile(pos: Vector2) -> void:
+ 	owned_tiles[pos] = true
+ 	var tile_area = tile_nodes[pos]
+ 	var base_poly = tile_area.get_child(0) as Polygon2D
++
+ 	if base_poly:
+ 		var overlay = Polygon2D.new()
+ 		overlay.polygon = base_poly.polygon
+@@ -229,6 +252,11 @@ func _get_hex_distance_to_nearest_city(tile: Vector2) -> int:
+ 		if d < min_d: min_d = d
+ 	return min_d
+ 
++
++# ============================================================
++# BUDOWANIE
++# ============================================================
++
+ func build_on_tile(pos: Vector2, building_name: String) -> void:
+ 	if character and character.selected: return
+ 	if not owned_tiles.has(pos): return
+@@ -244,33 +272,17 @@ func build_on_tile(pos: Vector2, building_name: String) -> void:
+ 		tile["fertility"] = 1.0
+ 
+ 	tile["building"] = building_name
+-	tile["level"] = 1
+ 
+ 	var poly = tile_nodes[pos].get_child(0) as Polygon2D
+-	if poly: poly.color = _get_building_color(building_name)
+-
+-	if tile_sprites.has(pos):
+-		# TODO: Zmie┼ä na docelow─ů ┼Ťcie┼╝k─Ö do obrazk├│w budynk├│w
+-		# tile_sprites[pos].texture = load("res://assets/buildings/" + building_name + ".png")
+-		pass
++	if poly:
++		poly.color = _get_building_color(building_name)
+ 
+ 	if label_nodes.has(pos):
+-		label_nodes[pos].text = "%s\n(Lvl 1)" % building_name
+-
+-func upgrade_building(pos: Vector2) -> void:
+-	var tile = map_data[pos]
+-	var b_name = tile["building"]
+-	if b_name == "Brak" or b_name == "Centrum Miasta": return
+-	if EconomyManager.can_afford_upgrade(b_name, tile["level"]):
+-		EconomyManager.deduct_upgrade_costs(b_name, tile["level"])
+-		tile["level"] += 1
+-		if label_nodes.has(pos):
+-			label_nodes[pos].text = "%s\n(Lvl %d)" % [b_name, tile["level"]]
++		label_nodes[pos].text = building_name
+ 
+ func _get_building_color(building_name: String) -> Color:
+ 	match building_name:
+ 		"Farma": return Color(0.7, 0.6, 0.2)
+-		"Pastwisko": return Color(0.6, 0.5, 0.15)
+ 		"Dom mieszkalny": return Color(0.65, 0.45, 0.35)
+ 		"Laboratorium": return Color(0.2, 0.5, 0.8)
+ 		"Warsztat": return Color(0.5, 0.4, 0.2)
+@@ -285,12 +297,16 @@ func get_active_buildings_list() -> Array:
+ 		if tile["building"] != "Brak":
+ 			list.append({
+ 				"name": tile["building"],
+-				"level": tile["level"],
+ 				"deposit_size": tile["deposit_size"],
+ 				"fertility": tile["fertility"]
+ 			})
+ 	return list
+ 
++
++# ============================================================
++# WEJ┼ÜCIE (MYSZ) ZABEZPIECZENIE PRZED B┼ü─śDAMI LPM
++# ============================================================
++
+ func _unhandled_input(event: InputEvent) -> void:
+ 	if not (event is InputEventMouseButton): return
+ 
+@@ -300,6 +316,7 @@ func _unhandled_input(event: InputEvent) -> void:
+ 			camera.is_drag_motion = false
+ 			return
+ 
++	# NOWO┼Ü─ć / POPRAWKA: Je┼Ťli dymek menu jest aktywny, klikni─Öcie LPM poza nim natychmiast go zamyka i przerywa dalsze akcje
+ 	if event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
+ 		if hud_node and hud_node.has_method("any_menu_visible") and hud_node.any_menu_visible():
+ 			hud_node.hide_all_menus()
+@@ -325,14 +342,17 @@ func _get_tile_at_world_pos(world_pos: Vector2) -> Variant:
+ 	query.collide_with_areas = true
+ 	var results = space_state.intersect_point(query)
+ 	if results.is_empty(): return null
++
+ 	var hit_area = results[0]["collider"] as Area2D
+ 	for pos in tile_nodes:
+-		if tile_nodes[pos] == hit_area: return pos
++		if tile_nodes[pos] == hit_area:
++			return pos
+ 	return null
+ 
+ func _show_context_menu_for(pos: Vector2) -> void:
+ 	var tile = map_data[pos]
+ 	var is_owned = owned_tiles.has(pos)
++
+ 	var borders_owned = false
+ 	for n in HexUtils.get_neighbors(pos):
+ 		if owned_tiles.has(n):
+@@ -342,12 +362,13 @@ func _show_context_menu_for(pos: Vector2) -> void:
+ 	var screen_mouse_pos = get_viewport().get_mouse_position()
+ 	if hud_node and hud_node.has_method("show_context_menu"):
+ 		hud_node.show_context_menu(
+-			screen_mouse_pos, pos, tile["type"], tile["building"], tile.get("level", 1),
++			screen_mouse_pos, pos, tile["type"], tile["building"],
+ 			is_owned, borders_owned, tile["deposit_size"], tile["fertility"]
+ 		)
+ 
+ func _handle_left_click_on_tile(pos: Vector2, global_mouse_pos: Vector2) -> void:
+-	if hud_node and hud_node.has_method("any_menu_visible") and hud_node.any_menu_visible(): return
++	if hud_node and hud_node.has_method("any_menu_visible") and hud_node.any_menu_visible():
++		return
+ 	if character and global_mouse_pos.distance_to(character.global_position) < 35.0:
+ 		character.set_selected(not character.selected)
+ 		return
+@@ -356,6 +377,11 @@ func _handle_left_click_on_tile(pos: Vector2, global_mouse_pos: Vector2) -> void
+ 		if not world_path.is_empty():
+ 			character.follow_path(world_path)
+ 
++
++# ============================================================
++# PATHFINDING
++# ============================================================
++
+ func build_astar_graph() -> void:
+ 	astar.clear()
+ 	cell_to_id.clear()
+@@ -389,13 +415,20 @@ func get_world_path_to(target_pos: Vector2) -> Array[Vector2]:
+ 	if id_path.is_empty(): return []
+ 	var max_steps: int = mini(id_path.size(), character.move_range + 1)
+ 	var world_path: Array[Vector2] = []
+-	for i in range(max_steps): world_path.append(astar.get_point_position(id_path[i]))
++	for i in range(max_steps):
++		world_path.append(astar.get_point_position(id_path[i]))
+ 	return world_path
+ 
+ func draw_path_line(world_path: Array[Vector2]) -> void:
+ 	if not path_line: return
+ 	path_line.clear_points()
+-	for point in world_path: path_line.add_point(point)
++	for point in world_path:
++		path_line.add_point(point)
++
++
++# ============================================================
++# P─śTLA G┼ü├ôWNA
++# ============================================================
+ 
+ func _process(_delta: float) -> void:
+ 	if not character or not path_line: return
+diff --git a/game_world/game_world.tscn b/game_world/game_world.tscn
+index 044a036..acf4377 100644
+--- a/game_world/game_world.tscn
++++ b/game_world/game_world.tscn
+@@ -100,3 +100,33 @@ grow_vertical = 2
+ 
+ [node name="TechTreeMap" type="Control" parent="CanvasLayer/UI/TechTreeWindow/ScrollContainer" unique_id=1443365614]
+ layout_mode = 2
++
++[node name="CultureTreeWindow" type="Panel" parent="CanvasLayer/UI" unique_id=1522330038]
++visible = false
++layout_mode = 0
++offset_left = 200.0
++offset_top = 100.0
++offset_right = 1000.0
++offset_bottom = 600.0
++
++[node name="CloseButton" type="Button" parent="CanvasLayer/UI/CultureTreeWindow" unique_id=888654416]
++layout_mode = 1
++anchors_preset = 1
++anchor_left = 1.0
++anchor_right = 1.0
++offset_left = -40.0
++offset_bottom = 40.0
++grow_horizontal = 0
++text = "X"
++
++[node name="ScrollContainer" type="ScrollContainer" parent="CanvasLayer/UI/CultureTreeWindow" unique_id=1755383947]
++layout_mode = 1
++anchors_preset = 15
++anchor_right = 1.0
++anchor_bottom = 1.0
++offset_top = 50.0
++grow_horizontal = 2
++grow_vertical = 2
++
++[node name="CultureTreeMap" type="Control" parent="CanvasLayer/UI/CultureTreeWindow/ScrollContainer" unique_id=247797046]
++layout_mode = 2
+diff --git a/project.godot b/project.godot
+index ba04433..7a37860 100644
+--- a/project.godot
++++ b/project.godot
+@@ -12,7 +12,7 @@ config_version=5
+ 
+ config/name="Nowy projekt gry"
+ run/main_scene="uid://brkvg5whgb0os"
+-config/features=PackedStringArray("4.7", "Forward Plus")
++config/features=PackedStringArray("4.6", "Forward Plus")
+ config/icon="res://icon.svg"
+ 
+ [autoload]
+diff --git a/ui/hud.gd b/ui/hud.gd
+index 0541268..af7ac4d 100644
+--- a/ui/hud.gd
++++ b/ui/hud.gd
+@@ -10,14 +10,11 @@ extends Control
+ @onready var build_coal = $MenuBudowania/VBoxContainer/BuildKopalniaWegla
+ 
+ var build_farma: Button
+-var build_pastwisko: Button
+ var build_dom: Button 
+ var info_label: Label
+ var menu_zalozenia_miasta: PopupPanel
+ var zaloz_miasto_button: Button
+ var kup_pole_button: Button
+-var upgrade_button: Button
+-var tile_info_menu: PanelContainer
+ 
+ var cat_zasobowe: Button
+ var cat_tech: Button
+@@ -29,9 +26,14 @@ var btn_naukowy_1: Button
+ var btn_naukowy_2: Button
+ 
+ var tech_tree_button: Button
++var culture_tree_button: Button
++
+ @onready var tech_tree_window = $TechTreeWindow
+ @onready var tech_tree_map = $TechTreeWindow/ScrollContainer/TechTreeMap
+ 
++@onready var culture_tree_window = $CultureTreeWindow
++@onready var culture_tree_map = $CultureTreeWindow/ScrollContainer/CultureTreeMap
++
+ const X_SPACING: float = 280.0
+ const Y_SPACING: float = 90.0
+ const OFFSET_POS: Vector2 = Vector2(80, 50)
+@@ -43,9 +45,6 @@ var last_mouse_pos: Vector2 = Vector2.ZERO
+ var confirm_dialog: ConfirmationDialog
+ var pending_building: String = ""
+ 
+-var resources_container: HBoxContainer
+-var resource_labels: Dictionary = {}
+-
+ var points_panel: PanelContainer
+ var culture_label: Label
+ var culture_bar: ProgressBar
+@@ -65,9 +64,11 @@ func _ready():
+ 	build_coal.pressed.connect(func(): execute_build("Kopalnia W─Ögla"))
+ 	
+ 	setup_points_panel()
+-	setup_resources_header()
+ 	setup_custom_popups()
++
+ 	setup_tech_tree_ui()
++	setup_culture_tree_ui()
++
+ 	style_main_hud_elements()
+ 	style_context_popup()
+ 	style_individual_buttons()
+@@ -102,12 +103,8 @@ func setup_points_panel():
+ 	var culture_vbox = VBoxContainer.new()
+ 	culture_vbox.add_theme_constant_override("separation", 2)
+ 	var culture_hbox = HBoxContainer.new()
+-	var default_icon = null
+-	var c_icon = TextureRect.new()
+-	c_icon.texture = default_icon
+-	c_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+-	c_icon.custom_minimum_size = Vector2(20, 20)
+-	c_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
++	var c_icon = Label.new()
++	c_icon.text = "­čÄş"
+ 	culture_label = Label.new()
+ 	culture_label.text = "Punkty Kultury: 0/100"
+ 	culture_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+@@ -129,14 +126,29 @@ func setup_points_panel():
+ 	culture_vbox.add_child(culture_bar)
+ 	vbox.add_child(culture_vbox)
+ 	
++	culture_tree_button = Button.new()
++	culture_tree_button.text = "Drzewo Kultury"
++	culture_tree_button.custom_minimum_size = Vector2(0, 40)
++
++	var culture_style = StyleBoxFlat.new()
++	culture_style.bg_color = Color(0.45, 0.15, 0.65)
++	culture_style.border_color = Color(0.8, 0.55, 1.0)
++	culture_style.set_border_width_all(1)
++	culture_style.set_corner_radius_all(4)
++
++	culture_tree_button.add_theme_stylebox_override("normal", culture_style)
++
++	var culture_hover = culture_style.duplicate()
++	culture_hover.bg_color = Color(0.60, 0.25, 0.80)
++	culture_tree_button.add_theme_stylebox_override("hover", culture_hover)
++
++	culture_vbox.add_child(culture_tree_button)
++	
+ 	var tech_vbox = VBoxContainer.new()
+ 	tech_vbox.add_theme_constant_override("separation", 2)
+ 	var tech_hbox = HBoxContainer.new()
+-	var t_icon = TextureRect.new()
+-	t_icon.texture = default_icon
+-	t_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+-	t_icon.custom_minimum_size = Vector2(20, 20)
+-	t_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
++	var t_icon = Label.new()
++	t_icon.text = "­čž¬"
+ 	tech_label = Label.new()
+ 	tech_label.text = "Punkty Technologii: 0/100"
+ 	tech_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+@@ -160,196 +172,77 @@ func setup_points_panel():
+ 	
+ 	add_child(points_panel)
+ 
+-func setup_resources_header():
+-	resources_label.visible = false
+-	
+-	resources_container = HBoxContainer.new()
+-	resources_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+-	resources_container.alignment = BoxContainer.ALIGNMENT_CENTER
+-	resources_container.add_theme_constant_override("separation", 25)
+-	$Panel.add_child(resources_container)
+-	
+-	var default_icon = null
+-	
+-	var resources_list = ["Drewno", "┼╗elazo", "W─Ögiel", "Jedzenie", "Z┼éoto", "Populacja"]
+-	for res_name in resources_list:
+-		var hbox = HBoxContainer.new()
+-		hbox.add_theme_constant_override("separation", 5)
+-		
+-		var icon = TextureRect.new()
+-		icon.texture = default_icon
+-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+-		icon.custom_minimum_size = Vector2(24, 24)
+-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+-		
+-		var lbl = Label.new()
+-		lbl.add_theme_font_size_override("font_size", 16)
+-		lbl.add_theme_color_override("font_color", Color(0.9, 0.88, 0.8))
+-		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+-		lbl.text = res_name + ": 0"
+-		
+-		hbox.add_child(icon)
+-		hbox.add_child(lbl)
+-		
+-		resources_container.add_child(hbox)
+-		resource_labels[res_name] = lbl
+-
+-var build_grid: GridContainer
+-
+ func setup_custom_popups():
++	var style_box = StyleBoxFlat.new()
++	style_box.bg_color = Color(0.05, 0.05, 0.07, 0.95)  
++	style_box.set_border_width_all(2) 
++	style_box.border_color = Color(0.0, 0.75, 1.0, 0.8) 
++	style_box.set_corner_radius_all(10)
++	style_box.set_content_margin_all(8)
++
+ 	var vbox = $MenuBudowania/VBoxContainer
+-	menu_budowania.custom_minimum_size = Vector2(360, 0) # Wymuszenie sta┼éej szeroko┼Ťci
+-	
+-	# Anchor bottom right ONCE
+-	menu_budowania.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+-	menu_budowania.offset_right = -20
+-	menu_budowania.offset_bottom = -20
+-	menu_budowania.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+-	menu_budowania.grow_vertical = Control.GROW_DIRECTION_BEGIN
+-	
+-	# 1. HEADER
+-	var header_hbox = HBoxContainer.new()
+-	header_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+-	var title_label = Label.new()
+-	title_label.text = "Menu Budowy"
+-	title_label.add_theme_font_size_override("font_size", 18)
+-	title_label.add_theme_color_override("font_color", Color(0.9, 0.85, 0.75))
+-	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+-	
+-	var close_btn = Button.new()
+-	close_btn.text = "X"
+-	close_btn.custom_minimum_size = Vector2(30, 30)
+-	close_btn.pressed.connect(func(): hide_all_menus())
+-	
+-	header_hbox.add_child(Control.new()) # Spacer
+-	header_hbox.get_child(0).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+-	header_hbox.add_child(title_label)
+-	header_hbox.add_child(close_btn)
+-	vbox.add_child(header_hbox)
+-	vbox.move_child(header_hbox, 0)
+-	
+-	# 2. TABS
+-	var tabs_hbox = HBoxContainer.new()
+-	cat_zasobowe = Button.new()
+-	cat_naukowe = Button.new()
+-	cat_tech = Button.new()
+-	cat_zasobowe.text = "Surowce"
+-	cat_naukowe.text = "Kultura"
+-	cat_tech.text = "Technologia"
+-	cat_zasobowe.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+-	cat_naukowe.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+-	cat_tech.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+-	tabs_hbox.add_child(cat_zasobowe)
+-	tabs_hbox.add_child(cat_naukowe)
+-	tabs_hbox.add_child(cat_tech)
+-	vbox.add_child(tabs_hbox)
+-	vbox.move_child(tabs_hbox, 1)
+-	
+-	cat_zasobowe.pressed.connect(func(): _show_building_category("zasobowe"))
+-	cat_naukowe.pressed.connect(func(): _show_building_category("naukowe"))
+-	cat_tech.pressed.connect(func(): _show_building_category("tech"))
+ 	
+-	# 3. KUP POLE BUTTON AND TILE INFO MENU SEPARATION
+-	tile_info_menu = PanelContainer.new()
+-	tile_info_menu.visible = false
+-	var tile_info_style = StyleBoxFlat.new()
+-	tile_info_style.bg_color = Color(0.05, 0.05, 0.07, 0.95)  
+-	tile_info_style.set_border_width_all(2) 
+-	tile_info_style.border_color = Color(0.2, 0.6, 1.0, 0.8) 
+-	tile_info_style.set_corner_radius_all(10)
+-	tile_info_style.set_content_margin_all(8)
+-	tile_info_menu.add_theme_stylebox_override("panel", tile_info_style)
+-	
+-	var tile_info_vbox = VBoxContainer.new()
+-	tile_info_vbox.add_theme_constant_override("separation", 6)
+-	tile_info_menu.add_child(tile_info_vbox)
++	var info_panel = PanelContainer.new()
++	var info_style = StyleBoxFlat.new()
++	info_style.bg_color = Color(0.12, 0.15, 0.22, 0.95)
++	info_style.set_corner_radius_all(8)
++	info_style.set_content_margin_all(10)
++	info_panel.add_theme_stylebox_override("panel", info_style)
+ 	
+ 	info_label = Label.new()
+ 	info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+ 	info_label.add_theme_color_override("font_color", Color(0.4, 0.9, 1.0))
+-	
+-	upgrade_button = Button.new()
+-	upgrade_button.pressed.connect(func(): 
+-		if world_ref and world_ref.has_method("upgrade_building"):
+-			world_ref.upgrade_building(active_tile_pos)
+-		hide_all_menus()
+-	)
+-	style_single_button(upgrade_button, "ÔČć´ŞĆ Ulepsz budynek")
++	info_panel.add_child(info_label)
++	vbox.add_child(info_panel)
++	vbox.move_child(info_panel, 0)
+ 
+-	tile_info_vbox.add_child(info_label)
+-	tile_info_vbox.add_child(upgrade_button)
+-	
+-	kup_pole_button = Button.new()
+-	kup_pole_button.text = "­č¬Ö Kup to pole (50 z┼éota)"
+-	kup_pole_button.custom_minimum_size = Vector2(180, 35)
+-	var style_buy = StyleBoxFlat.new()
+-	style_buy.bg_color = Color(0.15, 0.35, 0.4)
+-	style_buy.set_corner_radius_all(6)
+-	style_buy.set_content_margin_all(12)
+-	kup_pole_button.add_theme_stylebox_override("normal", style_buy)
+-	tile_info_vbox.add_child(kup_pole_button)
+-	
+-	kup_pole_button.pressed.connect(func():
+-		if world_ref and world_ref.has_method("buy_tile"):
+-			world_ref.buy_tile(active_tile_pos)
+-		hide_all_menus()
+-	)
+-	
+-	add_child(tile_info_menu)
+-	
+-	# 4. GRID CONTAINER FOR BUTTONS
+-	build_grid = GridContainer.new()
+-	build_grid.columns = 3
+-	build_grid.custom_minimum_size = Vector2(320, 0) # Miejsce na 3 kolumny po 100px + odst─Öpy
+-	build_grid.add_theme_constant_override("h_separation", 10)
+-	build_grid.add_theme_constant_override("v_separation", 10)
+-	build_grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+-	vbox.add_child(build_grid)
+-	vbox.move_child(build_grid, 2)
+-	
+-	# 5. BUTTONS (Reparent and create new ones)
+-	build_chata.reparent(build_grid)
+-	build_iron.reparent(build_grid)
+-	build_coal.reparent(build_grid)
+ 	build_farma = Button.new()
+-	build_grid.add_child(build_farma)
++	vbox.add_child(build_farma)
+ 	build_farma.pressed.connect(func(): execute_build("Farma"))
+-	style_single_button(build_farma, "­čîż Buduj Farm─Ö", "Farma")
+-	
+-	build_pastwisko = Button.new()
+-	build_grid.add_child(build_pastwisko)
+-	build_pastwisko.pressed.connect(func(): execute_build("Pastwisko"))
+-	style_single_button(build_pastwisko, "Pastwisko", "Pastwisko")
++	style_single_button(build_farma, Color(0.45, 0.4, 0.15), Color(0.65, 0.55, 0.2), "­čîż Buduj Farm─Ö","Farma")
+ 
+ 	build_dom = Button.new()
+-	build_grid.add_child(build_dom)
++	vbox.add_child(build_dom)
+ 	build_dom.pressed.connect(func(): execute_build("Dom mieszkalny"))
++	style_single_button(build_dom, Color(0.5, 0.35, 0.25), Color(0.65, 0.45, 0.35), "­čĆá Buduj Dom mieszkalny", "Dom mieszkalny")
++
++	cat_zasobowe = Button.new()
++	cat_tech = Button.new()
++	cat_naukowe = Button.new()
++	
++	vbox.add_child(cat_zasobowe)
++	vbox.add_child(cat_tech)
++	vbox.add_child(cat_naukowe)
++	
++	style_single_button(cat_zasobowe, Color(0.2, 0.4, 0.6), Color(0.3, 0.5, 0.8), "­čŤá´ŞĆ Budynki Zasobowe")
++	style_single_button(cat_tech, Color(0.4, 0.2, 0.6), Color(0.5, 0.3, 0.8), "ÔÜÖ´ŞĆ Budynki Technologiczne")
++	style_single_button(cat_naukowe, Color(0.6, 0.2, 0.4), Color(0.8, 0.3, 0.5), "­čôť Budynki Naukowe")
++
++	cat_zasobowe.pressed.connect(func(): _show_building_category("zasobowe"))
++	cat_tech.pressed.connect(func(): _show_building_category("tech"))
++	cat_naukowe.pressed.connect(func(): _show_building_category("naukowe"))
+ 	
+ 	btn_tech_1 = Button.new()
+ 	btn_tech_2 = Button.new()
+-	build_grid.add_child(btn_tech_1)
+-	build_grid.add_child(btn_tech_2)
++	vbox.add_child(btn_tech_1)
++	vbox.add_child(btn_tech_2)
+ 	btn_tech_1.pressed.connect(func(): execute_build("Laboratorium"))
+ 	btn_tech_2.pressed.connect(func(): execute_build("Warsztat"))
+-	
++	style_single_button(btn_tech_1, Color(0.3, 0.4, 0.6), Color(0.4, 0.5, 0.8), "ÔÜÖ´ŞĆ Laboratorium", "Laboratorium")
++	style_single_button(btn_tech_2, Color(0.4, 0.3, 0.2), Color(0.5, 0.4, 0.3), "ÔÜÖ´ŞĆ Warsztat",  "Warsztat")
++
+ 	btn_naukowy_1 = Button.new()
+ 	btn_naukowy_2 = Button.new()
+-	build_grid.add_child(btn_naukowy_1)
+-	build_grid.add_child(btn_naukowy_2)
++	vbox.add_child(btn_naukowy_1)
++	vbox.add_child(btn_naukowy_2)
+ 	btn_naukowy_1.pressed.connect(func(): execute_build("Biblioteka"))
+ 	btn_naukowy_2.pressed.connect(func(): execute_build("┼Üwi─ůtynia"))
+-	
+-	# 7. ZALOZ MIASTO MENU
++	style_single_button(btn_naukowy_1, Color(0.4, 0.2, 0.4), Color(0.5, 0.3, 0.5), "­čôť Biblioteka","Biblioteka")
++	style_single_button(btn_naukowy_2, Color(0.6, 0.5, 0.2), Color(0.7, 0.6, 0.3), "­čôť ┼Üwi─ůtynia","┼Üwi─ůtynia")
++
+ 	menu_zalozenia_miasta = PopupPanel.new()
+ 	menu_zalozenia_miasta.visible = false
+-	var mz_style = StyleBoxFlat.new()
+-	mz_style.bg_color = Color(0.05, 0.05, 0.07, 0.95)  
+-	mz_style.set_border_width_all(2) 
+-	mz_style.border_color = Color(0.0, 0.75, 1.0, 0.8) 
+-	mz_style.set_corner_radius_all(10)
+-	mz_style.set_content_margin_all(8)
+-	menu_zalozenia_miasta.add_theme_stylebox_override("panel", mz_style)
++	menu_zalozenia_miasta.add_theme_stylebox_override("panel", style_box)
+ 	
+ 	var margin_container = MarginContainer.new()
+ 	margin_container.add_theme_constant_override("margin_left", 4)
+@@ -369,7 +262,25 @@ func setup_custom_popups():
+ 			world_ref.create_city_at(active_tile_pos)
+ 		hide_all_menus()
+ 	)
++
++	kup_pole_button = Button.new()
++	kup_pole_button.text = "­č¬Ö Kup to pole (50 z┼éota)"
++	kup_pole_button.custom_minimum_size = Vector2(180, 35)
++	
++	var style_buy = StyleBoxFlat.new()
++	style_buy.bg_color = Color(0.15, 0.35, 0.4)
++	style_buy.set_corner_radius_all(6)
++	style_buy.set_content_margin_all(12)
++	kup_pole_button.add_theme_stylebox_override("normal", style_buy)
++	vbox.add_child(kup_pole_button)
++	vbox.move_child(kup_pole_button, 1)
+ 	
++	kup_pole_button.pressed.connect(func():
++		if world_ref and world_ref.has_method("buy_tile"):
++			world_ref.buy_tile(active_tile_pos)
++		hide_all_menus()
++	)
++
+ 	confirm_dialog = ConfirmationDialog.new()
+ 	confirm_dialog.title = "Uwaga: Zniszczenie Z┼éo┼╝a!"
+ 	confirm_dialog.dialog_text = "Czy na pewno chcesz postawi─ç ten budynek na tym polu?\nPostawienie go tutaj bezpowrotnie zniszczy obecne z┼éo┼╝e i zamieni pole w traw─Ö."
+@@ -392,19 +303,25 @@ func setup_tech_tree_ui():
+ 	if tech_tree_window:
+ 		tech_tree_window.visible = false
+ 		tech_tree_window.z_index = 10
++		
+ 		var style_tree = StyleBoxFlat.new()
+ 		style_tree.bg_color = Color(0.14, 0.13, 0.11, 0.98) 
+ 		style_tree.set_border_width_all(3)
+ 		style_tree.border_color = Color(0.45, 0.38, 0.28)
+ 		style_tree.set_corner_radius_all(4)
+ 		tech_tree_window.add_theme_stylebox_override("panel", style_tree)
++		
+ 		var close_btn = tech_tree_window.get_node_or_null("CloseButton")
+-		if close_btn: close_btn.pressed.connect(func(): tech_tree_window.visible = false)
++		if close_btn:
++			close_btn.pressed.connect(func(): tech_tree_window.visible = false)
++			
+ 		var scroll = tech_tree_window.get_node_or_null("ScrollContainer")
+ 		if scroll:
+ 			scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+ 			scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+-	if tech_tree_map: tech_tree_map.draw.connect(_draw_tech_connections)
++			
++	if tech_tree_map:
++		tech_tree_map.draw.connect(_draw_tech_connections)
+ 	
+ 	tech_tree_button.pressed.connect(func():
+ 		hide_all_menus()
+@@ -412,11 +329,53 @@ func setup_tech_tree_ui():
+ 			tech_tree_window.visible = true
+ 			tech_tree_window.custom_minimum_size = Vector2(900, 600)
+ 			tech_tree_window.size = Vector2(900, 600)
++			
+ 			var screen_center = get_viewport_rect().size / 2
+ 			tech_tree_window.global_position = screen_center - (tech_tree_window.size / 2)
+ 			refresh_technology_tree_view()
+ 	)
+ 
++func setup_culture_tree_ui():
++	if culture_tree_window:
++		culture_tree_window.visible = false
++		culture_tree_window.z_index = 10
++
++		var style_tree = StyleBoxFlat.new()
++		style_tree.bg_color = Color(0.14, 0.13, 0.11, 0.98)
++		style_tree.set_border_width_all(3)
++		style_tree.border_color = Color(0.55, 0.25, 0.80)
++		style_tree.set_corner_radius_all(4)
++
++		culture_tree_window.add_theme_stylebox_override("panel", style_tree)
++
++		var close_btn = culture_tree_window.get_node_or_null("CloseButton")
++		if close_btn:
++			close_btn.pressed.connect(func():
++				culture_tree_window.visible = false
++			)
++
++		var scroll = culture_tree_window.get_node_or_null("ScrollContainer")
++		if scroll:
++			scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
++			scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
++
++	if culture_tree_map:
++		culture_tree_map.draw.connect(_draw_culture_connections)
++
++	culture_tree_button.pressed.connect(func():
++
++		hide_all_menus()
++
++		culture_tree_window.visible = true
++		culture_tree_window.custom_minimum_size = Vector2(900,600)
++		culture_tree_window.size = Vector2(900,600)
++
++		var center = get_viewport_rect().size / 2
++		culture_tree_window.global_position = center - culture_tree_window.size / 2
++
++		refresh_culture_tree_view()
++	)
++
+ func _get_tech_node_position(grid_coords: Vector2) -> Vector2:
+ 	return Vector2(
+ 		grid_coords.x * X_SPACING + OFFSET_POS.x,
+@@ -427,36 +386,74 @@ func _draw_tech_connections():
+ 	for tech_name in EconomyManager.technology_tree:
+ 		var tech = EconomyManager.technology_tree[tech_name]
+ 		var start_pos = _get_tech_node_position(tech["grid_coords"]) + Vector2(210, 32) 
++		
+ 		for req_name in tech["req"]:
+ 			if EconomyManager.technology_tree.has(req_name):
+ 				var req_tech = EconomyManager.technology_tree[req_name]
+ 				var end_pos = _get_tech_node_position(req_tech["grid_coords"]) + Vector2(0, 32) 
++				
+ 				var line_color = Color(0.25, 0.22, 0.18, 1.0) 
+ 				var line_width = 2.5
++				
+ 				if req_tech["unlocked"] and tech["unlocked"]:
+ 					line_color = Color(0.32, 0.68, 0.85, 0.9) 
+ 					line_width = 3.5
+ 				elif req_tech["unlocked"] and EconomyManager.current_research == tech_name:
+ 					line_color = Color(0.72, 0.55, 0.25, 0.8)  
++				
+ 				var mid_x = start_pos.x + (end_pos.x - start_pos.x) / 2.0
++				
+ 				tech_tree_map.draw_line(start_pos, Vector2(mid_x, start_pos.y), line_color, line_width)
+ 				tech_tree_map.draw_line(Vector2(mid_x, start_pos.y), Vector2(mid_x, end_pos.y), line_color, line_width)
+ 				tech_tree_map.draw_line(Vector2(mid_x, end_pos.y), end_pos, line_color, line_width)
+ 
++
++func _draw_culture_connections():
++	for tech_name in EconomyManager.culture_tree:
++		var tech = EconomyManager.culture_tree[tech_name]
++		var start_pos = _get_tech_node_position(tech["grid_coords"]) + Vector2(210, 32)
++
++		for req_name in tech["req"]:
++			if EconomyManager.culture_tree.has(req_name):
++				var req_tech = EconomyManager.culture_tree[req_name]
++				var end_pos = _get_tech_node_position(req_tech["grid_coords"]) + Vector2(0, 32)
++
++				var line_color = Color(0.25, 0.22, 0.18, 1.0)
++				var line_width = 2.5
++
++				if req_tech["unlocked"] and tech["unlocked"]:
++					line_color = Color(0.75, 0.35, 1.0, 0.9)
++					line_width = 3.5
++				elif req_tech["unlocked"] and EconomyManager.current_culture_research == tech_name:
++					line_color = Color(0.85, 0.45, 1.0, 0.8)
++
++				var mid_x = start_pos.x + (end_pos.x - start_pos.x) / 2.0
++
++				culture_tree_map.draw_line(start_pos, Vector2(mid_x, start_pos.y), line_color, line_width)
++				culture_tree_map.draw_line(Vector2(mid_x, start_pos.y), Vector2(mid_x, end_pos.y), line_color, line_width)
++				culture_tree_map.draw_line(Vector2(mid_x, end_pos.y), end_pos, line_color, line_width)
++
+ func refresh_technology_tree_view():
+ 	if not tech_tree_map: return
+-	for child in tech_tree_map.get_children(): child.queue_free()
++	
++	for child in tech_tree_map.get_children():
++		child.queue_free()
++		
+ 	tech_tree_map.queue_redraw()
+ 	var max_size := Vector2.ZERO
++	
+ 	for tech_name in EconomyManager.technology_tree:
+ 		var tech = EconomyManager.technology_tree[tech_name]
+ 		var node_pos = _get_tech_node_position(tech["grid_coords"])
++		
+ 		var node_end = node_pos + Vector2(300, 150)
+ 		max_size.x = max(max_size.x, node_end.x)
+ 		max_size.y = max(max_size.y, node_end.y)
++		
+ 		var node_panel = PanelContainer.new()
+ 		node_panel.position = node_pos
+ 		node_panel.custom_minimum_size = Vector2(210, 64)
++		
+ 		var node_style = StyleBoxFlat.new()
+ 		node_style.bg_color = Color(0.18, 0.16, 0.14)
+ 		node_style.set_corner_radius_all(32)  
+@@ -464,9 +461,11 @@ func refresh_technology_tree_view():
+ 		node_style.border_color = Color(0.35, 0.3, 0.24)
+ 		node_style.set_content_margin_all(6)
+ 		node_panel.add_theme_stylebox_override("panel", node_style)
++		
+ 		var hbox = HBoxContainer.new()
+ 		hbox.add_theme_constant_override("separation", 8)
+ 		node_panel.add_child(hbox)
++		
+ 		var icon_panel = PanelContainer.new()
+ 		icon_panel.custom_minimum_size = Vector2(46, 46)
+ 		var icon_style = StyleBoxFlat.new()
+@@ -475,6 +474,7 @@ func refresh_technology_tree_view():
+ 		icon_style.set_border_width_all(1)
+ 		icon_style.border_color = Color(0.5, 0.44, 0.35)
+ 		icon_panel.add_theme_stylebox_override("panel", icon_style)
++		
+ 		var icon_label = Label.new()
+ 		icon_label.text = tech["icon"]
+ 		icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+@@ -482,27 +482,40 @@ func refresh_technology_tree_view():
+ 		icon_label.add_theme_font_size_override("font_size", 18)
+ 		icon_panel.add_child(icon_label)
+ 		hbox.add_child(icon_panel)
++		
+ 		var vbox = VBoxContainer.new()
+ 		vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+ 		vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+ 		hbox.add_child(vbox)
++		
+ 		var lbl_title = Label.new()
+ 		lbl_title.text = tech_name
+ 		lbl_title.add_theme_font_size_override("font_size", 12)
+ 		lbl_title.add_theme_color_override("font_color", Color(0.9, 0.85, 0.75))
+ 		vbox.add_child(lbl_title)
++		
+ 		var lbl_desc = Label.new()
+-		lbl_desc.text = tech["desc"]
++		lbl_desc.text = "%s\n­čöČ Koszt: %d pkt" % [
++			tech["desc"],
++			tech["research_cost"],
++		]
+ 		lbl_desc.add_theme_font_size_override("font_size", 9)
+-		lbl_desc.add_theme_color_override("font_color", Color(0.6, 0.58, 0.53))
++		lbl_desc.add_theme_color_override("font_color", Color(0.75,0.65,0.85))
+ 		vbox.add_child(lbl_desc)
+-		var bar = ProgressBar.new()
+-		var progress = EconomyManager.research_progress.get(tech_name, 0)
+-		bar.max_value = tech["cost"]
+-		bar.value = progress
+-		bar.show_percentage = false
+-		bar.custom_minimum_size.y = 4
+-		vbox.add_child(bar)
++		
++		#var bar = ProgressBar.new()
++		var progress = 0
++
++		if EconomyManager.current_research == tech_name:
++			progress = tech["research_cost"] - EconomyManager.resources["Nauka"]
++
++		progress = clamp(progress, 0, tech["research_cost"])
++		#bar.max_value = tech["research_cost"]
++		#bar.value = progress
++		#bar.show_percentage = false
++		#bar.custom_minimum_size.y = 4
++		#vbox.add_child(bar)
++		
+ 		var invisible_button = Button.new()
+ 		invisible_button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+ 		invisible_button.flat = true
+@@ -510,7 +523,8 @@ func refresh_technology_tree_view():
+ 		
+ 		var reqs_ok = true
+ 		for r in tech["req"]:
+-			if not EconomyManager.technology_tree[r]["unlocked"]: reqs_ok = false
++			if not EconomyManager.technology_tree[r]["unlocked"]:
++				reqs_ok = false
+ 				
+ 		if tech["unlocked"]:
+ 			node_style.border_color = Color(0.3, 0.75, 0.45) 
+@@ -520,37 +534,185 @@ func refresh_technology_tree_view():
+ 			node_style.border_color = Color(0.85, 0.64, 0.22) 
+ 			node_style.bg_color = Color(0.24, 0.2, 0.14)
+ 			var current_science = EconomyManager.resources["Nauka"]
+-			var turns_left = ceil(float(tech["cost"] - progress) / max(1, current_science))
+-			lbl_title.text = "%s (%dt)" % [tech_name, turns_left]
++			var turns_left = ceil(float(tech["research_cost"] - progress) / max(1, current_science))
++			lbl_title.text = "%s (%d tur)" % [
++	tech_name,
++	EconomyManager.research_turns_left
++]
+ 			invisible_button.disabled = true
+ 		elif not reqs_ok:
+ 			node_panel.modulate.a = 0.35 
+ 			invisible_button.disabled = true
+ 		else:
+ 			invisible_button.pressed.connect(func():
+-				EconomyManager.current_research = tech_name
++				EconomyManager.start_research(tech_name)
+ 				refresh_technology_tree_view()
+ 			)
++			
+ 		tech_tree_map.add_child(node_panel)
++
+ 	tech_tree_map.custom_minimum_size = max_size
+ 
+-func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String, building_name: String, building_level: int, is_owned: bool, borders_owned: bool, deposit_size: String = "", fertility: float = 0.0) -> void:
++func refresh_culture_tree_view():
++	if not culture_tree_map:
++		return
++
++	for child in culture_tree_map.get_children():
++		child.queue_free()
++
++	culture_tree_map.queue_redraw()
++
++	var max_size := Vector2.ZERO
++
++	for tech_name in EconomyManager.culture_tree:
++
++		var tech = EconomyManager.culture_tree[tech_name]
++
++		var node_pos = _get_tech_node_position(tech["grid_coords"])
++
++		var node_end = node_pos + Vector2(300,150)
++
++		max_size.x = max(max_size.x,node_end.x)
++		max_size.y = max(max_size.y,node_end.y)
++
++		var node_panel = PanelContainer.new()
++		node_panel.position = node_pos
++		node_panel.custom_minimum_size = Vector2(210,64)
++
++		var node_style = StyleBoxFlat.new()
++		node_style.bg_color = Color(0.18,0.16,0.14)
++		node_style.set_corner_radius_all(32)
++		node_style.set_border_width_all(2)
++		node_style.border_color = Color(0.45,0.25,0.70)
++		node_style.set_content_margin_all(6)
++
++		node_panel.add_theme_stylebox_override("panel",node_style)
++
++		var hbox = HBoxContainer.new()
++		hbox.add_theme_constant_override("separation",8)
++		node_panel.add_child(hbox)
++
++		var icon_panel = PanelContainer.new()
++		icon_panel.custom_minimum_size = Vector2(46,46)
++
++		var icon_style = StyleBoxFlat.new()
++		icon_style.bg_color = Color(0.24,0.22,0.18)
++		icon_style.set_corner_radius_all(23)
++		icon_style.set_border_width_all(1)
++		icon_style.border_color = Color(0.6,0.3,0.9)
++
++		icon_panel.add_theme_stylebox_override("panel",icon_style)
++
++		var icon_label = Label.new()
++		icon_label.text = tech["icon"]
++		icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
++		icon_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
++		icon_label.add_theme_font_size_override("font_size",18)
++
++		icon_panel.add_child(icon_label)
++		hbox.add_child(icon_panel)
++
++		var vbox = VBoxContainer.new()
++		vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
++		vbox.alignment = BoxContainer.ALIGNMENT_CENTER
++		hbox.add_child(vbox)
++
++		var lbl_title = Label.new()
++		lbl_title.text = tech_name
++		lbl_title.add_theme_font_size_override("font_size",12)
++		lbl_title.add_theme_color_override("font_color",Color(1,0.85,1))
++		vbox.add_child(lbl_title)
++
++		var lbl_desc = Label.new()
++		lbl_desc.text = "%s\n­čÄş Koszt: %d pkt"% [
++			tech["desc"],
++			tech["research_cost"],
++		]
++		lbl_desc.add_theme_font_size_override("font_size", 9)
++		lbl_desc.add_theme_color_override("font_color", Color(0.75,0.65,0.85))
++		vbox.add_child(lbl_desc)
++
++		#var bar = ProgressBar.new()
++#
++		var progress = 0
++
++		if EconomyManager.current_culture_research == tech_name:
++			progress = tech["research_cost"] - EconomyManager.resources["Kultura"]
++
++		progress = clamp(progress, 0, tech["research_cost"])
++#
++		#bar.max_value = tech["research_cost"]
++		#bar.value = progress
++		#bar.show_percentage = false
++		#bar.custom_minimum_size.y = 4
++#
++		#vbox.add_child(bar)
++
++		var invisible_button = Button.new()
++		invisible_button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
++		invisible_button.flat = true
++
++		node_panel.add_child(invisible_button)
++
++		var reqs_ok = true
++
++		for r in tech["req"]:
++			if !EconomyManager.culture_tree[r]["unlocked"]:
++				reqs_ok = false
++
++		if tech["unlocked"]:
++
++			node_style.border_color = Color(0.5,1.0,0.6)
++			node_style.bg_color = Color(0.15,0.22,0.16)
++			invisible_button.disabled = true
++
++		elif EconomyManager.current_culture_research == tech_name:
++
++			node_style.border_color = Color(0.85,0.3,1.0)
++			node_style.bg_color = Color(0.28,0.18,0.35)
++
++			var current = EconomyManager.resources["Kultura"]
++
++			var turns_left = ceil(float(tech["research_cost"]-progress)/max(1,current))
++
++			lbl_title.text = "%s (%d tur)" % [
++	tech_name,
++	EconomyManager.culture_turns_left
++]
++
++			invisible_button.disabled = true
++
++		elif !reqs_ok:
++
++			node_panel.modulate.a = 0.35
++			invisible_button.disabled = true
++
++		else:
++
++			invisible_button.pressed.connect(func():
++
++				EconomyManager.start_culture_research(tech_name)
++				refresh_culture_tree_view()
++
++			)
++
++		culture_tree_map.add_child(node_panel)
++
++	culture_tree_map.custom_minimum_size = max_size
++
++func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String, building_name: String, is_owned: bool, borders_owned: bool, deposit_size: String = "", fertility: float = 0.0) -> void:
+ 	hide_all_menus()
+ 	active_tile_pos = tile_pos
+ 	active_tile_type = tile_type
+ 	last_mouse_pos = mouse_pos
+ 	
++	menu_budowania.visible = true
+ 	var has_building = building_name != "Brak"
+-	var show_buildings = is_owned and not has_building
+-	
+-	menu_budowania.visible = show_buildings
+-	
+-	tile_info_menu.visible = true
+ 	
+ 	if has_building:
+-		info_label.text = "­čĆó Budynek: %s (Lvl %d)\nPod┼éo┼╝e: %s" % [building_name, building_level, tile_type]
++		info_label.text = "­čĆó Budynek: %s\nPod┼éo┼╝e: %s" % [building_name, tile_type]
+ 	elif tile_type == "Trawa":
+-		info_label.text = "­čî▒ Typ: %s\nÔťĘ ┼╗yzno┼Ť─ç pola: %d%%" % [tile_type, int(fertility * 100)]
++		info_label.text = "­čî▒ Typ: Trawa\nÔťĘ ┼╗yzno┼Ť─ç pola: %d%%" % [int(fertility * 100)]
+ 	else:
+ 		info_label.text = "ÔŤ░´ŞĆ Typ: Z┼éo┼╝e %s\n­čôŽ Wielko┼Ť─ç: %s" % [tile_type, deposit_size]
+ 
+@@ -563,14 +725,7 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
+ 		kup_pole_button.disabled = not can_buy
+ 		kup_pole_button.modulate.a = 1.0 if can_buy else 0.35
+ 
+-	var show_upgrade = is_owned and has_building and building_name != "Centrum Miasta" and building_level < 3
+-	
+-	upgrade_button.visible = show_upgrade
+-	if show_upgrade:
+-		var can_upgrade = EconomyManager.can_afford_upgrade(building_name, building_level)
+-		upgrade_button.disabled = not can_upgrade
+-		upgrade_button.modulate.a = 1.0 if can_upgrade else 0.35
+-		var up_cost = EconomyManager.get_upgrade_cost(building_name, building_level)
++	var show_buildings = is_owned and not has_building
+ 	
+ 	cat_zasobowe.visible = show_buildings
+ 	cat_tech.visible = show_buildings
+@@ -580,7 +735,6 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
+ 	build_iron.visible = false
+ 	build_coal.visible = false
+ 	build_farma.visible = false
+-	build_pastwisko.visible = false
+ 	build_dom.visible = false
+ 	btn_tech_1.visible = false
+ 	btn_tech_2.visible = false
+@@ -592,24 +746,24 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
+ 		update_button_state(build_iron, "Kopalnia ┼╗elaza", tile_type)
+ 		update_button_state(build_coal, "Kopalnia W─Ögla", tile_type)
+ 		update_button_state(build_farma, "Farma", tile_type)
+-		update_button_state(build_pastwisko, "Pastwisko", tile_type)
+ 		update_button_state(build_dom, "Dom mieszkalny", tile_type)
+ 		update_button_state(btn_tech_1, "Laboratorium", tile_type)
+ 		update_button_state(btn_tech_2, "Warsztat", tile_type)
+ 		update_button_state(btn_naukowy_1, "Biblioteka", tile_type)
+ 		update_button_state(btn_naukowy_2, "┼Üwi─ůtynia", tile_type)
+ 		
+-		_show_building_category("zasobowe")
+-		
+-	_reposition_menu(tile_info_menu, mouse_pos)
++	_reposition_menu(menu_budowania, mouse_pos)
+ 
+ func _show_building_category(category: String):
++	cat_zasobowe.visible = false
++	cat_tech.visible = false
++	cat_naukowe.visible = false
++	
+ 	var is_zasobowe = (category == "zasobowe")
+ 	build_chata.visible = is_zasobowe
+ 	build_iron.visible = is_zasobowe
+ 	build_coal.visible = is_zasobowe
+ 	build_farma.visible = is_zasobowe
+-	build_pastwisko.visible = is_zasobowe
+ 	build_dom.visible = is_zasobowe
+ 	
+ 	var is_tech = (category == "tech")
+@@ -620,20 +774,7 @@ func _show_building_category(category: String):
+ 	btn_naukowy_1.visible = is_naukowe
+ 	btn_naukowy_2.visible = is_naukowe
+ 	
+-	var selected_color = Color(0.75, 0.65, 0.5)
+-	var unselected_color = Color(0.65, 0.55, 0.4)
+-	
+-	var s_z = cat_zasobowe.get_theme_stylebox("normal").duplicate() as StyleBoxFlat
+-	s_z.bg_color = selected_color if is_zasobowe else unselected_color
+-	cat_zasobowe.add_theme_stylebox_override("normal", s_z)
+-	
+-	var s_n = cat_naukowe.get_theme_stylebox("normal").duplicate() as StyleBoxFlat
+-	s_n.bg_color = selected_color if is_naukowe else unselected_color
+-	cat_naukowe.add_theme_stylebox_override("normal", s_n)
+-	
+-	var s_t = cat_tech.get_theme_stylebox("normal").duplicate() as StyleBoxFlat
+-	s_t.bg_color = selected_color if is_tech else unselected_color
+-	cat_tech.add_theme_stylebox_override("normal", s_t)
++	_reposition_menu(menu_budowania, last_mouse_pos)
+ 
+ func show_city_creation_menu(_screen_pos: Vector2, tile_pos: Vector2) -> void:
+ 	hide_all_menus()
+@@ -644,47 +785,37 @@ func show_city_creation_menu(_screen_pos: Vector2, tile_pos: Vector2) -> void:
+ 
+ func hide_all_menus():
+ 	menu_budowania.visible = false
+-	if tile_info_menu: tile_info_menu.visible = false
+ 	if menu_zalozenia_miasta: menu_zalozenia_miasta.visible = false
+ 	if tech_tree_window: tech_tree_window.visible = false
++	if culture_tree_window:
++		culture_tree_window.visible = false
+ 
+ func any_menu_visible() -> bool:
+-	return menu_budowania.visible or (tile_info_menu and tile_info_menu.visible) or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) or (tech_tree_window and tech_tree_window.visible)
++	return menu_budowania.visible \
++	or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) \
++	or (tech_tree_window and tech_tree_window.visible) \
++	or (culture_tree_window and culture_tree_window.visible)
+ 
++# POPRAWIONE: Dymek automatycznie dostosowuje szeroko┼Ť─ç i wysoko┼Ť─ç do dzieci (VBoxContainer)
+ func _reposition_menu(menu: Control, base_pos: Vector2):
+ 	var vbox = menu.get_node("VBoxContainer") as VBoxContainer
+ 	if vbox:
+ 		vbox.queue_sort()
+ 		menu.size = vbox.get_combined_minimum_size() + Vector2(24, 24)
+-	else: menu.reset_size()
++	else:
++		menu.reset_size()
+ 		
+ 	var screen_size = get_viewport_rect().size
+ 	var menu_size = menu.size
+ 	var final_x = base_pos.x + 10
+ 	var final_y = base_pos.y + 10
+ 	
+-	if final_x + menu_size.x > screen_size.x: final_x = base_pos.x - menu_size.x - 10
+-	if final_y + menu_size.y > screen_size.y: final_y = base_pos.y - menu_size.y - 10
++	if final_x + menu_size.x > screen_size.x:
++		final_x = base_pos.x - menu_size.x - 10
++	if final_y + menu_size.y > screen_size.y:
++		final_y = base_pos.y - menu_size.y - 10
+ 		
+ 	menu.global_position = Vector2(final_x, final_y)
+-	
+-	if menu == tile_info_menu and menu_budowania.visible:
+-		var build_menu_size = menu_budowania.get_combined_minimum_size()
+-		# Upewniamy si─Ö, ┼╝e rozmiar menu jest u┼╝yty poprawnie, nawet je┼Ťli layout jeszcze nie zosta┼é w pe┼éni zaktualizowany
+-		if build_menu_size.x < menu_budowania.size.x:
+-			build_menu_size.x = menu_budowania.size.x
+-		if build_menu_size.y < menu_budowania.size.y:
+-			build_menu_size.y = menu_budowania.size.y
+-			
+-		var build_menu_pos = Vector2(screen_size.x - 20 - build_menu_size.x, screen_size.y - 20 - build_menu_size.y)
+-		var build_menu_rect = Rect2(build_menu_pos, build_menu_size)
+-		var menu_rect = Rect2(menu.global_position, menu_size)
+-		
+-		if menu_rect.intersects(build_menu_rect):
+-			final_x = base_pos.x - menu_size.x - 10
+-			if final_x < 0:
+-				final_x = 10
+-			menu.global_position = Vector2(final_x, final_y)
+ 
+ func update_button_state(btn: Button, b_name: String, tile_type: String):
+ 	var can_place = EconomyManager.can_afford_and_place(b_name, tile_type)
+@@ -692,7 +823,7 @@ func update_button_state(btn: Button, b_name: String, tile_type: String):
+ 	btn.modulate.a = 1.0 if can_place else 0.35
+ 
+ func execute_build(building_name: String) -> void:
+-	if active_tile_type != "Trawa" and building_name in ["Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "┼Üwi─ůtynia"]:
++	if active_tile_type != "Trawa" and building_name in ["Farma", "Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "┼Üwi─ůtynia"]:
+ 		pending_building = building_name
+ 		confirm_dialog.popup_centered()
+ 		hide_all_menus()
+@@ -710,17 +841,9 @@ func _do_execute_build(building_name: String) -> void:
+ 	hide_all_menus()
+ 
+ func _on_economy_updated(balances: Dictionary, turn: int, _selected_build: String):
+-	if resources_container:
+-		resource_labels["Drewno"].text = "Drewno: %d" % balances["Drewno"]
+-		resource_labels["┼╗elazo"].text = "┼╗elazo: %d" % balances["┼╗elazo"]
+-		resource_labels["W─Ögiel"].text = "W─Ögiel: %d" % balances["W─Ögiel"]
+-		resource_labels["Jedzenie"].text = "Jedzenie: %d" % balances["Jedzenie"]
+-		resource_labels["Z┼éoto"].text = "Z┼éoto: %d" % balances["Z┼éoto"]
+-		resource_labels["Populacja"].text = "Pop: %d/%d" % [balances.get("Populacja", 1), balances.get("Maks_Populacja", 5)]
+-	else:
+-		resources_label.text = "­č¬Á Drewno: %d      ÔŤô´ŞĆ ┼╗elazo: %d      ­čîő W─Ögiel: %d      ­čîż Jedzenie: %d      ­č¬Ö Z┼éoto: %d      ­čĹą Pop: %d/%d" % [
+-			balances["Drewno"], balances["┼╗elazo"], balances["W─Ögiel"], balances["Jedzenie"], balances["Z┼éoto"], balances.get("Populacja", 1), balances.get("Maks_Populacja", 5)
+-		]
++	resources_label.text = "­č¬Á Drewno: %d      ÔŤô´ŞĆ ┼╗elazo: %d      ­čîő W─Ögiel: %d      ­čîż Jedzenie: %d      ­č¬Ö Z┼éoto: %d      ­čĹą Pop: %d/%d" % [
++		balances["Drewno"], balances["┼╗elazo"], balances["W─Ögiel"], balances["Jedzenie"], balances["Z┼éoto"], balances.get("Populacja", 1), balances.get("Maks_Populacja", 5)
++	]
+ 	turn_button.text = "Nast─Öpna tura (%d)" % turn
+ 	
+ 	if culture_label and tech_label:
+@@ -728,14 +851,19 @@ func _on_economy_updated(balances: Dictionary, turn: int, _selected_build: Strin
+ 		var t_val = balances.get("Nauka", 0)
+ 		var c_max = EconomyManager.max_culture_points
+ 		var t_max = EconomyManager.max_tech_points
++		
+ 		culture_label.text = "Punkty Kultury:    %d/%d" % [c_val, int(c_max)]
+ 		culture_bar.max_value = c_max
+ 		culture_bar.value = c_val
++		
+ 		tech_label.text = "Punkty Technologii:    %d/%d" % [t_val, int(t_max)]
+ 		tech_bar.max_value = t_max
+ 		tech_bar.value = t_val
+ 	
+-	if tech_tree_window and tech_tree_window.visible: refresh_technology_tree_view()
++	if tech_tree_window and tech_tree_window.visible:
++		refresh_technology_tree_view()
++	if culture_tree_window and culture_tree_window.visible:
++		refresh_culture_tree_view()
+ 
+ func _on_turn_pressed():
+ 	hide_all_menus()
+@@ -743,6 +871,7 @@ func _on_turn_pressed():
+ 		var buildings = world_ref.get_active_buildings_list()
+ 		EconomyManager.next_turn(buildings)
+ 
++# POPRAWIONE: Elastyczne zakotwiczenie panelu na pe┼én─ů szeroko┼Ť─ç okna (brak ucinania)
+ func style_main_hud_elements():
+ 	var top_panel = $Panel
+ 	top_panel.anchor_left = 0.0
+@@ -788,101 +917,44 @@ func style_main_hud_elements():
+ 
+ func style_context_popup():
+ 	var style_box = StyleBoxFlat.new()
+-	style_box.bg_color = Color(0.85, 0.78, 0.65, 1.0) # Parchment background
+-	style_box.set_border_width_all(4) 
+-	style_box.border_color = Color(0.3, 0.25, 0.2, 1.0) # Dark brown border
+-	style_box.set_corner_radius_all(8)
++	style_box.bg_color = Color(0.05, 0.05, 0.07, 0.92) 
++	style_box.set_border_width_all(2) 
++	style_box.border_color = Color(0.2, 0.6, 1.0, 0.5) 
++	style_box.set_corner_radius_all(14)
+ 	style_box.set_content_margin_all(10)
+ 	menu_budowania.add_theme_stylebox_override("panel", style_box)
+-	$MenuBudowania/VBoxContainer.add_theme_constant_override("separation", 8)
+-	
+-	var tab_style = StyleBoxFlat.new()
+-	tab_style.bg_color = Color(0.65, 0.55, 0.4)
+-	tab_style.set_corner_radius_all(6)
+-	tab_style.set_content_margin_all(8)
+-	tab_style.border_color = Color(0.3, 0.25, 0.2)
+-	tab_style.set_border_width_all(2)
+-	
+-	cat_zasobowe.add_theme_stylebox_override("normal", tab_style.duplicate())
+-	cat_naukowe.add_theme_stylebox_override("normal", tab_style.duplicate())
+-	cat_tech.add_theme_stylebox_override("normal", tab_style.duplicate())
+-	
+-	cat_zasobowe.add_theme_color_override("font_color", Color(0.2, 0.15, 0.1))
+-	cat_naukowe.add_theme_color_override("font_color", Color(0.2, 0.15, 0.1))
+-	cat_tech.add_theme_color_override("font_color", Color(0.2, 0.15, 0.1))
++	$MenuBudowania/VBoxContainer.add_theme_constant_override("separation", 6)
+ 
+ func style_individual_buttons():
+-	style_single_button(build_chata, "Tartak", "Chata Drwala")
+-	style_single_button(build_iron, "Kopalnia ┼╗elaza", "Kopalnia ┼╗elaza")
+-	style_single_button(build_coal, "Kopalnia W─Ögla", "Kopalnia W─Ögla")
+-	style_single_button(build_farma, "Farma", "Farma")
+-	style_single_button(build_dom, "Dom mieszkalny", "Dom mieszkalny")
+-	style_single_button(btn_tech_1, "Laboratorium", "Laboratorium")
+-	style_single_button(btn_tech_2, "Warsztat", "Warsztat")
+-	style_single_button(btn_naukowy_1, "Biblioteka", "Biblioteka")
+-	style_single_button(btn_naukowy_2, "┼Üwi─ůtynia", "┼Üwi─ůtynia")
+-
+-func style_single_button(btn: Button, display_name: String, building_name := ""):
+-	btn.text = ""
+-	btn.custom_minimum_size = Vector2(100, 100)
+-	
+-	var vbox = VBoxContainer.new()
+-	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+-	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+-	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+-	btn.add_child(vbox)
+-	
+-	var default_icon = null
+-	var icon = TextureRect.new()
+-	icon.texture = default_icon
+-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+-	icon.custom_minimum_size = Vector2(40, 40)
+-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+-	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+-	
+-	var lbl = Label.new()
+-	lbl.text = display_name
+-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+-	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+-	lbl.add_theme_font_size_override("font_size", 12)
+-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+-	
+-	vbox.add_child(icon)
+-	vbox.add_child(lbl)
+-	
+-	var base_color = Color(0.75, 0.65, 0.5)
+-	var hover_color = Color(0.85, 0.75, 0.6)
++	style_single_button(build_chata, Color(0.15, 0.5, 0.15), Color(0.2, 0.7, 0.2), "­č¬Á Buduj Chat─Ö Drwala", "Chata Drwala")
++	style_single_button(build_iron, Color(0.2, 0.35, 0.5), Color(0.3, 0.5, 0.75), "ÔŤô´ŞĆ Kopalnia ┼╗elaza", "Kopalnia ┼╗elaza")
++	style_single_button(build_coal, Color(0.7, 0.3, 0.0), Color(0.9, 0.45, 0.1), "­čîő Kopalnia W─Ögla", "Kopalnia W─Ögla")
++
++func style_single_button(btn: Button, base_color: Color, hover_color: Color, new_text: String, building_name := ""):
++	btn.text = new_text
++	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
++	btn.custom_minimum_size.y = 38 
+ 	
+ 	var normal = StyleBoxFlat.new()
+ 	normal.bg_color = base_color
+ 	normal.set_corner_radius_all(6)
+-	normal.set_border_width_all(2)
+-	normal.border_color = Color(0.4, 0.35, 0.3)
+-	normal.set_content_margin_all(8)
++	normal.set_content_margin_all(12)
+ 	
+-	var hover = normal.duplicate() as StyleBoxFlat
++	var hover = StyleBoxFlat.new()
+ 	hover.bg_color = hover_color
+-	hover.border_color = Color(0.6, 0.55, 0.4)
++	hover.set_corner_radius_all(6)
++	hover.set_content_margin_all(12)
+ 	
+ 	var disabled = StyleBoxFlat.new()
+-	disabled.bg_color = Color(0.6, 0.5, 0.4, 0.5) 
++	disabled.bg_color = Color(0.15, 0.15, 0.15) 
+ 	disabled.set_corner_radius_all(6)
+ 	disabled.content_margin_left = 12
++	
+ 	btn.add_theme_stylebox_override("normal", normal)
+ 	btn.add_theme_stylebox_override("hover", hover)
+ 	btn.add_theme_stylebox_override("disabled", disabled)
+ 	btn.add_theme_color_override("font_color", Color.WHITE)
+ 	btn.add_theme_color_override("font_disabled_color", Color(0.5, 0.5, 0.5))
+-	if building_name != "": btn.tooltip_text = EconomyManager.get_building_tooltip(building_name)
+-	disabled.set_border_width_all(2)
+-	disabled.border_color = Color(0.3, 0.25, 0.2, 0.5)
+-	disabled.set_content_margin_all(8)
+-	
+-	btn.add_theme_stylebox_override("normal", normal)
+-	btn.add_theme_stylebox_override("hover", hover)
+-	btn.add_theme_stylebox_override("disabled", disabled)
+-	btn.add_theme_color_override("font_color", Color(0.2, 0.15, 0.1))
+-	btn.add_theme_color_override("font_disabled_color", Color(0.3, 0.25, 0.2, 0.6))
+ 	
+ 	if building_name != "":
+ 		btn.tooltip_text = EconomyManager.get_building_tooltip(building_name)

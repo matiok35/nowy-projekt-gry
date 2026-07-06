@@ -25,6 +25,7 @@ var building_costs: Dictionary = {
 	"Kopalnia Żelaza": {"Złoto": 50, "Drewno": 20},
 	"Kopalnia Węgla": {"Złoto": 60, "Drewno": 25},
 	"Farma": {"Złoto": 25, "Drewno": 15},
+	"Pastwisko": {"Złoto": 30, "Drewno": 15},
 	"Dom mieszkalny": {"Złoto": 40, "Drewno": 20},
 	"Laboratorium": {"Złoto": 100, "Drewno": 50, "Żelazo": 10},
 	"Warsztat": {"Złoto": 80, "Drewno": 40, "Żelazo": 5},
@@ -94,7 +95,7 @@ var culture_tree: Dictionary = {
 		"unlocked": false,
 		"desc": "Podstawy kultury.",
 		"grid_coords": Vector2(0,1),
-		"icon": "🎭"
+		"icon": "🏛️"
 	},
 
 	"Sztuka": {
@@ -114,7 +115,7 @@ var culture_tree: Dictionary = {
 		"unlocked": false,
 		"desc": "Rozwój myśli.",
 		"grid_coords": Vector2(1,2),
-		"icon": "📜"
+		"icon": "🧠"
 	},
 
 	"Teatr": {
@@ -144,54 +145,64 @@ var culture_tree: Dictionary = {
 		"unlocked": false,
 		"desc": "Złoty wiek kultury.",
 		"grid_coords": Vector2(3,1),
-		"icon": "🏛️"
+		"icon": "🌟"
 	}
 }
-
 
 func get_building_tooltip(building_name: String) -> String:
 	if not building_costs.has(building_name):
 		return ""
 
 	var text = "Wymagania\n"
-
 	match building_name:
-		"Chata Drwala":
-			text += "• Musi zostać wybudowana na drewnie\n"
-		"Kopalnia Żelaza":
-			text += "• Musi zostać wybudowana na żelazie\n"
-		"Kopalnia Węgla":
-			text += "• Musi zostać wybudowana na węglu\n"
-		"Farma":
-			text += "• Musi zostać wybudowana na trawie\n"
+		"Chata Drwala": text += "• Wymaga: Drewno\n"
+		"Kopalnia Żelaza": text += "• Wymaga: Żelazo\n"
+		"Kopalnia Węgla": text += "• Wymaga: Węgiel\n"
+		"Farma": text += "• Wymaga: Pszenica\n"
+		"Pastwisko": text += "• Wymaga: Bydło\n"
 		"Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia":
-			text += "• Musi zostać wybudowana na trawie\n"
+			text += "• Wymaga: Trawa\n"
 
-	text += "\nKoszt\n"
-
+	text += "\nKoszt poziomu 1\n"
 	for resource in building_costs[building_name]:
-		text += "• %s: %d\n" % [
-			resource,
-			building_costs[building_name][resource]
-		]
-
+		text += "• %s: %d\n" % [resource, building_costs[building_name][resource]]
 	return text
 
 func can_afford_and_place(building_name: String, tile_type: String) -> bool:
 	if not building_costs.has(building_name): return false
 	
-	if building_name == "Chata Drwala" and tile_type != "Drewno":
-		return false
-	if building_name == "Kopalnia Żelaza" and tile_type != "Żelazo":
-		return false
-	if building_name == "Kopalnia Węgla" and tile_type != "Węgiel":
-		return false
+	if building_name == "Chata Drwala" and tile_type != "Drewno": return false
+	if building_name == "Kopalnia Żelaza" and tile_type != "Żelazo": return false
+	if building_name == "Kopalnia Węgla" and tile_type != "Węgiel": return false
+	if building_name == "Farma" and tile_type != "Pszenica": return false
+	if building_name == "Pastwisko" and tile_type != "Bydło": return false
+	if building_name in ["Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia"] and tile_type != "Trawa": return false
 
 	var costs = building_costs[building_name]
 	for res in costs:
-		if resources[res] < costs[res]:
+		if resources.get(res, 0) < costs[res]:
 			return false
 	return true
+
+func get_upgrade_cost(b_name: String, current_level: int) -> Dictionary:
+	var cost = {}
+	if building_costs.has(b_name):
+		for res in building_costs[b_name]:
+			cost[res] = building_costs[b_name][res] * (current_level + 1)
+	return cost
+
+func can_afford_upgrade(b_name: String, current_level: int) -> bool:
+	if current_level >= 3: return false
+	var cost = get_upgrade_cost(b_name, current_level)
+	for res in cost:
+		if resources.get(res, 0) < cost[res]: return false
+	return true
+
+func deduct_upgrade_costs(b_name: String, current_level: int) -> void:
+	var cost = get_upgrade_cost(b_name, current_level)
+	for res in cost:
+		resources[res] -= cost[res]
+	notify_change()
 
 func can_afford_tile_purchase() -> bool:
 	return resources["Złoto"] >= 50
@@ -208,7 +219,6 @@ func deduct_costs(building_name: String) -> void:
 		notify_change()
 
 func start_research(tech_name:String):
-
 	if current_research != "":
 		return
 
@@ -218,16 +228,11 @@ func start_research(tech_name:String):
 		return
 
 	resources["Nauka"] -= tech["research_cost"]
-
 	current_research = tech_name
-
 	research_turns_left = tech["research_time"]
-
 	notify_change()
 
-
 func start_culture_research(tech_name:String):
-
 	if current_culture_research != "":
 		return
 
@@ -237,28 +242,21 @@ func start_culture_research(tech_name:String):
 		return
 
 	resources["Kultura"] -= tech["research_cost"]
-
 	current_culture_research = tech_name
-
 	culture_turns_left = tech["research_time"]
-
 	notify_change()
 
 func next_turn(active_buildings_data: Array) -> void:
 	current_turn += 1
-	
-	# Obliczanie maksymalnej populacji na podstawie budynków mieszkalnych (Centrum = 5, każdy Dom = +5)
 	var max_pop = 5
 	for b_data in active_buildings_data:
 		if b_data["name"] == "Dom mieszkalny":
-			max_pop += 5
+			max_pop += 5 * b_data.get("level", 1)
 	resources["Maks_Populacja"] = max_pop
 	
-	# Konsumpcja jedzenia przez populację (1 jedzenie na 1 punkt populacji)
 	var food_consumption = resources["Populacja"] * 1
 	resources["Jedzenie"] -= food_consumption
 	
-	# Generowanie populacji co 3 rundy, jeśli jest jedzenie i wolne miejsca mieszkalne
 	if current_turn % 3 == 0:
 		if resources["Jedzenie"] > 0 and resources["Populacja"] < resources["Maks_Populacja"]:
 			resources["Populacja"] += 1
@@ -268,6 +266,7 @@ func next_turn(active_buildings_data: Array) -> void:
 	
 	for b_data in active_buildings_data:
 		var b_name = b_data["name"]
+		var b_level = b_data.get("level", 1)
 		var size_modifier = 1.0
 		
 		if b_data.has("deposit_size"):
@@ -278,40 +277,38 @@ func next_turn(active_buildings_data: Array) -> void:
 
 		match b_name:
 			"Centrum Miasta":
-				var gold_bonus = 10
+				var gold_bonus = 10 * b_level
 				if technology_tree["Industrializacja"]["unlocked"]:
-					gold_bonus += 10
+					gold_bonus += 10 * b_level
 				resources["Złoto"] += gold_bonus
-				resources["Jedzenie"] += 2
+				resources["Jedzenie"] += 2 * b_level
 			"Chata Drwala":
-				resources["Drewno"] += int(8 * size_modifier)
+				resources["Drewno"] += int(8 * size_modifier * b_level)
 			"Kopalnia Żelaza":
 				var iron_yield = 5
-				if technology_tree["Wydajne Maszyny"]["unlocked"]:
-					iron_yield += 3
-				resources["Żelazo"] += int(iron_yield * size_modifier)
-				resources["Złoto"] -= 2
+				if technology_tree["Wydajne Maszyny"]["unlocked"]: iron_yield += 3
+				resources["Żelazo"] += int(iron_yield * size_modifier * b_level)
+				resources["Złoto"] -= 2 * b_level
 			"Kopalnia Węgla":
 				var coal_yield = 4
-				if technology_tree["Wydajne Maszyny"]["unlocked"]:
-					coal_yield += 2
-				resources["Węgiel"] += int(coal_yield * size_modifier)
-				resources["Złoto"] -= 2
+				if technology_tree["Wydajne Maszyny"]["unlocked"]: coal_yield += 2
+				resources["Węgiel"] += int(coal_yield * size_modifier * b_level)
+				resources["Złoto"] -= 2 * b_level
 			"Farma":
-				var fertility = b_data.get("fertility", 1.0)
 				var farm_yield = 6
-				if technology_tree["Płodozmian"]["unlocked"]:
-					farm_yield += 3
-				resources["Jedzenie"] += int(farm_yield * fertility)
+				if technology_tree["Płodozmian"]["unlocked"]: farm_yield += 3
+				resources["Jedzenie"] += int(farm_yield * size_modifier * b_level)
+			"Pastwisko":
+				resources["Jedzenie"] += int(5 * size_modifier * b_level)
 			"Laboratorium":
-				turn_science += 3
+				turn_science += 3 * b_level
 			"Warsztat":
-				turn_science += 1
+				turn_science += 1 * b_level
 			"Biblioteka":
-				turn_science += 2
-				turn_culture += 1
+				turn_science += 2 * b_level
+				turn_culture += 1 * b_level
 			"Świątynia":
-				turn_culture += 3
+				turn_culture += 3 * b_level
 
 	var total_science = 1 + turn_science
 	
@@ -325,7 +322,6 @@ func next_turn(active_buildings_data: Array) -> void:
 		resources["Kultura"] + turn_culture
 	)
 
-	# Głód - brak jedzenia obniża złoto i może zredukować populację
 	if resources["Jedzenie"] < 0:
 		resources["Jedzenie"] = 0
 		resources["Złoto"] = max(0, resources["Złoto"] - 5)
@@ -333,33 +329,27 @@ func next_turn(active_buildings_data: Array) -> void:
 			resources["Populacja"] -= 1
 
 	if current_research != "":
-	
 		research_turns_left -= 1
-	
 		if research_turns_left <= 0:
-	
 			technology_tree[current_research]["unlocked"] = true
-	
+			
 			match current_research:
 				"Industrializacja":
 					max_tech_points += 25
-	
+			
 			current_research = ""
-	
-	
+			
 	if current_culture_research != "":
-	
 		culture_turns_left -= 1
-	
 		if culture_turns_left <= 0:
-	
 			culture_tree[current_culture_research]["unlocked"] = true
-	
+			
 			match current_culture_research:
 				"Renesans":
 					max_culture_points += 25
-	
+					
 			current_culture_research = ""
+
 	notify_change()
 
 func notify_change() -> void:
