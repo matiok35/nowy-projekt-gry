@@ -14,6 +14,7 @@ var hex_height: float = 2.0 * HEX_RADIUS
 # --- Dane mapy ---
 var map_data = {}
 var tile_nodes = {}
+var tile_sprites = {}
 var label_nodes = {}
 
 # --- Terytorium ---
@@ -117,6 +118,12 @@ func create_procedural_hex(pos: Vector2, type: String, deposit_size: String) -> 
 	polygon.polygon = points
 	polygon.color = _get_tile_color(type)
 	area.add_child(polygon)
+
+	var sprite = Sprite2D.new()
+	sprite.texture = null
+	sprite.scale = Vector2(0.6, 0.6)
+	area.add_child(sprite)
+	tile_sprites[pos] = sprite
 
 	var line = Line2D.new()
 	var line_points = points.duplicate()
@@ -276,6 +283,11 @@ func build_on_tile(pos: Vector2, building_name: String) -> void:
 	var poly = tile_nodes[pos].get_child(0) as Polygon2D
 	if poly:
 		poly.color = _get_building_color(building_name)
+
+	if tile_sprites.has(pos):
+		# TODO: Zmień na docelową ścieżkę do obrazków budynków
+		# tile_sprites[pos].texture = load("res://assets/buildings/" + building_name + ".png")
+		pass
 
 	if label_nodes.has(pos):
 		label_nodes[pos].text = building_name
