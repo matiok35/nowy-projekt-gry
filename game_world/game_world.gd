@@ -6,7 +6,7 @@ extends Node2D
 # ============================================================
 
 const MAP_SIZE = 25
-const HEX_RADIUS = 50.0
+const HEX_RADIUS = 80.0 # POWIĘKSZONY ROZMIAR KAFELKA
 
 var hex_width: float = sqrt(3) * HEX_RADIUS
 var hex_height: float = 2.0 * HEX_RADIUS
@@ -33,8 +33,7 @@ var astar: AStar2D = AStar2D.new()
 var cell_to_id: Dictionary = {}
 var cell_to_world: Dictionary = {}
 
-# Budynki, które po postawieniu zamieniają pole w zwykłą trawę (np. kopalnia zbudowana na złożu)
-const BUILDINGS_RESET_TILE_TO_GRASS = ["Farma", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia"]
+const BUILDINGS_RESET_TILE_TO_GRASS = ["Farma", "Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia"]
 
 
 # ============================================================
@@ -42,7 +41,6 @@ const BUILDINGS_RESET_TILE_TO_GRASS = ["Farma", "Laboratorium", "Warsztat", "Bib
 # ============================================================
 
 func _ready() -> void:
-	# Bezpieczne wyszukiwanie zaktualizowanego interfejsu w drzewie sceny
 	hud_node = get_tree().current_scene.find_child("UI", true, false)
 	if hud_node == null:
 		hud_node = get_tree().current_scene.find_child("HUD", true, false)
@@ -141,11 +139,6 @@ func create_procedural_hex(pos: Vector2, type: String, deposit_size: String) -> 
 	label.add_theme_color_override("font_shadow_color", Color.BLACK)
 	area.add_child(label)
 	label_nodes[pos] = label
-
-	area.input_event.connect(func(_viewport, event, _shape_idx):
-		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			if hud_node: hud_node.hide_all_menus()
-	)
 
 	if map_container:
 		map_container.add_child(area)
@@ -290,6 +283,7 @@ func build_on_tile(pos: Vector2, building_name: String) -> void:
 func _get_building_color(building_name: String) -> Color:
 	match building_name:
 		"Farma": return Color(0.7, 0.6, 0.2)
+		"Dom mieszkalny": return Color(0.65, 0.45, 0.35)
 		"Laboratorium": return Color(0.2, 0.5, 0.8)
 		"Warsztat": return Color(0.5, 0.4, 0.2)
 		"Biblioteka": return Color(0.6, 0.3, 0.6)
@@ -310,27 +304,37 @@ func get_active_buildings_list() -> Array:
 
 
 # ============================================================
-# WEJŚCIE (MYSZ)
+# WEJŚCIE (MYSZ) ZABEZPIECZENIE PRZED BŁĘDAMI LPM
 # ============================================================
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not (event is InputEventMouseButton and event.pressed): return
+	if not (event is InputEventMouseButton): return
+
+	var camera = get_node_or_null("StrategyCamera")
+	if camera and camera.is_drag_motion:
+		if event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
+			camera.is_drag_motion = false
+			return
+
+	# NOWOŚĆ / POPRAWKA: Jeśli dymek menu jest aktywny, kliknięcie LPM poza nim natychmiast go zamyka i przerywa dalsze akcje
+	if event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
+		if hud_node and hud_node.has_method("any_menu_visible") and hud_node.any_menu_visible():
+			hud_node.hide_all_menus()
+			return
 
 	var global_mouse_pos = get_global_mouse_position()
 	var pos = _get_tile_at_world_pos(global_mouse_pos)
 
-	if event.button_index == MOUSE_BUTTON_RIGHT:
+	if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 		if character: character.set_selected(false)
 		if pos == null: return
 		if character and character.selected: return
 		_show_context_menu_for(pos)
 
-	elif event.button_index == MOUSE_BUTTON_LEFT:
+	elif event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
 		if pos == null: return
 		_handle_left_click_on_tile(pos, global_mouse_pos)
 
-# Znajduje kafelek pod danym punktem świata (jeden raz, zamiast duplikować raycast
-# osobno dla lewego i prawego przycisku myszy). Zwraca null, jeśli nic nie trafiono.
 func _get_tile_at_world_pos(world_pos: Vector2) -> Variant:
 	var space_state = get_world_2d().direct_space_state
 	var query = PhysicsPointQueryParameters2D.new()
@@ -365,7 +369,7 @@ func _show_context_menu_for(pos: Vector2) -> void:
 func _handle_left_click_on_tile(pos: Vector2, global_mouse_pos: Vector2) -> void:
 	if hud_node and hud_node.has_method("any_menu_visible") and hud_node.any_menu_visible():
 		return
-	if character and global_mouse_pos.distance_to(character.global_position) < 20.0:
+	if character and global_mouse_pos.distance_to(character.global_position) < 35.0:
 		character.set_selected(not character.selected)
 		return
 	if character and character.selected and cell_to_id.has(pos):
