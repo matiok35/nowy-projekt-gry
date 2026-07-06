@@ -10,6 +10,7 @@ extends Control
 @onready var build_coal = $MenuBudowania/VBoxContainer/BuildKopalniaWegla
 
 var build_farma: Button
+var build_dom: Button 
 var info_label: Label
 var menu_zalozenia_miasta: PopupPanel
 var zaloz_miasto_button: Button
@@ -24,12 +25,10 @@ var btn_tech_2: Button
 var btn_naukowy_1: Button
 var btn_naukowy_2: Button
 
-# --- ZAKTUALIZOWANE REFERENCJE DO STRUKTURY DRZEWKA UI ---
 var tech_tree_button: Button
 @onready var tech_tree_window = $TechTreeWindow
 @onready var tech_tree_map = $TechTreeWindow/ScrollContainer/TechTreeMap
 
-# Stałe pozycjonowania siatki 2D
 const X_SPACING: float = 280.0
 const Y_SPACING: float = 90.0
 const OFFSET_POS: Vector2 = Vector2(80, 50)
@@ -54,7 +53,6 @@ func _ready():
 		
 	EconomyManager.economy_updated.connect(_on_economy_updated)
 	
-	# Podpięcie logiki przycisków głównych
 	turn_button.pressed.connect(_on_turn_pressed)
 	build_chata.pressed.connect(func(): execute_build("Chata Drwala"))
 	build_iron.pressed.connect(func(): execute_build("Kopalnia Żelaza"))
@@ -94,7 +92,6 @@ func setup_points_panel():
 	vbox.add_theme_constant_override("separation", 15)
 	points_panel.add_child(vbox)
 	
-	# CULTURE ROW
 	var culture_vbox = VBoxContainer.new()
 	culture_vbox.add_theme_constant_override("separation", 2)
 	var culture_hbox = HBoxContainer.new()
@@ -119,10 +116,8 @@ func setup_points_panel():
 	culture_bar.add_theme_stylebox_override("background", c_bg)
 	culture_bar.add_theme_stylebox_override("fill", c_fg)
 	culture_vbox.add_child(culture_bar)
-	
 	vbox.add_child(culture_vbox)
 	
-	# TECH ROW
 	var tech_vbox = VBoxContainer.new()
 	tech_vbox.add_theme_constant_override("separation", 2)
 	var tech_hbox = HBoxContainer.new()
@@ -147,7 +142,6 @@ func setup_points_panel():
 	tech_bar.add_theme_stylebox_override("background", t_bg)
 	tech_bar.add_theme_stylebox_override("fill", t_fg)
 	tech_vbox.add_child(tech_bar)
-	
 	vbox.add_child(tech_vbox)
 	
 	add_child(points_panel)
@@ -172,7 +166,6 @@ func setup_custom_popups():
 	info_label = Label.new()
 	info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	info_label.add_theme_color_override("font_color", Color(0.4, 0.9, 1.0))
-	
 	info_panel.add_child(info_label)
 	vbox.add_child(info_panel)
 	vbox.move_child(info_panel, 0)
@@ -181,6 +174,11 @@ func setup_custom_popups():
 	vbox.add_child(build_farma)
 	build_farma.pressed.connect(func(): execute_build("Farma"))
 	style_single_button(build_farma, Color(0.45, 0.4, 0.15), Color(0.65, 0.55, 0.2), "🌾 Buduj Farmę","Farma")
+
+	build_dom = Button.new()
+	vbox.add_child(build_dom)
+	build_dom.pressed.connect(func(): execute_build("Dom mieszkalny"))
+	style_single_button(build_dom, Color(0.5, 0.35, 0.25), Color(0.65, 0.45, 0.35), "🏠 Buduj Dom mieszkalny", "Dom mieszkalny")
 
 	cat_zasobowe = Button.new()
 	cat_tech = Button.new()
@@ -229,7 +227,6 @@ func setup_custom_popups():
 	zaloz_miasto_button = Button.new()
 	zaloz_miasto_button.text = "👑 Załóż Miasto tutaj"
 	zaloz_miasto_button.custom_minimum_size = Vector2(160, 35)
-	
 	margin_container.add_child(zaloz_miasto_button)
 	menu_zalozenia_miasta.add_child(margin_container)
 	add_child(menu_zalozenia_miasta)
@@ -249,7 +246,6 @@ func setup_custom_popups():
 	style_buy.set_corner_radius_all(6)
 	style_buy.set_content_margin_all(12)
 	kup_pole_button.add_theme_stylebox_override("normal", style_buy)
-	
 	vbox.add_child(kup_pole_button)
 	vbox.move_child(kup_pole_button, 1)
 	
@@ -259,14 +255,12 @@ func setup_custom_popups():
 		hide_all_menus()
 	)
 
-	# Okno dialogowe potwierdzenia zniszczenia surowca
 	confirm_dialog = ConfirmationDialog.new()
 	confirm_dialog.title = "Uwaga: Zniszczenie Złoża!"
 	confirm_dialog.dialog_text = "Czy na pewno chcesz postawić ten budynek na tym polu?\nPostawienie go tutaj bezpowrotnie zniszczy obecne złoże i zamieni pole w trawę."
 	confirm_dialog.confirmed.connect(_on_confirm_build_on_resource)
 	add_child(confirm_dialog)
 
-# --- DRZEWO TECHNOLOGICZNE (LOGIKA EKRANU) ---
 func setup_tech_tree_ui():
 	tech_tree_button = Button.new()
 	tech_tree_button.text = "Drzewo Rozwoju"
@@ -280,11 +274,8 @@ func setup_tech_tree_ui():
 	var vbox = points_panel.get_child(0)
 	vbox.add_child(tech_tree_button)
 	
-	# Konfiguracja bazowa wczytanego z pliku .tscn węzła TechTreeWindow
 	if tech_tree_window:
 		tech_tree_window.visible = false
-		
-		# POPRAWKA 1: Wymuszenie wysokiego z_index, aby paski w tle nie prześwitywały
 		tech_tree_window.z_index = 10
 		
 		var style_tree = StyleBoxFlat.new()
@@ -298,7 +289,6 @@ func setup_tech_tree_ui():
 		if close_btn:
 			close_btn.pressed.connect(func(): tech_tree_window.visible = false)
 			
-		# POPRAWKA 2: Upewnienie się, że tryb przewijania kontenera jest włączony automatycznie
 		var scroll = tech_tree_window.get_node_or_null("ScrollContainer")
 		if scroll:
 			scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
@@ -311,8 +301,6 @@ func setup_tech_tree_ui():
 		hide_all_menus()
 		if tech_tree_window:
 			tech_tree_window.visible = true
-			
-			# POPRAWKA 3: Wymuszenie konkretnego i rzeczywistego rozmiaru okna do kalkulacji środka
 			tech_tree_window.custom_minimum_size = Vector2(900, 600)
 			tech_tree_window.size = Vector2(900, 600)
 			
@@ -359,15 +347,12 @@ func refresh_technology_tree_view():
 		child.queue_free()
 		
 	tech_tree_map.queue_redraw()
-	
-	# POPRAWKA 4: Śledzenie krańcowych punktów drzewka w celu wyznaczenia wielkości Scrolla
 	var max_size := Vector2.ZERO
 	
 	for tech_name in EconomyManager.technology_tree:
 		var tech = EconomyManager.technology_tree[tech_name]
 		var node_pos = _get_tech_node_position(tech["grid_coords"])
 		
-		# Dodanie bezpiecznego marginesu (np. szerokość kafelka 210 + odstęp 90, wysokość 64 + 86), by nic nie ucięło
 		var node_end = node_pos + Vector2(300, 150)
 		max_size.x = max(max_size.x, node_end.x)
 		max_size.y = max(max_size.y, node_end.y)
@@ -462,7 +447,6 @@ func refresh_technology_tree_view():
 			
 		tech_tree_map.add_child(node_panel)
 
-	# Przypisujemy obliczony rozmiar mapy, aby ScrollContainer włączył suwaki
 	tech_tree_map.custom_minimum_size = max_size
 
 func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String, building_name: String, is_owned: bool, borders_owned: bool, deposit_size: String = "", fertility: float = 0.0) -> void:
@@ -500,6 +484,7 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 	build_iron.visible = false
 	build_coal.visible = false
 	build_farma.visible = false
+	build_dom.visible = false
 	btn_tech_1.visible = false
 	btn_tech_2.visible = false
 	btn_naukowy_1.visible = false
@@ -510,6 +495,7 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 		update_button_state(build_iron, "Kopalnia Żelaza", tile_type)
 		update_button_state(build_coal, "Kopalnia Węgla", tile_type)
 		update_button_state(build_farma, "Farma", tile_type)
+		update_button_state(build_dom, "Dom mieszkalny", tile_type)
 		update_button_state(btn_tech_1, "Laboratorium", tile_type)
 		update_button_state(btn_tech_2, "Warsztat", tile_type)
 		update_button_state(btn_naukowy_1, "Biblioteka", tile_type)
@@ -527,6 +513,7 @@ func _show_building_category(category: String):
 	build_iron.visible = is_zasobowe
 	build_coal.visible = is_zasobowe
 	build_farma.visible = is_zasobowe
+	build_dom.visible = is_zasobowe
 	
 	var is_tech = (category == "tech")
 	btn_tech_1.visible = is_tech
@@ -553,8 +540,15 @@ func hide_all_menus():
 func any_menu_visible() -> bool:
 	return menu_budowania.visible or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) or (tech_tree_window and tech_tree_window.visible)
 
+# POPRAWIONE: Dymek automatycznie dostosowuje szerokość i wysokość do dzieci (VBoxContainer)
 func _reposition_menu(menu: Control, base_pos: Vector2):
-	menu.reset_size()
+	var vbox = menu.get_node("VBoxContainer") as VBoxContainer
+	if vbox:
+		vbox.queue_sort()
+		menu.size = vbox.get_combined_minimum_size() + Vector2(24, 24)
+	else:
+		menu.reset_size()
+		
 	var screen_size = get_viewport_rect().size
 	var menu_size = menu.size
 	var final_x = base_pos.x + 10
@@ -573,7 +567,7 @@ func update_button_state(btn: Button, b_name: String, tile_type: String):
 	btn.modulate.a = 1.0 if can_place else 0.35
 
 func execute_build(building_name: String) -> void:
-	if active_tile_type != "Trawa" and building_name in ["Farma", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia"]:
+	if active_tile_type != "Trawa" and building_name in ["Farma", "Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia"]:
 		pending_building = building_name
 		confirm_dialog.popup_centered()
 		hide_all_menus()
@@ -591,8 +585,8 @@ func _do_execute_build(building_name: String) -> void:
 	hide_all_menus()
 
 func _on_economy_updated(balances: Dictionary, turn: int, _selected_build: String):
-	resources_label.text = "🪵 Drewno: %d      ⛓️ Żelazo: %d      🌋 Węgiel: %d      🌾 Jedzenie: %d      🪙 Złoto: %d" % [
-		balances["Drewno"], balances["Żelazo"], balances["Węgiel"], balances["Jedzenie"], balances["Złoto"]
+	resources_label.text = "🪵 Drewno: %d      ⛓️ Żelazo: %d      🌋 Węgiel: %d      🌾 Jedzenie: %d      🪙 Złoto: %d      👥 Pop: %d/%d" % [
+		balances["Drewno"], balances["Żelazo"], balances["Węgiel"], balances["Jedzenie"], balances["Złoto"], balances.get("Populacja", 1), balances.get("Maks_Populacja", 5)
 	]
 	turn_button.text = "Następna tura (%d)" % turn
 	
@@ -619,38 +613,35 @@ func _on_turn_pressed():
 		var buildings = world_ref.get_active_buildings_list()
 		EconomyManager.next_turn(buildings)
 
+# POPRAWIONE: Elastyczne zakotwiczenie panelu na pełną szerokość okna (brak ucinania)
 func style_main_hud_elements():
 	var top_panel = $Panel
-	
-	top_panel.anchor_left = 0.5
-	top_panel.anchor_right = 0.5
+	top_panel.anchor_left = 0.0
+	top_panel.anchor_right = 1.0
 	top_panel.anchor_top = 0.0
 	top_panel.anchor_bottom = 0.0
-	top_panel.offset_left = -480
-	top_panel.offset_right = 480
-	top_panel.offset_top = 0
-	top_panel.offset_bottom = 45
+	top_panel.offset_left = 10
+	top_panel.offset_right = -10
+	top_panel.offset_top = 5
+	top_panel.offset_bottom = 50
 	
 	var style_top = StyleBoxFlat.new()
 	style_top.bg_color = Color(0.12, 0.13, 0.14, 0.98) 
 	style_top.border_width_bottom = 3
 	style_top.border_width_left = 3
 	style_top.border_width_right = 3
-	style_top.border_width_top = 0
+	style_top.border_width_top = 3
 	style_top.border_color = Color(0.4, 0.38, 0.33) 
-	style_top.corner_radius_bottom_left = 12
-	style_top.corner_radius_bottom_right = 12
-	
+	style_top.set_corner_radius_all(10)
 	style_top.shadow_color = Color(0, 0, 0, 0.6)
 	style_top.shadow_size = 4
 	style_top.shadow_offset = Vector2(0, 3)
-	
 	top_panel.add_theme_stylebox_override("panel", style_top)
 	
 	resources_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	resources_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	resources_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	resources_label.add_theme_font_size_override("font_size", 16)
+	resources_label.add_theme_font_size_override("font_size", 14)
 	resources_label.add_theme_color_override("font_color", Color(0.9, 0.88, 0.8))
 	
 	var style_turn = StyleBoxFlat.new()
@@ -674,7 +665,6 @@ func style_context_popup():
 	style_box.set_corner_radius_all(14)
 	style_box.set_content_margin_all(10)
 	menu_budowania.add_theme_stylebox_override("panel", style_box)
-	
 	$MenuBudowania/VBoxContainer.add_theme_constant_override("separation", 6)
 
 func style_individual_buttons():
@@ -682,13 +672,7 @@ func style_individual_buttons():
 	style_single_button(build_iron, Color(0.2, 0.35, 0.5), Color(0.3, 0.5, 0.75), "⛓️ Kopalnia Żelaza", "Kopalnia Żelaza")
 	style_single_button(build_coal, Color(0.7, 0.3, 0.0), Color(0.9, 0.45, 0.1), "🌋 Kopalnia Węgla", "Kopalnia Węgla")
 
-func style_single_button(
-	btn: Button,
-	base_color: Color,
-	hover_color: Color,
-	new_text: String,
-	building_name := ""
-):
+func style_single_button(btn: Button, base_color: Color, hover_color: Color, new_text: String, building_name := ""):
 	btn.text = new_text
 	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	btn.custom_minimum_size.y = 38 
