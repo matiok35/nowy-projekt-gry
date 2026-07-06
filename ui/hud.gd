@@ -10,11 +10,13 @@ extends Control
 @onready var build_coal = $MenuBudowania/VBoxContainer/BuildKopalniaWegla
 
 var build_farma: Button
+var build_pastwisko: Button
 var build_dom: Button 
 var info_label: Label
 var menu_zalozenia_miasta: PopupPanel
 var zaloz_miasto_button: Button
 var kup_pole_button: Button
+var upgrade_button: Button
 
 var cat_zasobowe: Button
 var cat_tech: Button
@@ -169,11 +171,25 @@ func setup_custom_popups():
 	info_panel.add_child(info_label)
 	vbox.add_child(info_panel)
 	vbox.move_child(info_panel, 0)
+	
+	upgrade_button = Button.new()
+	upgrade_button.pressed.connect(func(): 
+		if world_ref and world_ref.has_method("upgrade_building"):
+			world_ref.upgrade_building(active_tile_pos)
+		hide_all_menus()
+	)
+	style_single_button(upgrade_button, Color(0.1, 0.6, 0.1), Color(0.2, 0.8, 0.2), "⬆️ Ulepsz budynek")
+	vbox.add_child(upgrade_button)
 
 	build_farma = Button.new()
 	vbox.add_child(build_farma)
 	build_farma.pressed.connect(func(): execute_build("Farma"))
 	style_single_button(build_farma, Color(0.45, 0.4, 0.15), Color(0.65, 0.55, 0.2), "🌾 Buduj Farmę","Farma")
+	
+	build_pastwisko = Button.new()
+	vbox.add_child(build_pastwisko)
+	build_pastwisko.pressed.connect(func(): execute_build("Pastwisko"))
+	style_single_button(build_pastwisko, Color(0.35, 0.5, 0.25), Color(0.45, 0.65, 0.35), "🐄 Buduj Pastwisko", "Pastwisko")
 
 	build_dom = Button.new()
 	vbox.add_child(build_dom)
@@ -247,7 +263,6 @@ func setup_custom_popups():
 	style_buy.set_content_margin_all(12)
 	kup_pole_button.add_theme_stylebox_override("normal", style_buy)
 	vbox.add_child(kup_pole_button)
-	vbox.move_child(kup_pole_button, 1)
 	
 	kup_pole_button.pressed.connect(func():
 		if world_ref and world_ref.has_method("buy_tile"):
@@ -277,25 +292,19 @@ func setup_tech_tree_ui():
 	if tech_tree_window:
 		tech_tree_window.visible = false
 		tech_tree_window.z_index = 10
-		
 		var style_tree = StyleBoxFlat.new()
 		style_tree.bg_color = Color(0.14, 0.13, 0.11, 0.98) 
 		style_tree.set_border_width_all(3)
 		style_tree.border_color = Color(0.45, 0.38, 0.28)
 		style_tree.set_corner_radius_all(4)
 		tech_tree_window.add_theme_stylebox_override("panel", style_tree)
-		
 		var close_btn = tech_tree_window.get_node_or_null("CloseButton")
-		if close_btn:
-			close_btn.pressed.connect(func(): tech_tree_window.visible = false)
-			
+		if close_btn: close_btn.pressed.connect(func(): tech_tree_window.visible = false)
 		var scroll = tech_tree_window.get_node_or_null("ScrollContainer")
 		if scroll:
 			scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 			scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-			
-	if tech_tree_map:
-		tech_tree_map.draw.connect(_draw_tech_connections)
+	if tech_tree_map: tech_tree_map.draw.connect(_draw_tech_connections)
 	
 	tech_tree_button.pressed.connect(func():
 		hide_all_menus()
@@ -303,7 +312,6 @@ func setup_tech_tree_ui():
 			tech_tree_window.visible = true
 			tech_tree_window.custom_minimum_size = Vector2(900, 600)
 			tech_tree_window.size = Vector2(900, 600)
-			
 			var screen_center = get_viewport_rect().size / 2
 			tech_tree_window.global_position = screen_center - (tech_tree_window.size / 2)
 			refresh_technology_tree_view()
@@ -319,48 +327,36 @@ func _draw_tech_connections():
 	for tech_name in EconomyManager.technology_tree:
 		var tech = EconomyManager.technology_tree[tech_name]
 		var start_pos = _get_tech_node_position(tech["grid_coords"]) + Vector2(210, 32) 
-		
 		for req_name in tech["req"]:
 			if EconomyManager.technology_tree.has(req_name):
 				var req_tech = EconomyManager.technology_tree[req_name]
 				var end_pos = _get_tech_node_position(req_tech["grid_coords"]) + Vector2(0, 32) 
-				
 				var line_color = Color(0.25, 0.22, 0.18, 1.0) 
 				var line_width = 2.5
-				
 				if req_tech["unlocked"] and tech["unlocked"]:
 					line_color = Color(0.32, 0.68, 0.85, 0.9) 
 					line_width = 3.5
 				elif req_tech["unlocked"] and EconomyManager.current_research == tech_name:
 					line_color = Color(0.72, 0.55, 0.25, 0.8)  
-				
 				var mid_x = start_pos.x + (end_pos.x - start_pos.x) / 2.0
-				
 				tech_tree_map.draw_line(start_pos, Vector2(mid_x, start_pos.y), line_color, line_width)
 				tech_tree_map.draw_line(Vector2(mid_x, start_pos.y), Vector2(mid_x, end_pos.y), line_color, line_width)
 				tech_tree_map.draw_line(Vector2(mid_x, end_pos.y), end_pos, line_color, line_width)
 
 func refresh_technology_tree_view():
 	if not tech_tree_map: return
-	
-	for child in tech_tree_map.get_children():
-		child.queue_free()
-		
+	for child in tech_tree_map.get_children(): child.queue_free()
 	tech_tree_map.queue_redraw()
 	var max_size := Vector2.ZERO
-	
 	for tech_name in EconomyManager.technology_tree:
 		var tech = EconomyManager.technology_tree[tech_name]
 		var node_pos = _get_tech_node_position(tech["grid_coords"])
-		
 		var node_end = node_pos + Vector2(300, 150)
 		max_size.x = max(max_size.x, node_end.x)
 		max_size.y = max(max_size.y, node_end.y)
-		
 		var node_panel = PanelContainer.new()
 		node_panel.position = node_pos
 		node_panel.custom_minimum_size = Vector2(210, 64)
-		
 		var node_style = StyleBoxFlat.new()
 		node_style.bg_color = Color(0.18, 0.16, 0.14)
 		node_style.set_corner_radius_all(32)  
@@ -368,11 +364,9 @@ func refresh_technology_tree_view():
 		node_style.border_color = Color(0.35, 0.3, 0.24)
 		node_style.set_content_margin_all(6)
 		node_panel.add_theme_stylebox_override("panel", node_style)
-		
 		var hbox = HBoxContainer.new()
 		hbox.add_theme_constant_override("separation", 8)
 		node_panel.add_child(hbox)
-		
 		var icon_panel = PanelContainer.new()
 		icon_panel.custom_minimum_size = Vector2(46, 46)
 		var icon_style = StyleBoxFlat.new()
@@ -381,7 +375,6 @@ func refresh_technology_tree_view():
 		icon_style.set_border_width_all(1)
 		icon_style.border_color = Color(0.5, 0.44, 0.35)
 		icon_panel.add_theme_stylebox_override("panel", icon_style)
-		
 		var icon_label = Label.new()
 		icon_label.text = tech["icon"]
 		icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -389,24 +382,20 @@ func refresh_technology_tree_view():
 		icon_label.add_theme_font_size_override("font_size", 18)
 		icon_panel.add_child(icon_label)
 		hbox.add_child(icon_panel)
-		
 		var vbox = VBoxContainer.new()
 		vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 		hbox.add_child(vbox)
-		
 		var lbl_title = Label.new()
 		lbl_title.text = tech_name
 		lbl_title.add_theme_font_size_override("font_size", 12)
 		lbl_title.add_theme_color_override("font_color", Color(0.9, 0.85, 0.75))
 		vbox.add_child(lbl_title)
-		
 		var lbl_desc = Label.new()
 		lbl_desc.text = tech["desc"]
 		lbl_desc.add_theme_font_size_override("font_size", 9)
 		lbl_desc.add_theme_color_override("font_color", Color(0.6, 0.58, 0.53))
 		vbox.add_child(lbl_desc)
-		
 		var bar = ProgressBar.new()
 		var progress = EconomyManager.research_progress.get(tech_name, 0)
 		bar.max_value = tech["cost"]
@@ -414,7 +403,6 @@ func refresh_technology_tree_view():
 		bar.show_percentage = false
 		bar.custom_minimum_size.y = 4
 		vbox.add_child(bar)
-		
 		var invisible_button = Button.new()
 		invisible_button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		invisible_button.flat = true
@@ -422,8 +410,7 @@ func refresh_technology_tree_view():
 		
 		var reqs_ok = true
 		for r in tech["req"]:
-			if not EconomyManager.technology_tree[r]["unlocked"]:
-				reqs_ok = false
+			if not EconomyManager.technology_tree[r]["unlocked"]: reqs_ok = false
 				
 		if tech["unlocked"]:
 			node_style.border_color = Color(0.3, 0.75, 0.45) 
@@ -444,12 +431,10 @@ func refresh_technology_tree_view():
 				EconomyManager.current_research = tech_name
 				refresh_technology_tree_view()
 			)
-			
 		tech_tree_map.add_child(node_panel)
-
 	tech_tree_map.custom_minimum_size = max_size
 
-func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String, building_name: String, is_owned: bool, borders_owned: bool, deposit_size: String = "", fertility: float = 0.0) -> void:
+func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String, building_name: String, building_level: int, is_owned: bool, borders_owned: bool, deposit_size: String = "", fertility: float = 0.0) -> void:
 	hide_all_menus()
 	active_tile_pos = tile_pos
 	active_tile_type = tile_type
@@ -459,9 +444,9 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 	var has_building = building_name != "Brak"
 	
 	if has_building:
-		info_label.text = "🏢 Budynek: %s\nPodłoże: %s" % [building_name, tile_type]
+		info_label.text = "🏢 Budynek: %s (Lvl %d)\nPodłoże: %s" % [building_name, building_level, tile_type]
 	elif tile_type == "Trawa":
-		info_label.text = "🌱 Typ: Trawa\n✨ Żyzność pola: %d%%" % [int(fertility * 100)]
+		info_label.text = "🌱 Typ: %s\n✨ Żyzność pola: %d%%" % [tile_type, int(fertility * 100)]
 	else:
 		info_label.text = "⛰️ Typ: Złoże %s\n📦 Wielkość: %s" % [tile_type, deposit_size]
 
@@ -475,6 +460,15 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 		kup_pole_button.modulate.a = 1.0 if can_buy else 0.35
 
 	var show_buildings = is_owned and not has_building
+	var show_upgrade = is_owned and has_building and building_name != "Centrum Miasta" and building_level < 3
+	
+	upgrade_button.visible = show_upgrade
+	if show_upgrade:
+		var can_upgrade = EconomyManager.can_afford_upgrade(building_name, building_level)
+		upgrade_button.disabled = not can_upgrade
+		upgrade_button.modulate.a = 1.0 if can_upgrade else 0.35
+		var up_cost = EconomyManager.get_upgrade_cost(building_name, building_level)
+		upgrade_button.tooltip_text = "Koszt ulepszenia: %s" % str(up_cost)
 	
 	cat_zasobowe.visible = show_buildings
 	cat_tech.visible = show_buildings
@@ -484,6 +478,7 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 	build_iron.visible = false
 	build_coal.visible = false
 	build_farma.visible = false
+	build_pastwisko.visible = false
 	build_dom.visible = false
 	btn_tech_1.visible = false
 	btn_tech_2.visible = false
@@ -495,6 +490,7 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 		update_button_state(build_iron, "Kopalnia Żelaza", tile_type)
 		update_button_state(build_coal, "Kopalnia Węgla", tile_type)
 		update_button_state(build_farma, "Farma", tile_type)
+		update_button_state(build_pastwisko, "Pastwisko", tile_type)
 		update_button_state(build_dom, "Dom mieszkalny", tile_type)
 		update_button_state(btn_tech_1, "Laboratorium", tile_type)
 		update_button_state(btn_tech_2, "Warsztat", tile_type)
@@ -513,6 +509,7 @@ func _show_building_category(category: String):
 	build_iron.visible = is_zasobowe
 	build_coal.visible = is_zasobowe
 	build_farma.visible = is_zasobowe
+	build_pastwisko.visible = is_zasobowe
 	build_dom.visible = is_zasobowe
 	
 	var is_tech = (category == "tech")
@@ -540,24 +537,20 @@ func hide_all_menus():
 func any_menu_visible() -> bool:
 	return menu_budowania.visible or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) or (tech_tree_window and tech_tree_window.visible)
 
-# POPRAWIONE: Dymek automatycznie dostosowuje szerokość i wysokość do dzieci (VBoxContainer)
 func _reposition_menu(menu: Control, base_pos: Vector2):
 	var vbox = menu.get_node("VBoxContainer") as VBoxContainer
 	if vbox:
 		vbox.queue_sort()
 		menu.size = vbox.get_combined_minimum_size() + Vector2(24, 24)
-	else:
-		menu.reset_size()
+	else: menu.reset_size()
 		
 	var screen_size = get_viewport_rect().size
 	var menu_size = menu.size
 	var final_x = base_pos.x + 10
 	var final_y = base_pos.y + 10
 	
-	if final_x + menu_size.x > screen_size.x:
-		final_x = base_pos.x - menu_size.x - 10
-	if final_y + menu_size.y > screen_size.y:
-		final_y = base_pos.y - menu_size.y - 10
+	if final_x + menu_size.x > screen_size.x: final_x = base_pos.x - menu_size.x - 10
+	if final_y + menu_size.y > screen_size.y: final_y = base_pos.y - menu_size.y - 10
 		
 	menu.global_position = Vector2(final_x, final_y)
 
@@ -567,7 +560,7 @@ func update_button_state(btn: Button, b_name: String, tile_type: String):
 	btn.modulate.a = 1.0 if can_place else 0.35
 
 func execute_build(building_name: String) -> void:
-	if active_tile_type != "Trawa" and building_name in ["Farma", "Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia"]:
+	if active_tile_type != "Trawa" and building_name in ["Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia"]:
 		pending_building = building_name
 		confirm_dialog.popup_centered()
 		hide_all_menus()
@@ -595,17 +588,14 @@ func _on_economy_updated(balances: Dictionary, turn: int, _selected_build: Strin
 		var t_val = balances.get("Nauka", 0)
 		var c_max = EconomyManager.max_culture_points
 		var t_max = EconomyManager.max_tech_points
-		
 		culture_label.text = "Punkty Kultury:    %d/%d" % [c_val, int(c_max)]
 		culture_bar.max_value = c_max
 		culture_bar.value = c_val
-		
 		tech_label.text = "Punkty Technologii:    %d/%d" % [t_val, int(t_max)]
 		tech_bar.max_value = t_max
 		tech_bar.value = t_val
 	
-	if tech_tree_window and tech_tree_window.visible:
-		refresh_technology_tree_view()
+	if tech_tree_window and tech_tree_window.visible: refresh_technology_tree_view()
 
 func _on_turn_pressed():
 	hide_all_menus()
@@ -613,7 +603,6 @@ func _on_turn_pressed():
 		var buildings = world_ref.get_active_buildings_list()
 		EconomyManager.next_turn(buildings)
 
-# POPRAWIONE: Elastyczne zakotwiczenie panelu na pełną szerokość okna (brak ucinania)
 func style_main_hud_elements():
 	var top_panel = $Panel
 	top_panel.anchor_left = 0.0
@@ -676,27 +665,21 @@ func style_single_button(btn: Button, base_color: Color, hover_color: Color, new
 	btn.text = new_text
 	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	btn.custom_minimum_size.y = 38 
-	
 	var normal = StyleBoxFlat.new()
 	normal.bg_color = base_color
 	normal.set_corner_radius_all(6)
 	normal.set_content_margin_all(12)
-	
 	var hover = StyleBoxFlat.new()
 	hover.bg_color = hover_color
 	hover.set_corner_radius_all(6)
 	hover.set_content_margin_all(12)
-	
 	var disabled = StyleBoxFlat.new()
 	disabled.bg_color = Color(0.15, 0.15, 0.15) 
 	disabled.set_corner_radius_all(6)
 	disabled.content_margin_left = 12
-	
 	btn.add_theme_stylebox_override("normal", normal)
 	btn.add_theme_stylebox_override("hover", hover)
 	btn.add_theme_stylebox_override("disabled", disabled)
 	btn.add_theme_color_override("font_color", Color.WHITE)
 	btn.add_theme_color_override("font_disabled_color", Color(0.5, 0.5, 0.5))
-	
-	if building_name != "":
-		btn.tooltip_text = EconomyManager.get_building_tooltip(building_name)
+	if building_name != "": btn.tooltip_text = EconomyManager.get_building_tooltip(building_name)
