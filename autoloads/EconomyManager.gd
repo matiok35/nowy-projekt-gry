@@ -12,7 +12,9 @@ var resources: Dictionary = {
 	"Węgiel": 0,
 	"Jedzenie": 10,
 	"Nauka": 2, 
-	"Kultura": 1
+	"Kultura": 1,
+	"Populacja": 1,
+	"Maks_Populacja": 5
 }
 
 var max_tech_points: float = 100.0
@@ -23,6 +25,7 @@ var building_costs: Dictionary = {
 	"Kopalnia Żelaza": {"Złoto": 50, "Drewno": 20},
 	"Kopalnia Węgla": {"Złoto": 60, "Drewno": 25},
 	"Farma": {"Złoto": 25, "Drewno": 15},
+	"Dom mieszkalny": {"Złoto": 40, "Drewno": 20},
 	"Laboratorium": {"Złoto": 100, "Drewno": 50, "Żelazo": 10},
 	"Warsztat": {"Złoto": 80, "Drewno": 40, "Żelazo": 5},
 	"Biblioteka": {"Złoto": 70, "Drewno": 30},
@@ -90,7 +93,7 @@ func get_building_tooltip(building_name: String) -> String:
 			text += "• Musi zostać wybudowana na węglu\n"
 		"Farma":
 			text += "• Musi zostać wybudowana na trawie\n"
-		"Laboratorium", "Warsztat", "Biblioteka", "Świątynia":
+		"Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia":
 			text += "• Musi zostać wybudowana na trawie\n"
 
 	text += "\nKoszt\n"
@@ -135,7 +138,22 @@ func deduct_costs(building_name: String) -> void:
 
 func next_turn(active_buildings_data: Array) -> void:
 	current_turn += 1
-	resources["Jedzenie"] -= 2 
+	
+	# Obliczanie maksymalnej populacji na podstawie budynków mieszkalnych (Centrum = 5, każdy Dom = +5)
+	var max_pop = 5
+	for b_data in active_buildings_data:
+		if b_data["name"] == "Dom mieszkalny":
+			max_pop += 5
+	resources["Maks_Populacja"] = max_pop
+	
+	# Konsumpcja jedzenia przez populację (1 jedzenie na 1 punkt populacji)
+	var food_consumption = resources["Populacja"] * 1
+	resources["Jedzenie"] -= food_consumption
+	
+	# Generowanie populacji co 3 rundy, jeśli jest jedzenie i wolne miejsca mieszkalne
+	if current_turn % 3 == 0:
+		if resources["Jedzenie"] > 0 and resources["Populacja"] < resources["Maks_Populacja"]:
+			resources["Populacja"] += 1
 	
 	var turn_science = 0
 	var turn_culture = 0
@@ -191,9 +209,12 @@ func next_turn(active_buildings_data: Array) -> void:
 	resources["Nauka"] = total_science
 	resources["Kultura"] = min(100, resources["Kultura"] + total_science + turn_culture) 
 
+	# Głód - brak jedzenia obniża złoto i może zredukować populację
 	if resources["Jedzenie"] < 0:
 		resources["Jedzenie"] = 0
 		resources["Złoto"] = max(0, resources["Złoto"] - 5)
+		if resources["Populacja"] > 1 and randf() < 0.25:
+			resources["Populacja"] -= 1
 
 	if current_research != "" and technology_tree.has(current_research):
 		if not research_progress.has(current_research):
