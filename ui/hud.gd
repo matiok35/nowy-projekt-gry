@@ -43,6 +43,9 @@ var last_mouse_pos: Vector2 = Vector2.ZERO
 var confirm_dialog: ConfirmationDialog
 var pending_building: String = ""
 
+var resources_container: HBoxContainer
+var resource_labels: Dictionary = {}
+
 var points_panel: PanelContainer
 var culture_label: Label
 var culture_bar: ProgressBar
@@ -62,6 +65,7 @@ func _ready():
 	build_coal.pressed.connect(func(): execute_build("Kopalnia Węgla"))
 	
 	setup_points_panel()
+	setup_resources_header()
 	setup_custom_popups()
 	setup_tech_tree_ui()
 	style_main_hud_elements()
@@ -98,8 +102,12 @@ func setup_points_panel():
 	var culture_vbox = VBoxContainer.new()
 	culture_vbox.add_theme_constant_override("separation", 2)
 	var culture_hbox = HBoxContainer.new()
-	var c_icon = Label.new()
-	c_icon.text = "🎭"
+	var default_icon = null
+	var c_icon = TextureRect.new()
+	c_icon.texture = default_icon
+	c_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	c_icon.custom_minimum_size = Vector2(20, 20)
+	c_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	culture_label = Label.new()
 	culture_label.text = "Punkty Kultury: 0/100"
 	culture_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -124,8 +132,11 @@ func setup_points_panel():
 	var tech_vbox = VBoxContainer.new()
 	tech_vbox.add_theme_constant_override("separation", 2)
 	var tech_hbox = HBoxContainer.new()
-	var t_icon = Label.new()
-	t_icon.text = "🧪"
+	var t_icon = TextureRect.new()
+	t_icon.texture = default_icon
+	t_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	t_icon.custom_minimum_size = Vector2(20, 20)
+	t_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	tech_label = Label.new()
 	tech_label.text = "Punkty Technologii: 0/100"
 	tech_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -148,6 +159,40 @@ func setup_points_panel():
 	vbox.add_child(tech_vbox)
 	
 	add_child(points_panel)
+
+func setup_resources_header():
+	resources_label.visible = false
+	
+	resources_container = HBoxContainer.new()
+	resources_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	resources_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	resources_container.add_theme_constant_override("separation", 25)
+	$Panel.add_child(resources_container)
+	
+	var default_icon = null
+	
+	var resources_list = ["Drewno", "Żelazo", "Węgiel", "Jedzenie", "Złoto", "Populacja"]
+	for res_name in resources_list:
+		var hbox = HBoxContainer.new()
+		hbox.add_theme_constant_override("separation", 5)
+		
+		var icon = TextureRect.new()
+		icon.texture = default_icon
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.custom_minimum_size = Vector2(24, 24)
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		
+		var lbl = Label.new()
+		lbl.add_theme_font_size_override("font_size", 16)
+		lbl.add_theme_color_override("font_color", Color(0.9, 0.88, 0.8))
+		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		lbl.text = res_name + ": 0"
+		
+		hbox.add_child(icon)
+		hbox.add_child(lbl)
+		
+		resources_container.add_child(hbox)
+		resource_labels[res_name] = lbl
 
 var build_grid: GridContainer
 
@@ -259,6 +304,7 @@ func setup_custom_popups():
 	build_grid.custom_minimum_size = Vector2(320, 0) # Miejsce na 3 kolumny po 100px + odstępy
 	build_grid.add_theme_constant_override("h_separation", 10)
 	build_grid.add_theme_constant_override("v_separation", 10)
+	build_grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	vbox.add_child(build_grid)
 	vbox.move_child(build_grid, 2)
 	
@@ -664,9 +710,17 @@ func _do_execute_build(building_name: String) -> void:
 	hide_all_menus()
 
 func _on_economy_updated(balances: Dictionary, turn: int, _selected_build: String):
-	resources_label.text = "🪵 Drewno: %d      ⛓️ Żelazo: %d      🌋 Węgiel: %d      🌾 Jedzenie: %d      🪙 Złoto: %d      👥 Pop: %d/%d" % [
-		balances["Drewno"], balances["Żelazo"], balances["Węgiel"], balances["Jedzenie"], balances["Złoto"], balances.get("Populacja", 1), balances.get("Maks_Populacja", 5)
-	]
+	if resources_container:
+		resource_labels["Drewno"].text = "Drewno: %d" % balances["Drewno"]
+		resource_labels["Żelazo"].text = "Żelazo: %d" % balances["Żelazo"]
+		resource_labels["Węgiel"].text = "Węgiel: %d" % balances["Węgiel"]
+		resource_labels["Jedzenie"].text = "Jedzenie: %d" % balances["Jedzenie"]
+		resource_labels["Złoto"].text = "Złoto: %d" % balances["Złoto"]
+		resource_labels["Populacja"].text = "Pop: %d/%d" % [balances.get("Populacja", 1), balances.get("Maks_Populacja", 5)]
+	else:
+		resources_label.text = "🪵 Drewno: %d      ⛓️ Żelazo: %d      🌋 Węgiel: %d      🌾 Jedzenie: %d      🪙 Złoto: %d      👥 Pop: %d/%d" % [
+			balances["Drewno"], balances["Żelazo"], balances["Węgiel"], balances["Jedzenie"], balances["Złoto"], balances.get("Populacja", 1), balances.get("Maks_Populacja", 5)
+		]
 	turn_button.text = "Następna tura (%d)" % turn
 	
 	if culture_label and tech_label:
@@ -769,10 +823,32 @@ func style_individual_buttons():
 	style_single_button(btn_naukowy_2, "Świątynia", "Świątynia")
 
 func style_single_button(btn: Button, display_name: String, building_name := ""):
-	btn.text = display_name
-	btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	btn.text = ""
 	btn.custom_minimum_size = Vector2(100, 100)
-	btn.autowrap_mode = TextServer.AUTOWRAP_WORD
+	
+	var vbox = VBoxContainer.new()
+	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn.add_child(vbox)
+	
+	var default_icon = null
+	var icon = TextureRect.new()
+	icon.texture = default_icon
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.custom_minimum_size = Vector2(40, 40)
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	var lbl = Label.new()
+	lbl.text = display_name
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+	lbl.add_theme_font_size_override("font_size", 12)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	vbox.add_child(icon)
+	vbox.add_child(lbl)
 	
 	var base_color = Color(0.75, 0.65, 0.5)
 	var hover_color = Color(0.85, 0.75, 0.6)
