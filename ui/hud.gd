@@ -15,6 +15,7 @@ var info_label: Label
 var menu_zalozenia_miasta: PopupPanel
 var zaloz_miasto_button: Button
 var kup_pole_button: Button
+var tile_info_menu: PanelContainer
 
 var cat_zasobowe: Button
 var cat_tech: Button
@@ -146,77 +147,144 @@ func setup_points_panel():
 	
 	add_child(points_panel)
 
-func setup_custom_popups():
-	var style_box = StyleBoxFlat.new()
-	style_box.bg_color = Color(0.05, 0.05, 0.07, 0.95)  
-	style_box.set_border_width_all(2) 
-	style_box.border_color = Color(0.0, 0.75, 1.0, 0.8) 
-	style_box.set_corner_radius_all(10)
-	style_box.set_content_margin_all(8)
+var build_grid: GridContainer
 
+func setup_custom_popups():
 	var vbox = $MenuBudowania/VBoxContainer
+	menu_budowania.custom_minimum_size = Vector2(360, 0) # Wymuszenie stałej szerokości
 	
-	var info_panel = PanelContainer.new()
-	var info_style = StyleBoxFlat.new()
-	info_style.bg_color = Color(0.12, 0.15, 0.22, 0.95)
-	info_style.set_corner_radius_all(8)
-	info_style.set_content_margin_all(10)
-	info_panel.add_theme_stylebox_override("panel", info_style)
+	# Anchor bottom right ONCE
+	menu_budowania.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	menu_budowania.offset_right = -20
+	menu_budowania.offset_bottom = -20
+	menu_budowania.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	menu_budowania.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	
+	# 1. HEADER
+	var header_hbox = HBoxContainer.new()
+	header_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	var title_label = Label.new()
+	title_label.text = "Menu Budowy"
+	title_label.add_theme_font_size_override("font_size", 18)
+	title_label.add_theme_color_override("font_color", Color(0.9, 0.85, 0.75))
+	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	
+	var close_btn = Button.new()
+	close_btn.text = "X"
+	close_btn.custom_minimum_size = Vector2(30, 30)
+	close_btn.pressed.connect(func(): hide_all_menus())
+	
+	header_hbox.add_child(Control.new()) # Spacer
+	header_hbox.get_child(0).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header_hbox.add_child(title_label)
+	header_hbox.add_child(close_btn)
+	vbox.add_child(header_hbox)
+	vbox.move_child(header_hbox, 0)
+	
+	# 2. TABS
+	var tabs_hbox = HBoxContainer.new()
+	cat_zasobowe = Button.new()
+	cat_naukowe = Button.new()
+	cat_tech = Button.new()
+	cat_zasobowe.text = "Surowce"
+	cat_naukowe.text = "Kultura"
+	cat_tech.text = "Technologia"
+	cat_zasobowe.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cat_naukowe.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cat_tech.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tabs_hbox.add_child(cat_zasobowe)
+	tabs_hbox.add_child(cat_naukowe)
+	tabs_hbox.add_child(cat_tech)
+	vbox.add_child(tabs_hbox)
+	vbox.move_child(tabs_hbox, 1)
+	
+	cat_zasobowe.pressed.connect(func(): _show_building_category("zasobowe"))
+	cat_naukowe.pressed.connect(func(): _show_building_category("naukowe"))
+	cat_tech.pressed.connect(func(): _show_building_category("tech"))
+	
+	# 3. KUP POLE BUTTON AND TILE INFO MENU SEPARATION
+	tile_info_menu = PanelContainer.new()
+	tile_info_menu.visible = false
+	var tile_info_style = StyleBoxFlat.new()
+	tile_info_style.bg_color = Color(0.05, 0.05, 0.07, 0.95)  
+	tile_info_style.set_border_width_all(2) 
+	tile_info_style.border_color = Color(0.2, 0.6, 1.0, 0.8) 
+	tile_info_style.set_corner_radius_all(10)
+	tile_info_style.set_content_margin_all(8)
+	tile_info_menu.add_theme_stylebox_override("panel", tile_info_style)
+	
+	var tile_info_vbox = VBoxContainer.new()
+	tile_info_vbox.add_theme_constant_override("separation", 6)
+	tile_info_menu.add_child(tile_info_vbox)
 	
 	info_label = Label.new()
 	info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	info_label.add_theme_color_override("font_color", Color(0.4, 0.9, 1.0))
-	info_panel.add_child(info_label)
-	vbox.add_child(info_panel)
-	vbox.move_child(info_panel, 0)
-
+	tile_info_vbox.add_child(info_label)
+	
+	kup_pole_button = Button.new()
+	kup_pole_button.text = "🪙 Kup to pole (50 złota)"
+	kup_pole_button.custom_minimum_size = Vector2(180, 35)
+	var style_buy = StyleBoxFlat.new()
+	style_buy.bg_color = Color(0.15, 0.35, 0.4)
+	style_buy.set_corner_radius_all(6)
+	style_buy.set_content_margin_all(12)
+	kup_pole_button.add_theme_stylebox_override("normal", style_buy)
+	tile_info_vbox.add_child(kup_pole_button)
+	
+	kup_pole_button.pressed.connect(func():
+		if world_ref and world_ref.has_method("buy_tile"):
+			world_ref.buy_tile(active_tile_pos)
+		hide_all_menus()
+	)
+	
+	add_child(tile_info_menu)
+	
+	# 4. GRID CONTAINER FOR BUTTONS
+	build_grid = GridContainer.new()
+	build_grid.columns = 3
+	build_grid.custom_minimum_size = Vector2(320, 0) # Miejsce na 3 kolumny po 100px + odstępy
+	build_grid.add_theme_constant_override("h_separation", 10)
+	build_grid.add_theme_constant_override("v_separation", 10)
+	vbox.add_child(build_grid)
+	vbox.move_child(build_grid, 2)
+	
+	# 5. BUTTONS (Reparent and create new ones)
+	build_chata.reparent(build_grid)
+	build_iron.reparent(build_grid)
+	build_coal.reparent(build_grid)
 	build_farma = Button.new()
-	vbox.add_child(build_farma)
+	build_grid.add_child(build_farma)
 	build_farma.pressed.connect(func(): execute_build("Farma"))
-	style_single_button(build_farma, Color(0.45, 0.4, 0.15), Color(0.65, 0.55, 0.2), "🌾 Buduj Farmę","Farma")
-
 	build_dom = Button.new()
-	vbox.add_child(build_dom)
+	build_grid.add_child(build_dom)
 	build_dom.pressed.connect(func(): execute_build("Dom mieszkalny"))
-	style_single_button(build_dom, Color(0.5, 0.35, 0.25), Color(0.65, 0.45, 0.35), "🏠 Buduj Dom mieszkalny", "Dom mieszkalny")
-
-	cat_zasobowe = Button.new()
-	cat_tech = Button.new()
-	cat_naukowe = Button.new()
-	
-	vbox.add_child(cat_zasobowe)
-	vbox.add_child(cat_tech)
-	vbox.add_child(cat_naukowe)
-	
-	style_single_button(cat_zasobowe, Color(0.2, 0.4, 0.6), Color(0.3, 0.5, 0.8), "🛠️ Budynki Zasobowe")
-	style_single_button(cat_tech, Color(0.4, 0.2, 0.6), Color(0.5, 0.3, 0.8), "⚙️ Budynki Technologiczne")
-	style_single_button(cat_naukowe, Color(0.6, 0.2, 0.4), Color(0.8, 0.3, 0.5), "📜 Budynki Naukowe")
-
-	cat_zasobowe.pressed.connect(func(): _show_building_category("zasobowe"))
-	cat_tech.pressed.connect(func(): _show_building_category("tech"))
-	cat_naukowe.pressed.connect(func(): _show_building_category("naukowe"))
 	
 	btn_tech_1 = Button.new()
 	btn_tech_2 = Button.new()
-	vbox.add_child(btn_tech_1)
-	vbox.add_child(btn_tech_2)
+	build_grid.add_child(btn_tech_1)
+	build_grid.add_child(btn_tech_2)
 	btn_tech_1.pressed.connect(func(): execute_build("Laboratorium"))
 	btn_tech_2.pressed.connect(func(): execute_build("Warsztat"))
-	style_single_button(btn_tech_1, Color(0.3, 0.4, 0.6), Color(0.4, 0.5, 0.8), "⚙️ Laboratorium", "Laboratorium")
-	style_single_button(btn_tech_2, Color(0.4, 0.3, 0.2), Color(0.5, 0.4, 0.3), "⚙️ Warsztat",  "Warsztat")
-
+	
 	btn_naukowy_1 = Button.new()
 	btn_naukowy_2 = Button.new()
-	vbox.add_child(btn_naukowy_1)
-	vbox.add_child(btn_naukowy_2)
+	build_grid.add_child(btn_naukowy_1)
+	build_grid.add_child(btn_naukowy_2)
 	btn_naukowy_1.pressed.connect(func(): execute_build("Biblioteka"))
 	btn_naukowy_2.pressed.connect(func(): execute_build("Świątynia"))
-	style_single_button(btn_naukowy_1, Color(0.4, 0.2, 0.4), Color(0.5, 0.3, 0.5), "📜 Biblioteka","Biblioteka")
-	style_single_button(btn_naukowy_2, Color(0.6, 0.5, 0.2), Color(0.7, 0.6, 0.3), "📜 Świątynia","Świątynia")
-
+	
+	# 7. ZALOZ MIASTO MENU
 	menu_zalozenia_miasta = PopupPanel.new()
 	menu_zalozenia_miasta.visible = false
-	menu_zalozenia_miasta.add_theme_stylebox_override("panel", style_box)
+	var mz_style = StyleBoxFlat.new()
+	mz_style.bg_color = Color(0.05, 0.05, 0.07, 0.95)  
+	mz_style.set_border_width_all(2) 
+	mz_style.border_color = Color(0.0, 0.75, 1.0, 0.8) 
+	mz_style.set_corner_radius_all(10)
+	mz_style.set_content_margin_all(8)
+	menu_zalozenia_miasta.add_theme_stylebox_override("panel", mz_style)
 	
 	var margin_container = MarginContainer.new()
 	margin_container.add_theme_constant_override("margin_left", 4)
@@ -236,24 +304,7 @@ func setup_custom_popups():
 			world_ref.create_city_at(active_tile_pos)
 		hide_all_menus()
 	)
-
-	kup_pole_button = Button.new()
-	kup_pole_button.text = "🪙 Kup to pole (50 złota)"
-	kup_pole_button.custom_minimum_size = Vector2(180, 35)
 	
-	var style_buy = StyleBoxFlat.new()
-	style_buy.bg_color = Color(0.15, 0.35, 0.4)
-	style_buy.set_corner_radius_all(6)
-	style_buy.set_content_margin_all(12)
-	kup_pole_button.add_theme_stylebox_override("normal", style_buy)
-	vbox.add_child(kup_pole_button)
-	vbox.move_child(kup_pole_button, 1)
-	
-	kup_pole_button.pressed.connect(func():
-		if world_ref and world_ref.has_method("buy_tile"):
-			world_ref.buy_tile(active_tile_pos)
-		hide_all_menus()
-	)
 
 	confirm_dialog = ConfirmationDialog.new()
 	confirm_dialog.title = "Uwaga: Zniszczenie Złoża!"
@@ -455,8 +506,12 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 	active_tile_type = tile_type
 	last_mouse_pos = mouse_pos
 	
-	menu_budowania.visible = true
 	var has_building = building_name != "Brak"
+	var show_buildings = is_owned and not has_building
+	
+	menu_budowania.visible = show_buildings
+	
+	tile_info_menu.visible = true
 	
 	if has_building:
 		info_label.text = "🏢 Budynek: %s\nPodłoże: %s" % [building_name, tile_type]
@@ -473,8 +528,6 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 		var can_buy = can_afford and borders_owned
 		kup_pole_button.disabled = not can_buy
 		kup_pole_button.modulate.a = 1.0 if can_buy else 0.35
-
-	var show_buildings = is_owned and not has_building
 	
 	cat_zasobowe.visible = show_buildings
 	cat_tech.visible = show_buildings
@@ -501,13 +554,11 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 		update_button_state(btn_naukowy_1, "Biblioteka", tile_type)
 		update_button_state(btn_naukowy_2, "Świątynia", tile_type)
 		
-	_reposition_menu(menu_budowania, mouse_pos)
+		_show_building_category("zasobowe")
+		
+	_reposition_menu(tile_info_menu, mouse_pos)
 
 func _show_building_category(category: String):
-	cat_zasobowe.visible = false
-	cat_tech.visible = false
-	cat_naukowe.visible = false
-	
 	var is_zasobowe = (category == "zasobowe")
 	build_chata.visible = is_zasobowe
 	build_iron.visible = is_zasobowe
@@ -523,7 +574,20 @@ func _show_building_category(category: String):
 	btn_naukowy_1.visible = is_naukowe
 	btn_naukowy_2.visible = is_naukowe
 	
-	_reposition_menu(menu_budowania, last_mouse_pos)
+	var selected_color = Color(0.75, 0.65, 0.5)
+	var unselected_color = Color(0.65, 0.55, 0.4)
+	
+	var s_z = cat_zasobowe.get_theme_stylebox("normal").duplicate() as StyleBoxFlat
+	s_z.bg_color = selected_color if is_zasobowe else unselected_color
+	cat_zasobowe.add_theme_stylebox_override("normal", s_z)
+	
+	var s_n = cat_naukowe.get_theme_stylebox("normal").duplicate() as StyleBoxFlat
+	s_n.bg_color = selected_color if is_naukowe else unselected_color
+	cat_naukowe.add_theme_stylebox_override("normal", s_n)
+	
+	var s_t = cat_tech.get_theme_stylebox("normal").duplicate() as StyleBoxFlat
+	s_t.bg_color = selected_color if is_tech else unselected_color
+	cat_tech.add_theme_stylebox_override("normal", s_t)
 
 func show_city_creation_menu(_screen_pos: Vector2, tile_pos: Vector2) -> void:
 	hide_all_menus()
@@ -534,11 +598,12 @@ func show_city_creation_menu(_screen_pos: Vector2, tile_pos: Vector2) -> void:
 
 func hide_all_menus():
 	menu_budowania.visible = false
+	if tile_info_menu: tile_info_menu.visible = false
 	if menu_zalozenia_miasta: menu_zalozenia_miasta.visible = false
 	if tech_tree_window: tech_tree_window.visible = false
 
 func any_menu_visible() -> bool:
-	return menu_budowania.visible or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) or (tech_tree_window and tech_tree_window.visible)
+	return menu_budowania.visible or (tile_info_menu and tile_info_menu.visible) or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) or (tech_tree_window and tech_tree_window.visible)
 
 # POPRAWIONE: Dymek automatycznie dostosowuje szerokość i wysokość do dzieci (VBoxContainer)
 func _reposition_menu(menu: Control, base_pos: Vector2):
@@ -560,6 +625,24 @@ func _reposition_menu(menu: Control, base_pos: Vector2):
 		final_y = base_pos.y - menu_size.y - 10
 		
 	menu.global_position = Vector2(final_x, final_y)
+	
+	if menu == tile_info_menu and menu_budowania.visible:
+		var build_menu_size = menu_budowania.get_combined_minimum_size()
+		# Upewniamy się, że rozmiar menu jest użyty poprawnie, nawet jeśli layout jeszcze nie został w pełni zaktualizowany
+		if build_menu_size.x < menu_budowania.size.x:
+			build_menu_size.x = menu_budowania.size.x
+		if build_menu_size.y < menu_budowania.size.y:
+			build_menu_size.y = menu_budowania.size.y
+			
+		var build_menu_pos = Vector2(screen_size.x - 20 - build_menu_size.x, screen_size.y - 20 - build_menu_size.y)
+		var build_menu_rect = Rect2(build_menu_pos, build_menu_size)
+		var menu_rect = Rect2(menu.global_position, menu_size)
+		
+		if menu_rect.intersects(build_menu_rect):
+			final_x = base_pos.x - menu_size.x - 10
+			if final_x < 0:
+				final_x = 10
+			menu.global_position = Vector2(final_x, final_y)
 
 func update_button_state(btn: Button, b_name: String, tile_type: String):
 	var can_place = EconomyManager.can_afford_and_place(b_name, tile_type)
@@ -659,44 +742,72 @@ func style_main_hud_elements():
 
 func style_context_popup():
 	var style_box = StyleBoxFlat.new()
-	style_box.bg_color = Color(0.05, 0.05, 0.07, 0.92) 
-	style_box.set_border_width_all(2) 
-	style_box.border_color = Color(0.2, 0.6, 1.0, 0.5) 
-	style_box.set_corner_radius_all(14)
+	style_box.bg_color = Color(0.85, 0.78, 0.65, 1.0) # Parchment background
+	style_box.set_border_width_all(4) 
+	style_box.border_color = Color(0.3, 0.25, 0.2, 1.0) # Dark brown border
+	style_box.set_corner_radius_all(8)
 	style_box.set_content_margin_all(10)
 	menu_budowania.add_theme_stylebox_override("panel", style_box)
-	$MenuBudowania/VBoxContainer.add_theme_constant_override("separation", 6)
+	$MenuBudowania/VBoxContainer.add_theme_constant_override("separation", 8)
+	
+	var tab_style = StyleBoxFlat.new()
+	tab_style.bg_color = Color(0.65, 0.55, 0.4)
+	tab_style.set_corner_radius_all(6)
+	tab_style.set_content_margin_all(8)
+	tab_style.border_color = Color(0.3, 0.25, 0.2)
+	tab_style.set_border_width_all(2)
+	
+	cat_zasobowe.add_theme_stylebox_override("normal", tab_style.duplicate())
+	cat_naukowe.add_theme_stylebox_override("normal", tab_style.duplicate())
+	cat_tech.add_theme_stylebox_override("normal", tab_style.duplicate())
+	
+	cat_zasobowe.add_theme_color_override("font_color", Color(0.2, 0.15, 0.1))
+	cat_naukowe.add_theme_color_override("font_color", Color(0.2, 0.15, 0.1))
+	cat_tech.add_theme_color_override("font_color", Color(0.2, 0.15, 0.1))
 
 func style_individual_buttons():
-	style_single_button(build_chata, Color(0.15, 0.5, 0.15), Color(0.2, 0.7, 0.2), "🪵 Buduj Chatę Drwala", "Chata Drwala")
-	style_single_button(build_iron, Color(0.2, 0.35, 0.5), Color(0.3, 0.5, 0.75), "⛓️ Kopalnia Żelaza", "Kopalnia Żelaza")
-	style_single_button(build_coal, Color(0.7, 0.3, 0.0), Color(0.9, 0.45, 0.1), "🌋 Kopalnia Węgla", "Kopalnia Węgla")
+	style_single_button(build_chata, "Tartak", "Chata Drwala")
+	style_single_button(build_iron, "Kopalnia Żelaza", "Kopalnia Żelaza")
+	style_single_button(build_coal, "Kopalnia Węgla", "Kopalnia Węgla")
+	style_single_button(build_farma, "Farma", "Farma")
+	style_single_button(build_dom, "Dom mieszkalny", "Dom mieszkalny")
+	style_single_button(btn_tech_1, "Laboratorium", "Laboratorium")
+	style_single_button(btn_tech_2, "Warsztat", "Warsztat")
+	style_single_button(btn_naukowy_1, "Biblioteka", "Biblioteka")
+	style_single_button(btn_naukowy_2, "Świątynia", "Świątynia")
 
-func style_single_button(btn: Button, base_color: Color, hover_color: Color, new_text: String, building_name := ""):
-	btn.text = new_text
-	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	btn.custom_minimum_size.y = 38 
+func style_single_button(btn: Button, display_name: String, building_name := ""):
+	btn.text = display_name
+	btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	btn.custom_minimum_size = Vector2(100, 100)
+	btn.autowrap_mode = TextServer.AUTOWRAP_WORD
+	
+	var base_color = Color(0.75, 0.65, 0.5)
+	var hover_color = Color(0.85, 0.75, 0.6)
 	
 	var normal = StyleBoxFlat.new()
 	normal.bg_color = base_color
 	normal.set_corner_radius_all(6)
-	normal.set_content_margin_all(12)
+	normal.set_border_width_all(2)
+	normal.border_color = Color(0.4, 0.35, 0.3)
+	normal.set_content_margin_all(8)
 	
-	var hover = StyleBoxFlat.new()
+	var hover = normal.duplicate() as StyleBoxFlat
 	hover.bg_color = hover_color
-	hover.set_corner_radius_all(6)
-	hover.set_content_margin_all(12)
+	hover.border_color = Color(0.6, 0.55, 0.4)
 	
 	var disabled = StyleBoxFlat.new()
-	disabled.bg_color = Color(0.15, 0.15, 0.15) 
+	disabled.bg_color = Color(0.6, 0.5, 0.4, 0.5) 
 	disabled.set_corner_radius_all(6)
-	disabled.content_margin_left = 12
+	disabled.set_border_width_all(2)
+	disabled.border_color = Color(0.3, 0.25, 0.2, 0.5)
+	disabled.set_content_margin_all(8)
 	
 	btn.add_theme_stylebox_override("normal", normal)
 	btn.add_theme_stylebox_override("hover", hover)
 	btn.add_theme_stylebox_override("disabled", disabled)
-	btn.add_theme_color_override("font_color", Color.WHITE)
-	btn.add_theme_color_override("font_disabled_color", Color(0.5, 0.5, 0.5))
+	btn.add_theme_color_override("font_color", Color(0.2, 0.15, 0.1))
+	btn.add_theme_color_override("font_disabled_color", Color(0.3, 0.25, 0.2, 0.6))
 	
 	if building_name != "":
 		btn.tooltip_text = EconomyManager.get_building_tooltip(building_name)
