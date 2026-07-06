@@ -33,12 +33,16 @@ var building_costs: Dictionary = {
 	"Świątynia": {"Złoto": 150, "Drewno": 40, "Żelazo": 15}
 }
 
-var current_research: String = ""
-var research_progress: Dictionary = {}
+var current_research := ""
+var research_turns_left := 0
+
+var current_culture_research := ""
+var culture_turns_left := 0
 
 var technology_tree: Dictionary = {
 	"Górnictwo": {
-		"cost": 15,
+		"research_cost": 15,
+		"research_time": 2,
 		"req": [],
 		"unlocked": false,
 		"desc": "Podstawy wydobycia.",
@@ -46,7 +50,8 @@ var technology_tree: Dictionary = {
 		"icon": "⛏️"
 	},
 	"Wydajne Maszyny": {
-		"cost": 45,
+		"research_cost": 45,
+		"research_time": 4,
 		"req": ["Górnictwo"],
 		"unlocked": false,
 		"desc": "+3 Żelaza, +2 Węgla.",
@@ -54,7 +59,8 @@ var technology_tree: Dictionary = {
 		"icon": "⚙️"
 	},
 	"Melioracja": {
-		"cost": 30,
+		"research_cost": 30,
+		"research_time": 3,
 		"req": [],
 		"unlocked": false,
 		"desc": "Nawadnianie pól.",
@@ -62,7 +68,8 @@ var technology_tree: Dictionary = {
 		"icon": "💧"
 	},
 	"Płodozmian": {
-		"cost": 50,
+		"research_cost": 50,
+		"research_time": 5,
 		"req": ["Melioracja"],
 		"unlocked": false,
 		"desc": "+3 Jedzenia dla Farm.",
@@ -70,12 +77,75 @@ var technology_tree: Dictionary = {
 		"icon": "🌾"
 	},
 	"Industrializacja": {
-		"cost": 100,
+		"research_cost": 100,
+		"research_time": 8,
 		"req": ["Wydajne Maszyny", "Płodozmian"],
 		"unlocked": false,
 		"desc": "+10 Złota z Centrum Miasta.",
 		"grid_coords": Vector2(2, 1.5),
 		"icon": "🏭"
+	}
+}
+
+var culture_tree: Dictionary = {
+	"Tradycje": {
+		"research_cost": 15,
+		"research_time": 2,
+		"req": [],
+		"unlocked": false,
+		"desc": "Podstawy kultury.",
+		"grid_coords": Vector2(0,1),
+		"icon": "🏛️"
+	},
+
+	"Sztuka": {
+		"research_cost": 35,
+		"research_time": 4,
+		"req": ["Tradycje"],
+		"unlocked": false,
+		"desc": "Rozwój sztuki.",
+		"grid_coords": Vector2(1,0),
+		"icon": "🎨"
+	},
+
+	"Filozofia": {
+		"research_cost": 40,
+		"research_time": 4,
+		"req": ["Tradycje"],
+		"unlocked": false,
+		"desc": "Rozwój myśli.",
+		"grid_coords": Vector2(1,2),
+		"icon": "🧠"
+	},
+
+	"Teatr": {
+		"research_cost": 55,
+		"research_time": 6,
+		"req": ["Sztuka"],
+		"unlocked": false,
+		"desc": "+2 Kultury.",
+		"grid_coords": Vector2(2,0),
+		"icon": "🎭"
+	},
+
+	"Edukacja": {
+		"research_cost": 70,
+		"research_time": 6,
+		"req": ["Filozofia"],
+		"unlocked": false,
+		"desc": "+1 Nauki.",
+		"grid_coords": Vector2(2,2),
+		"icon": "📚"
+	},
+
+	"Renesans": {
+		"research_cost": 110,
+		"research_time": 10,
+		"req": ["Teatr","Edukacja"],
+		"unlocked": false,
+		"desc": "Złoty wiek kultury.",
+		"grid_coords": Vector2(3,1),
+		"icon": "🌟"
 	}
 }
 
@@ -148,6 +218,34 @@ func deduct_costs(building_name: String) -> void:
 			resources[res] -= costs[res]
 		notify_change()
 
+func start_research(tech_name:String):
+	if current_research != "":
+		return
+
+	var tech = technology_tree[tech_name]
+
+	if resources["Nauka"] < tech["research_cost"]:
+		return
+
+	resources["Nauka"] -= tech["research_cost"]
+	current_research = tech_name
+	research_turns_left = tech["research_time"]
+	notify_change()
+
+func start_culture_research(tech_name:String):
+	if current_culture_research != "":
+		return
+
+	var tech = culture_tree[tech_name]
+
+	if resources["Kultura"] < tech["research_cost"]:
+		return
+
+	resources["Kultura"] -= tech["research_cost"]
+	current_culture_research = tech_name
+	culture_turns_left = tech["research_time"]
+	notify_change()
+
 func next_turn(active_buildings_data: Array) -> void:
 	current_turn += 1
 	var max_pop = 5
@@ -213,8 +311,16 @@ func next_turn(active_buildings_data: Array) -> void:
 				turn_culture += 3 * b_level
 
 	var total_science = 1 + turn_science
-	resources["Nauka"] = total_science
-	resources["Kultura"] = min(100, resources["Kultura"] + total_science + turn_culture) 
+	
+	resources["Nauka"] = min(
+		max_tech_points,
+		resources["Nauka"] + total_science
+	)
+
+	resources["Kultura"] = min(
+		max_culture_points,
+		resources["Kultura"] + turn_culture
+	)
 
 	if resources["Jedzenie"] < 0:
 		resources["Jedzenie"] = 0
@@ -222,14 +328,27 @@ func next_turn(active_buildings_data: Array) -> void:
 		if resources["Populacja"] > 1 and randf() < 0.25:
 			resources["Populacja"] -= 1
 
-	if current_research != "" and technology_tree.has(current_research):
-		if not research_progress.has(current_research):
-			research_progress[current_research] = 0
-		research_progress[current_research] += total_science
-		if research_progress[current_research] >= technology_tree[current_research]["cost"]:
+	if current_research != "":
+		research_turns_left -= 1
+		if research_turns_left <= 0:
 			technology_tree[current_research]["unlocked"] = true
-			research_progress[current_research] = technology_tree[current_research]["cost"]
+			
+			match current_research:
+				"Industrializacja":
+					max_tech_points += 25
+			
 			current_research = ""
+			
+	if current_culture_research != "":
+		culture_turns_left -= 1
+		if culture_turns_left <= 0:
+			culture_tree[current_culture_research]["unlocked"] = true
+			
+			match current_culture_research:
+				"Renesans":
+					max_culture_points += 25
+					
+			current_culture_research = ""
 
 	notify_change()
 

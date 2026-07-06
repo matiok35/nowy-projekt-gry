@@ -29,8 +29,13 @@ var btn_naukowy_1: Button
 var btn_naukowy_2: Button
 
 var tech_tree_button: Button
+var culture_tree_button: Button
+
 @onready var tech_tree_window = $TechTreeWindow
 @onready var tech_tree_map = $TechTreeWindow/ScrollContainer/TechTreeMap
+
+@onready var culture_tree_window = $CultureTreeWindow
+@onready var culture_tree_map = $CultureTreeWindow/ScrollContainer/CultureTreeMap
 
 const X_SPACING: float = 280.0
 const Y_SPACING: float = 90.0
@@ -68,6 +73,7 @@ func _ready():
 	setup_resources_header()
 	setup_custom_popups()
 	setup_tech_tree_ui()
+	setup_culture_tree_ui()
 	style_main_hud_elements()
 	style_context_popup()
 	style_individual_buttons()
@@ -127,6 +133,21 @@ func setup_points_panel():
 	culture_bar.add_theme_stylebox_override("background", c_bg)
 	culture_bar.add_theme_stylebox_override("fill", c_fg)
 	culture_vbox.add_child(culture_bar)
+	
+	culture_tree_button = Button.new()
+	culture_tree_button.text = "Drzewo Kultury"
+	culture_tree_button.custom_minimum_size = Vector2(0, 40)
+	var culture_style = StyleBoxFlat.new()
+	culture_style.bg_color = Color(0.45, 0.15, 0.65)
+	culture_style.border_color = Color(0.8, 0.55, 1.0)
+	culture_style.set_border_width_all(1)
+	culture_style.set_corner_radius_all(4)
+	culture_tree_button.add_theme_stylebox_override("normal", culture_style)
+	var culture_hover = culture_style.duplicate()
+	culture_hover.bg_color = Color(0.60, 0.25, 0.80)
+	culture_tree_button.add_theme_stylebox_override("hover", culture_hover)
+	culture_vbox.add_child(culture_tree_button)
+
 	vbox.add_child(culture_vbox)
 	
 	var tech_vbox = VBoxContainer.new()
@@ -417,6 +438,38 @@ func setup_tech_tree_ui():
 			refresh_technology_tree_view()
 	)
 
+func setup_culture_tree_ui():
+	if culture_tree_window:
+		culture_tree_window.visible = false
+		culture_tree_window.z_index = 10
+		var style_tree = StyleBoxFlat.new()
+		style_tree.bg_color = Color(0.14, 0.13, 0.11, 0.98)
+		style_tree.set_border_width_all(3)
+		style_tree.border_color = Color(0.55, 0.25, 0.80)
+		style_tree.set_corner_radius_all(4)
+		culture_tree_window.add_theme_stylebox_override("panel", style_tree)
+		var close_btn = culture_tree_window.get_node_or_null("CloseButton")
+		if close_btn:
+			close_btn.pressed.connect(func(): culture_tree_window.visible = false)
+		var scroll = culture_tree_window.get_node_or_null("ScrollContainer")
+		if scroll:
+			scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+			scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+
+	if culture_tree_map:
+		culture_tree_map.draw.connect(_draw_culture_connections)
+
+	culture_tree_button.pressed.connect(func():
+		hide_all_menus()
+		if culture_tree_window:
+			culture_tree_window.visible = true
+			culture_tree_window.custom_minimum_size = Vector2(900,600)
+			culture_tree_window.size = Vector2(900,600)
+			var center = get_viewport_rect().size / 2
+			culture_tree_window.global_position = center - culture_tree_window.size / 2
+			refresh_culture_tree_view()
+	)
+
 func _get_tech_node_position(grid_coords: Vector2) -> Vector2:
 	return Vector2(
 		grid_coords.x * X_SPACING + OFFSET_POS.x,
@@ -442,6 +495,26 @@ func _draw_tech_connections():
 				tech_tree_map.draw_line(start_pos, Vector2(mid_x, start_pos.y), line_color, line_width)
 				tech_tree_map.draw_line(Vector2(mid_x, start_pos.y), Vector2(mid_x, end_pos.y), line_color, line_width)
 				tech_tree_map.draw_line(Vector2(mid_x, end_pos.y), end_pos, line_color, line_width)
+
+func _draw_culture_connections():
+	for tech_name in EconomyManager.culture_tree:
+		var tech = EconomyManager.culture_tree[tech_name]
+		var start_pos = _get_tech_node_position(tech["grid_coords"]) + Vector2(210, 32)
+		for req_name in tech["req"]:
+			if EconomyManager.culture_tree.has(req_name):
+				var req_tech = EconomyManager.culture_tree[req_name]
+				var end_pos = _get_tech_node_position(req_tech["grid_coords"]) + Vector2(0, 32)
+				var line_color = Color(0.25, 0.22, 0.18, 1.0)
+				var line_width = 2.5
+				if req_tech["unlocked"] and tech["unlocked"]:
+					line_color = Color(0.75, 0.35, 1.0, 0.9)
+					line_width = 3.5
+				elif req_tech["unlocked"] and EconomyManager.current_culture_research == tech_name:
+					line_color = Color(0.85, 0.45, 1.0, 0.8)
+				var mid_x = start_pos.x + (end_pos.x - start_pos.x) / 2.0
+				culture_tree_map.draw_line(start_pos, Vector2(mid_x, start_pos.y), line_color, line_width)
+				culture_tree_map.draw_line(Vector2(mid_x, start_pos.y), Vector2(mid_x, end_pos.y), line_color, line_width)
+				culture_tree_map.draw_line(Vector2(mid_x, end_pos.y), end_pos, line_color, line_width)
 
 func refresh_technology_tree_view():
 	if not tech_tree_map: return
@@ -492,17 +565,11 @@ func refresh_technology_tree_view():
 		lbl_title.add_theme_color_override("font_color", Color(0.9, 0.85, 0.75))
 		vbox.add_child(lbl_title)
 		var lbl_desc = Label.new()
-		lbl_desc.text = tech["desc"]
+		lbl_desc.text = "%s\n💎 Koszt: %d pkt" % [tech["desc"], tech["research_cost"]]
 		lbl_desc.add_theme_font_size_override("font_size", 9)
-		lbl_desc.add_theme_color_override("font_color", Color(0.6, 0.58, 0.53))
+		lbl_desc.add_theme_color_override("font_color", Color(0.75, 0.65, 0.85))
 		vbox.add_child(lbl_desc)
-		var bar = ProgressBar.new()
-		var progress = EconomyManager.research_progress.get(tech_name, 0)
-		bar.max_value = tech["cost"]
-		bar.value = progress
-		bar.show_percentage = false
-		bar.custom_minimum_size.y = 4
-		vbox.add_child(bar)
+
 		var invisible_button = Button.new()
 		invisible_button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		invisible_button.flat = true
@@ -520,19 +587,106 @@ func refresh_technology_tree_view():
 			node_style.border_color = Color(0.85, 0.64, 0.22) 
 			node_style.bg_color = Color(0.24, 0.2, 0.14)
 			var current_science = EconomyManager.resources["Nauka"]
-			var turns_left = ceil(float(tech["cost"] - progress) / max(1, current_science))
-			lbl_title.text = "%s (%dt)" % [tech_name, turns_left]
+			var progress = tech["research_cost"] - EconomyManager.resources["Nauka"]
+			progress = clamp(progress, 0, tech["research_cost"])
+			lbl_title.text = "%s (%d tur)" % [tech_name, EconomyManager.research_turns_left]
 			invisible_button.disabled = true
 		elif not reqs_ok:
 			node_panel.modulate.a = 0.35 
 			invisible_button.disabled = true
 		else:
 			invisible_button.pressed.connect(func():
-				EconomyManager.current_research = tech_name
+				EconomyManager.start_research(tech_name)
 				refresh_technology_tree_view()
 			)
 		tech_tree_map.add_child(node_panel)
 	tech_tree_map.custom_minimum_size = max_size
+
+func refresh_culture_tree_view():
+	if not culture_tree_map: return
+	for child in culture_tree_map.get_children(): child.queue_free()
+	culture_tree_map.queue_redraw()
+	var max_size := Vector2.ZERO
+	for tech_name in EconomyManager.culture_tree:
+		var tech = EconomyManager.culture_tree[tech_name]
+		var node_pos = _get_tech_node_position(tech["grid_coords"])
+		var node_end = node_pos + Vector2(300, 150)
+		max_size.x = max(max_size.x, node_end.x)
+		max_size.y = max(max_size.y, node_end.y)
+		var node_panel = PanelContainer.new()
+		node_panel.position = node_pos
+		node_panel.custom_minimum_size = Vector2(210, 64)
+		var node_style = StyleBoxFlat.new()
+		node_style.bg_color = Color(0.18, 0.16, 0.14)
+		node_style.set_corner_radius_all(32)  
+		node_style.set_border_width_all(2)
+		node_style.border_color = Color(0.45, 0.25, 0.70)
+		node_style.set_content_margin_all(6)
+		node_panel.add_theme_stylebox_override("panel", node_style)
+		var hbox = HBoxContainer.new()
+		hbox.add_theme_constant_override("separation", 8)
+		node_panel.add_child(hbox)
+		var icon_panel = PanelContainer.new()
+		icon_panel.custom_minimum_size = Vector2(46, 46)
+		var icon_style = StyleBoxFlat.new()
+		icon_style.bg_color = Color(0.24, 0.22, 0.18)
+		icon_style.set_corner_radius_all(23) 
+		icon_style.set_border_width_all(1)
+		icon_style.border_color = Color(0.6, 0.3, 0.9)
+		icon_panel.add_theme_stylebox_override("panel", icon_style)
+		var icon_label = Label.new()
+		icon_label.text = tech["icon"]
+		icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		icon_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		icon_label.add_theme_font_size_override("font_size", 18)
+		icon_panel.add_child(icon_label)
+		hbox.add_child(icon_panel)
+		var vbox = VBoxContainer.new()
+		vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+		hbox.add_child(vbox)
+		var lbl_title = Label.new()
+		lbl_title.text = tech_name
+		lbl_title.add_theme_font_size_override("font_size", 12)
+		lbl_title.add_theme_color_override("font_color", Color(1.0, 0.85, 1.0))
+		vbox.add_child(lbl_title)
+		var lbl_desc = Label.new()
+		lbl_desc.text = "%s\n💎 Koszt: %d pkt" % [tech["desc"], tech["research_cost"]]
+		lbl_desc.add_theme_font_size_override("font_size", 9)
+		lbl_desc.add_theme_color_override("font_color", Color(0.75, 0.65, 0.85))
+		vbox.add_child(lbl_desc)
+
+		var invisible_button = Button.new()
+		invisible_button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		invisible_button.flat = true
+		node_panel.add_child(invisible_button)
+		
+		var reqs_ok = true
+		for r in tech["req"]:
+			if not EconomyManager.culture_tree[r]["unlocked"]: reqs_ok = false
+				
+		if tech["unlocked"]:
+			node_style.border_color = Color(0.5, 1.0, 0.6) 
+			node_style.bg_color = Color(0.15, 0.22, 0.16)
+			invisible_button.disabled = true
+		elif EconomyManager.current_culture_research == tech_name:
+			node_style.border_color = Color(0.85, 0.3, 1.0) 
+			node_style.bg_color = Color(0.28, 0.18, 0.35)
+			var current = EconomyManager.resources["Kultura"]
+			var progress = tech["research_cost"] - EconomyManager.resources["Kultura"]
+			progress = clamp(progress, 0, tech["research_cost"])
+			lbl_title.text = "%s (%d tur)" % [tech_name, EconomyManager.culture_turns_left]
+			invisible_button.disabled = true
+		elif not reqs_ok:
+			node_panel.modulate.a = 0.35 
+			invisible_button.disabled = true
+		else:
+			invisible_button.pressed.connect(func():
+				EconomyManager.start_culture_research(tech_name)
+				refresh_culture_tree_view()
+			)
+		culture_tree_map.add_child(node_panel)
+	culture_tree_map.custom_minimum_size = max_size
 
 func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String, building_name: String, building_level: int, is_owned: bool, borders_owned: bool, deposit_size: String = "", fertility: float = 0.0) -> void:
 	hide_all_menus()
@@ -647,9 +801,10 @@ func hide_all_menus():
 	if tile_info_menu: tile_info_menu.visible = false
 	if menu_zalozenia_miasta: menu_zalozenia_miasta.visible = false
 	if tech_tree_window: tech_tree_window.visible = false
+	if culture_tree_window: culture_tree_window.visible = false
 
 func any_menu_visible() -> bool:
-	return menu_budowania.visible or (tile_info_menu and tile_info_menu.visible) or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) or (tech_tree_window and tech_tree_window.visible)
+	return menu_budowania.visible or (tile_info_menu and tile_info_menu.visible) or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) or (tech_tree_window and tech_tree_window.visible) or (culture_tree_window and culture_tree_window.visible)
 
 func _reposition_menu(menu: Control, base_pos: Vector2):
 	var vbox = menu.get_node("VBoxContainer") as VBoxContainer
