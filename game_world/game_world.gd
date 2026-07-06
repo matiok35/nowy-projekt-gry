@@ -1,50 +1,74 @@
 extends Node2D
 # game_world.gd (Podpięty pod główny węzeł sceny GameWorld)
 
+# ============================================================
+# STAŁE I ZMIENNE
+# ============================================================
+
 const MAP_SIZE = 25
-const HEX_RADIUS = 80.0
+const HEX_RADIUS = 80.0 # POWIĘKSZONY ROZMIAR KAFELKA
 
 var hex_width: float = sqrt(3) * HEX_RADIUS
 var hex_height: float = 2.0 * HEX_RADIUS
 
+# --- Dane mapy ---
 var map_data = {}
 var tile_nodes = {}
 var label_nodes = {}
+
+# --- Terytorium ---
 var owned_tiles: Dictionary = {}
 var city_centers: Array[Vector2] = []
 var territory_overlays: Dictionary = {}
 var last_expansion_turn: int = 1
 
+# --- Referencje do węzłów ---
 var map_container: Node2D
 var hud_node: Control
 var character: Character
 var path_line: Line2D
 
+# --- Pathfinding ---
 var astar: AStar2D = AStar2D.new()
 var cell_to_id: Dictionary = {}
 var cell_to_world: Dictionary = {}
 
-const BUILDINGS_RESET_TILE_TO_GRASS = ["Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia"]
+const BUILDINGS_RESET_TILE_TO_GRASS = ["Farma", "Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia"]
+
+
+# ============================================================
+# INICJALIZACJA
+# ============================================================
 
 func _ready() -> void:
 	hud_node = get_tree().current_scene.find_child("UI", true, false)
-	if hud_node == null: hud_node = get_tree().current_scene.find_child("HUD", true, false)
+	if hud_node == null:
+		hud_node = get_tree().current_scene.find_child("HUD", true, false)
+
 	map_container = get_node_or_null("MapContainer")
 	randomize()
 	generate_map()
 	build_astar_graph()
+
 	character = get_node_or_null("Character")
 	path_line = get_node_or_null("PathLine")
+
 	if path_line:
 		path_line.width = 4.0
 		path_line.default_color = Color(1.0, 0.85, 0.0, 0.85)
+
 	if character:
 		var start_pos = Vector2(MAP_SIZE / 2, MAP_SIZE / 2)
-		if map_data.has(start_pos): map_data[start_pos]["type"] = "Trawa"
 		if cell_to_world.has(start_pos):
 			character.global_position = cell_to_world[start_pos]
 		character.city_creation_requested.connect(_on_character_city_creation_requested)
+
 	EconomyManager.economy_updated.connect(_on_economy_turn_changed)
+
+
+# ============================================================
+# GENEROWANIE MAPY
+# ============================================================
 
 func generate_map() -> void:
 	var sizes = ["Małe", "Średnie", "Duże"]
@@ -56,8 +80,6 @@ func generate_map() -> void:
 			if rand < 0.04: type = "Drewno"
 			elif rand < 0.07: type = "Żelazo"
 			elif rand < 0.09: type = "Węgiel"
-			elif rand < 0.14: type = "Pszenica"
-			elif rand < 0.19: type = "Bydło"
 
 			var deposit_size = ""
 			var fertility = 0.0
@@ -70,7 +92,6 @@ func generate_map() -> void:
 			map_data[pos] = {
 				"type": type,
 				"building": "Brak",
-				"level": 1,
 				"deposit_size": deposit_size,
 				"fertility": fertility
 			}
@@ -83,13 +104,15 @@ func create_procedural_hex(pos: Vector2, type: String, deposit_size: String) -> 
 	area.monitorable = false
 
 	var x_pos = pos.x * hex_width
-	if int(pos.y) % 2 == 1: x_pos += hex_width / 2.0
+	if int(pos.y) % 2 == 1:
+		x_pos += hex_width / 2.0
 	var y_pos = pos.y * (hex_height * 0.75)
 
 	area.position = Vector2(x_pos, y_pos) + Vector2(200, 150)
 	cell_to_world[pos] = area.position
 
 	var points = _build_hex_points()
+
 	var polygon = Polygon2D.new()
 	polygon.polygon = points
 	polygon.color = _get_tile_color(type)
@@ -108,7 +131,7 @@ func create_procedural_hex(pos: Vector2, type: String, deposit_size: String) -> 
 	area.add_child(collision)
 
 	var label = Label.new()
-	label.text = "%s\n(%s)" % [type, deposit_size] if deposit_size != "" else type
+	label.text = "%s\n(%s)" % [type, deposit_size] if type != "Trawa" else type
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.size = Vector2(hex_width, hex_height)
@@ -117,8 +140,10 @@ func create_procedural_hex(pos: Vector2, type: String, deposit_size: String) -> 
 	area.add_child(label)
 	label_nodes[pos] = label
 
-	if map_container: map_container.add_child(area)
-	else: add_child(area)
+	if map_container:
+		map_container.add_child(area)
+	else:
+		add_child(area)
 	tile_nodes[pos] = area
 
 func _build_hex_points() -> PackedVector2Array:
@@ -133,9 +158,12 @@ func _get_tile_color(type: String) -> Color:
 		"Drewno": return Color(0.15, 0.6, 0.15)
 		"Żelazo": return Color(0.45, 0.45, 0.45)
 		"Węgiel": return Color(0.18, 0.18, 0.18)
-		"Pszenica": return Color(0.85, 0.75, 0.2)
-		"Bydło": return Color(0.45, 0.55, 0.2)
 		_: return Color(0.1, 0.45, 0.1)
+
+
+# ============================================================
+# MIASTA I TERYTORIUM
+# ============================================================
 
 func _on_character_city_creation_requested(char_global_pos: Vector2) -> void:
 	var cell_pos = world_to_nearest_cell(char_global_pos)
@@ -148,15 +176,16 @@ func create_city_at(pos: Vector2) -> void:
 	if city_centers.has(pos): return
 	city_centers.append(pos)
 	map_data[pos]["building"] = "Centrum Miasta"
-	map_data[pos]["level"] = 1
-	if label_nodes.has(pos): label_nodes[pos].text = "🏢 Centrum"
+	if label_nodes.has(pos):
+		label_nodes[pos].text = "🏢 Centrum"
 
 	var poly = tile_nodes[pos].get_child(0) as Polygon2D
 	if poly: poly.color = Color(0.2, 0.5, 0.8)
 
 	claim_tile(pos)
 	for neighbor in HexUtils.get_neighbors(pos):
-		if map_data.has(neighbor): claim_tile(neighbor)
+		if map_data.has(neighbor):
+			claim_tile(neighbor)
 
 	if character:
 		character.queue_free()
@@ -167,6 +196,7 @@ func claim_tile(pos: Vector2) -> void:
 	owned_tiles[pos] = true
 	var tile_area = tile_nodes[pos]
 	var base_poly = tile_area.get_child(0) as Polygon2D
+
 	if base_poly:
 		var overlay = Polygon2D.new()
 		overlay.polygon = base_poly.polygon
@@ -222,6 +252,11 @@ func _get_hex_distance_to_nearest_city(tile: Vector2) -> int:
 		if d < min_d: min_d = d
 	return min_d
 
+
+# ============================================================
+# BUDOWANIE
+# ============================================================
+
 func build_on_tile(pos: Vector2, building_name: String) -> void:
 	if character and character.selected: return
 	if not owned_tiles.has(pos): return
@@ -237,28 +272,17 @@ func build_on_tile(pos: Vector2, building_name: String) -> void:
 		tile["fertility"] = 1.0
 
 	tile["building"] = building_name
-	tile["level"] = 1
 
 	var poly = tile_nodes[pos].get_child(0) as Polygon2D
-	if poly: poly.color = _get_building_color(building_name)
+	if poly:
+		poly.color = _get_building_color(building_name)
 
 	if label_nodes.has(pos):
-		label_nodes[pos].text = "%s\n(Lvl 1)" % building_name
-
-func upgrade_building(pos: Vector2) -> void:
-	var tile = map_data[pos]
-	var b_name = tile["building"]
-	if b_name == "Brak" or b_name == "Centrum Miasta": return
-	if EconomyManager.can_afford_upgrade(b_name, tile["level"]):
-		EconomyManager.deduct_upgrade_costs(b_name, tile["level"])
-		tile["level"] += 1
-		if label_nodes.has(pos):
-			label_nodes[pos].text = "%s\n(Lvl %d)" % [b_name, tile["level"]]
+		label_nodes[pos].text = building_name
 
 func _get_building_color(building_name: String) -> Color:
 	match building_name:
 		"Farma": return Color(0.7, 0.6, 0.2)
-		"Pastwisko": return Color(0.6, 0.5, 0.15)
 		"Dom mieszkalny": return Color(0.65, 0.45, 0.35)
 		"Laboratorium": return Color(0.2, 0.5, 0.8)
 		"Warsztat": return Color(0.5, 0.4, 0.2)
@@ -273,11 +297,15 @@ func get_active_buildings_list() -> Array:
 		if tile["building"] != "Brak":
 			list.append({
 				"name": tile["building"],
-				"level": tile["level"],
 				"deposit_size": tile["deposit_size"],
 				"fertility": tile["fertility"]
 			})
 	return list
+
+
+# ============================================================
+# WEJŚCIE (MYSZ) ZABEZPIECZENIE PRZED BŁĘDAMI LPM
+# ============================================================
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventMouseButton): return
@@ -288,6 +316,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			camera.is_drag_motion = false
 			return
 
+	# NOWOŚĆ / POPRAWKA: Jeśli dymek menu jest aktywny, kliknięcie LPM poza nim natychmiast go zamyka i przerywa dalsze akcje
 	if event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
 		if hud_node and hud_node.has_method("any_menu_visible") and hud_node.any_menu_visible():
 			hud_node.hide_all_menus()
@@ -313,14 +342,17 @@ func _get_tile_at_world_pos(world_pos: Vector2) -> Variant:
 	query.collide_with_areas = true
 	var results = space_state.intersect_point(query)
 	if results.is_empty(): return null
+
 	var hit_area = results[0]["collider"] as Area2D
 	for pos in tile_nodes:
-		if tile_nodes[pos] == hit_area: return pos
+		if tile_nodes[pos] == hit_area:
+			return pos
 	return null
 
 func _show_context_menu_for(pos: Vector2) -> void:
 	var tile = map_data[pos]
 	var is_owned = owned_tiles.has(pos)
+
 	var borders_owned = false
 	for n in HexUtils.get_neighbors(pos):
 		if owned_tiles.has(n):
@@ -330,12 +362,13 @@ func _show_context_menu_for(pos: Vector2) -> void:
 	var screen_mouse_pos = get_viewport().get_mouse_position()
 	if hud_node and hud_node.has_method("show_context_menu"):
 		hud_node.show_context_menu(
-			screen_mouse_pos, pos, tile["type"], tile["building"], tile.get("level", 1),
+			screen_mouse_pos, pos, tile["type"], tile["building"],
 			is_owned, borders_owned, tile["deposit_size"], tile["fertility"]
 		)
 
 func _handle_left_click_on_tile(pos: Vector2, global_mouse_pos: Vector2) -> void:
-	if hud_node and hud_node.has_method("any_menu_visible") and hud_node.any_menu_visible(): return
+	if hud_node and hud_node.has_method("any_menu_visible") and hud_node.any_menu_visible():
+		return
 	if character and global_mouse_pos.distance_to(character.global_position) < 35.0:
 		character.set_selected(not character.selected)
 		return
@@ -343,6 +376,11 @@ func _handle_left_click_on_tile(pos: Vector2, global_mouse_pos: Vector2) -> void
 		var world_path = get_world_path_to(pos)
 		if not world_path.is_empty():
 			character.follow_path(world_path)
+
+
+# ============================================================
+# PATHFINDING
+# ============================================================
 
 func build_astar_graph() -> void:
 	astar.clear()
@@ -377,13 +415,20 @@ func get_world_path_to(target_pos: Vector2) -> Array[Vector2]:
 	if id_path.is_empty(): return []
 	var max_steps: int = mini(id_path.size(), character.move_range + 1)
 	var world_path: Array[Vector2] = []
-	for i in range(max_steps): world_path.append(astar.get_point_position(id_path[i]))
+	for i in range(max_steps):
+		world_path.append(astar.get_point_position(id_path[i]))
 	return world_path
 
 func draw_path_line(world_path: Array[Vector2]) -> void:
 	if not path_line: return
 	path_line.clear_points()
-	for point in world_path: path_line.add_point(point)
+	for point in world_path:
+		path_line.add_point(point)
+
+
+# ============================================================
+# PĘTLA GŁÓWNA
+# ============================================================
 
 func _process(_delta: float) -> void:
 	if not character or not path_line: return
