@@ -4,6 +4,7 @@ extends Node
 signal economy_updated(balances: Dictionary, current_turn: int, selected_build: String)
 
 var current_turn: int = 1
+var player_army: Array = []
 
 var resources: Dictionary = {
 	"Złoto": 150,
@@ -360,3 +361,20 @@ func next_turn(active_buildings_data: Array) -> void:
 
 func notify_change() -> void:
 	economy_updated.emit(resources, current_turn, "")
+
+func calculate_unit_cost(unit: Dictionary) -> int:
+	var hp = unit.get("hp", 0)
+	var dmg = unit.get("dmg", 0)
+	var def = unit.get("def", 0)
+	return int((hp + dmg + def) * 1.5)
+
+func can_recruit_unit(unit: Dictionary) -> bool:
+	var cost = calculate_unit_cost(unit)
+	return resources.get("Złoto", 0) >= cost
+
+func recruit_unit(unit: Dictionary) -> void:
+	var cost = calculate_unit_cost(unit)
+	if resources.get("Złoto", 0) >= cost:
+		resources["Złoto"] -= cost
+		player_army.append(unit)
+		notify_change()
