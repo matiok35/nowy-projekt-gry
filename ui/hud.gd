@@ -106,25 +106,31 @@ func setup_points_panel():
 	points_panel.add_child(vbox)
 	
 	var culture_vbox = VBoxContainer.new()
-	culture_vbox.add_theme_constant_override("separation", 2)
+	culture_vbox.add_theme_constant_override("separation", 5)
+	
 	var culture_hbox = HBoxContainer.new()
-	var default_icon = null
+	culture_hbox.add_theme_constant_override("separation", 10)
+	
 	var c_icon = TextureRect.new()
-	c_icon.texture = default_icon
+	c_icon.texture = preload("res://assets/resources/cultural.png")
 	c_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	c_icon.custom_minimum_size = Vector2(20, 20)
+	c_icon.custom_minimum_size = Vector2(36, 36)
 	c_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	c_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	
+	var c_info_vbox = VBoxContainer.new()
+	c_info_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	c_info_vbox.add_theme_constant_override("separation", 2)
+	c_info_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	
 	culture_label = Label.new()
 	culture_label.text = "Punkty Kultury: 0/100"
 	culture_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	culture_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	culture_label.add_theme_font_size_override("font_size", 14)
-	culture_hbox.add_child(c_icon)
-	culture_hbox.add_child(culture_label)
-	culture_vbox.add_child(culture_hbox)
 	
 	culture_bar = ProgressBar.new()
-	culture_bar.custom_minimum_size = Vector2(0, 4)
+	culture_bar.custom_minimum_size = Vector2(0, 8)
 	culture_bar.show_percentage = false
 	var c_bg = StyleBoxFlat.new()
 	c_bg.bg_color = Color(0.2, 0.15, 0.25)
@@ -132,7 +138,13 @@ func setup_points_panel():
 	c_fg.bg_color = Color(0.65, 0.35, 0.75)  
 	culture_bar.add_theme_stylebox_override("background", c_bg)
 	culture_bar.add_theme_stylebox_override("fill", c_fg)
-	culture_vbox.add_child(culture_bar)
+	
+	c_info_vbox.add_child(culture_label)
+	c_info_vbox.add_child(culture_bar)
+	
+	culture_hbox.add_child(c_icon)
+	culture_hbox.add_child(c_info_vbox)
+	culture_vbox.add_child(culture_hbox)
 	
 	culture_tree_button = Button.new()
 	culture_tree_button.text = "Drzewo Kultury"
@@ -151,24 +163,31 @@ func setup_points_panel():
 	vbox.add_child(culture_vbox)
 	
 	var tech_vbox = VBoxContainer.new()
-	tech_vbox.add_theme_constant_override("separation", 2)
+	tech_vbox.add_theme_constant_override("separation", 5)
+	
 	var tech_hbox = HBoxContainer.new()
+	tech_hbox.add_theme_constant_override("separation", 10)
+	
 	var t_icon = TextureRect.new()
-	t_icon.texture = default_icon
+	t_icon.texture = preload("res://assets/resources/technology.png")
 	t_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	t_icon.custom_minimum_size = Vector2(20, 20)
+	t_icon.custom_minimum_size = Vector2(36, 36)
 	t_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	t_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	
+	var t_info_vbox = VBoxContainer.new()
+	t_info_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	t_info_vbox.add_theme_constant_override("separation", 2)
+	t_info_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	
 	tech_label = Label.new()
 	tech_label.text = "Punkty Technologii: 0/100"
 	tech_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tech_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	tech_label.add_theme_font_size_override("font_size", 14)
-	tech_hbox.add_child(t_icon)
-	tech_hbox.add_child(tech_label)
-	tech_vbox.add_child(tech_hbox)
 	
 	tech_bar = ProgressBar.new()
-	tech_bar.custom_minimum_size = Vector2(0, 4)
+	tech_bar.custom_minimum_size = Vector2(0, 8)
 	tech_bar.show_percentage = false
 	var t_bg = StyleBoxFlat.new()
 	t_bg.bg_color = Color(0.1, 0.25, 0.25)
@@ -176,7 +195,13 @@ func setup_points_panel():
 	t_fg.bg_color = Color(0.25, 0.7, 0.65) 
 	tech_bar.add_theme_stylebox_override("background", t_bg)
 	tech_bar.add_theme_stylebox_override("fill", t_fg)
-	tech_vbox.add_child(tech_bar)
+	
+	t_info_vbox.add_child(tech_label)
+	t_info_vbox.add_child(tech_bar)
+	
+	tech_hbox.add_child(t_icon)
+	tech_hbox.add_child(t_info_vbox)
+	tech_vbox.add_child(tech_hbox)
 	vbox.add_child(tech_vbox)
 	
 	add_child(points_panel)
@@ -198,7 +223,20 @@ func setup_resources_header():
 		hbox.add_theme_constant_override("separation", 5)
 		
 		var icon = TextureRect.new()
-		icon.texture = default_icon
+		if res_name == "Złoto":
+			icon.texture = preload("res://assets/resources/gold.png")
+		elif res_name == "Jedzenie":
+			icon.texture = preload("res://assets/resources/food.png")
+		elif res_name == "Drewno":
+			icon.texture = preload("res://assets/resources/wood.png")
+		elif res_name == "Żelazo":
+			icon.texture = preload("res://assets/resources/iron.png")
+		elif res_name == "Węgiel":
+			icon.texture = preload("res://assets/resources/coal.png")
+		elif res_name == "Populacja":
+			icon.texture = preload("res://assets/resources/population.png")
+		else:
+			icon.texture = default_icon
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.custom_minimum_size = Vector2(24, 24)
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED

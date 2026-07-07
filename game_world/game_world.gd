@@ -93,7 +93,43 @@ func create_procedural_hex(pos: Vector2, type: String, deposit_size: String) -> 
 	var points = _build_hex_points()
 	var polygon = Polygon2D.new()
 	polygon.polygon = points
-	polygon.color = _get_tile_color(type)
+	if type == "Trawa" or type == "Drewno" or type == "Pszenica" or type == "Żelazo" or type == "Bydło" or type == "Węgiel":
+		# Ustawiamy poligon jako maskę (nie będzie rysowany jego kolor, tylko przytnie on swoje dzieci)
+		polygon.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
+		polygon.color = Color(1, 1, 1, 1) # Musi mieć pełną widoczność (alpha = 1), żeby działał jako maska
+		
+		var sprite_bg = Sprite2D.new()
+		var zoom_factor = 1.0
+		var stretch_y = 1.0
+		if type == "Trawa":
+			sprite_bg.texture = load("res://assets/tiles/hex_grass.png")
+			zoom_factor = 1.25
+		elif type == "Drewno":
+			sprite_bg.texture = load("res://assets/tiles/hex_forest.png")
+			zoom_factor = 1.10
+		elif type == "Pszenica":
+			sprite_bg.texture = load("res://assets/tiles/hex_wheat.png")
+			zoom_factor = 1.15
+			stretch_y = 1.20
+		elif type == "Żelazo":
+			sprite_bg.texture = load("res://assets/tiles/hex_iron.png")
+			zoom_factor = 1.15
+			stretch_y = 1.15
+		elif type == "Bydło":
+			sprite_bg.texture = load("res://assets/tiles/hex_cows.png")
+			zoom_factor = 1.15
+			stretch_y = 1.50
+		elif type == "Węgiel":
+			sprite_bg.texture = load("res://assets/tiles/hex_coal.png")
+			zoom_factor = 1.15
+			
+		var tex_size = sprite_bg.texture.get_size()
+		# Skalujemy Sprite proporcjonalnie i dopasowujemy powiększenie do konkretnej tekstury
+		var s = max(hex_width / tex_size.x, hex_height / tex_size.y) * zoom_factor
+		sprite_bg.scale = Vector2(s, s * stretch_y)
+		polygon.add_child(sprite_bg)
+	else:
+		polygon.color = _get_tile_color(type)
 	area.add_child(polygon)
 
 	var sprite = Sprite2D.new()
@@ -115,7 +151,10 @@ func create_procedural_hex(pos: Vector2, type: String, deposit_size: String) -> 
 	area.add_child(collision)
 
 	var label = Label.new()
-	label.text = "%s\n(%s)" % [type, deposit_size] if deposit_size != "" else type
+	if type == "Trawa" or type == "Drewno" or type == "Pszenica" or type == "Żelazo" or type == "Bydło" or type == "Węgiel":
+		label.text = ""
+	else:
+		label.text = "%s\n(%s)" % [type, deposit_size] if deposit_size != "" else type
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.size = Vector2(hex_width, hex_height)
