@@ -30,7 +30,9 @@ var building_costs: Dictionary = {
 	"Laboratorium": {"Złoto": 100, "Drewno": 50, "Żelazo": 10},
 	"Warsztat": {"Złoto": 80, "Drewno": 40, "Żelazo": 5},
 	"Biblioteka": {"Złoto": 70, "Drewno": 30},
-	"Świątynia": {"Złoto": 150, "Drewno": 40, "Żelazo": 15}
+	"Świątynia": {"Złoto": 150, "Drewno": 40, "Żelazo": 15},
+	"Baraki": {"Złoto": 60, "Drewno": 30},
+	"Akademia generałów": {"Złoto": 120, "Drewno": 40, "Żelazo": 10}
 }
 
 var current_research := ""
@@ -160,7 +162,7 @@ func get_building_tooltip(building_name: String) -> String:
 		"Kopalnia Węgla": text += "• Wymaga: Węgiel\n"
 		"Farma": text += "• Wymaga: Pszenica\n"
 		"Pastwisko": text += "• Wymaga: Bydło\n"
-		"Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia":
+		"Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia", "Baraki", "Akademia generałów":
 			text += "• Wymaga: Trawa\n"
 
 	text += "\nKoszt poziomu 1\n"
@@ -176,7 +178,7 @@ func can_afford_and_place(building_name: String, tile_type: String) -> bool:
 	if building_name == "Kopalnia Węgla" and tile_type != "Węgiel": return false
 	if building_name == "Farma" and tile_type != "Pszenica": return false
 	if building_name == "Pastwisko" and tile_type != "Bydło": return false
-	if building_name in ["Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia"] and tile_type != "Trawa": return false
+	if building_name in ["Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia", "Baraki", "Akademia generałów"] and tile_type != "Trawa": return false
 
 	var costs = building_costs[building_name]
 	for res in costs:
@@ -309,6 +311,10 @@ func next_turn(active_buildings_data: Array) -> void:
 				turn_culture += 1 * b_level
 			"Świątynia":
 				turn_culture += 3 * b_level
+			"Baraki":
+				pass # Na razie brak logiki
+			"Akademia generałów":
+				pass # Na razie brak logiki
 
 	var total_science = 1 + turn_science
 	

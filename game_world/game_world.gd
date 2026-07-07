@@ -25,7 +25,7 @@ var astar: AStar2D = AStar2D.new()
 var cell_to_id: Dictionary = {}
 var cell_to_world: Dictionary = {}
 
-const BUILDINGS_RESET_TILE_TO_GRASS = ["Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia"]
+const BUILDINGS_RESET_TILE_TO_GRASS = ["Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia", "Baraki", "Akademia generałów"]
 
 func _ready() -> void:
 	hud_node = get_tree().current_scene.find_child("UI", true, false)
@@ -184,6 +184,11 @@ func _get_tile_color(type: String) -> Color:
 		_: return Color(0.1, 0.45, 0.1)
 
 func _on_character_city_creation_requested(char_global_pos: Vector2) -> void:
+	# Dodany warunek: Jeśli tablica city_centers nie jest pusta, przerwij działanie.
+	# Zapewnia to, że można stworzyć tylko jedno miasto w grze.
+	if not city_centers.is_empty():
+		return
+
 	var cell_pos = world_to_nearest_cell(char_global_pos)
 	if map_data.has(cell_pos):
 		if city_centers.has(cell_pos): return
@@ -204,9 +209,9 @@ func create_city_at(pos: Vector2) -> void:
 	for neighbor in HexUtils.get_neighbors(pos):
 		if map_data.has(neighbor): claim_tile(neighbor)
 
+	# Zmiana: Postać nie znika (usuwamy queue_free()), odznaczamy ją jedynie dla porządku wizualnego
 	if character:
-		character.queue_free()
-		character = null
+		character.set_selected(false)
 
 func claim_tile(pos: Vector2) -> void:
 	if owned_tiles.has(pos): return
@@ -315,6 +320,8 @@ func _get_building_color(building_name: String) -> Color:
 		"Warsztat": return Color(0.5, 0.4, 0.2)
 		"Biblioteka": return Color(0.6, 0.3, 0.6)
 		"Świątynia": return Color(0.8, 0.7, 0.3)
+		"Baraki": return Color(0.75, 0.2, 0.2)
+		"Akademia generałów": return Color(0.4, 0.2, 0.6)
 		_: return Color(0.85, 0.65, 0.15)
 
 func get_active_buildings_list() -> Array:
