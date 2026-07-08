@@ -784,6 +784,12 @@ func refresh_culture_tree_view():
 		culture_tree_map.add_child(node_panel)
 	culture_tree_map.custom_minimum_size = max_size
 
+func _format_cost_dict(cost: Dictionary) -> String:
+	var parts: Array = []
+	for res in cost:
+		parts.append("%d %s" % [cost[res], res])
+	return ", ".join(parts)
+
 func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String, building_name: String, building_level: int, is_owned: bool, borders_owned: bool, deposit_size: String = "", fertility: float = 0.0) -> void:
 	hide_all_menus()
 	active_tile_pos = tile_pos
@@ -797,8 +803,13 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 	
 	tile_info_menu.visible = true
 	
+	var show_upgrade = is_owned and has_building and building_name != "Centrum Miasta" and building_level < 3
+	
 	if has_building:
 		info_label.text = "🏢 Budynek: %s (Lvl %d)\nPodłoże: %s" % [building_name, building_level, tile_type]
+		if show_upgrade:
+			var preview_cost = EconomyManager.get_upgrade_cost(building_name, building_level)
+			info_label.text += "\n⬆️ Koszt ulepszenia: %s" % _format_cost_dict(preview_cost)
 	elif tile_type == "Trawa":
 		info_label.text = "🌱 Typ: %s\n✨ Żyzność pola: %d%%" % [tile_type, int(fertility * 100)]
 	else:
@@ -813,8 +824,6 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 		kup_pole_button.disabled = not can_buy
 		kup_pole_button.modulate.a = 1.0 if can_buy else 0.35
 
-	var show_upgrade = is_owned and has_building and building_name != "Centrum Miasta" and building_level < 3
-	
 	upgrade_button.visible = show_upgrade
 	recruit_button.visible = (has_building and building_name == "Baraki" and is_owned)
 	army_button.visible = (has_building and building_name == "Baraki" and is_owned)
@@ -823,6 +832,7 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 		upgrade_button.disabled = not can_upgrade
 		upgrade_button.modulate.a = 1.0 if can_upgrade else 0.35
 		var up_cost = EconomyManager.get_upgrade_cost(building_name, building_level)
+		upgrade_button.tooltip_text = "Koszt ulepszenia:\n%s" % _format_cost_dict(up_cost)
 	
 	cat_zasobowe.visible = show_buildings
 	cat_tech.visible = show_buildings

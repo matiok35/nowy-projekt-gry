@@ -184,8 +184,8 @@ func _create_building_badge(area: Area2D) -> PanelContainer:
 	badge.anchor_bottom = 1.0
 	badge.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	badge.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	badge.offset_bottom = -12
-	badge.offset_top = -12
+	badge.offset_bottom = -30
+	badge.offset_top = -30
 
 	var style = StyleBoxFlat.new()
 	style.bg_color = Color(0.06, 0.07, 0.09, 0.85)
