@@ -382,11 +382,15 @@ func calculate_unit_cost(unit: Dictionary) -> Dictionary:
 	return {
 		"Złoto": int((hp + dmg + def) * 1.5),
 		"Żelazo": int((dmg * 2.0) + (def * 1.0)),
-		"Jedzenie": int(hp * 1.5)
+		"Jedzenie": int(hp * 1.5),
+		"Populacja": 1
 	}
 
 func can_recruit_unit(unit: Dictionary) -> bool:
 	var cost = calculate_unit_cost(unit)
+	# Rezerwujemy minimum 1 mieszkańca w mieście - werbunek nie może wyludnić miasta do zera.
+	if resources.get("Populacja", 0) - cost.get("Populacja", 0) < 1:
+		return false
 	for res in cost:
 		if resources.get(res, 0) < cost[res]:
 			return false

@@ -150,17 +150,7 @@ func create_procedural_hex(pos: Vector2, type: String, deposit_size: String) -> 
 	collision.polygon = points
 	area.add_child(collision)
 
-	var label = Label.new()
-	if type == "Trawa" or type == "Drewno" or type == "Pszenica" or type == "Żelazo" or type == "Bydło" or type == "Węgiel":
-		label.text = ""
-	else:
-		label.text = "%s\n(%s)" % [type, deposit_size] if deposit_size != "" else type
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.size = Vector2(hex_width, hex_height)
-	label.position = Vector2(-hex_width / 2.0, -hex_height / 2.0)
-	label.add_theme_color_override("font_shadow_color", Color.BLACK)
-	area.add_child(label)
+	var label = _create_building_badge(area)
 	label_nodes[pos] = label
 
 	if map_container: map_container.add_child(area)
@@ -173,6 +163,153 @@ func _build_hex_points() -> PackedVector2Array:
 		var angle_rad = deg_to_rad(60.0 * i - 30.0)
 		points.append(Vector2(cos(angle_rad), sin(angle_rad)) * HEX_RADIUS)
 	return points
+
+func _create_building_badge(area: Area2D) -> PanelContainer:
+	# Kontener-kotwica o rozmiarze heksu, wewnątrz którego plakietka
+	# jest przypięta do dolnej krawędzi kafelka i rośnie w górę wraz z treścią.
+	var anchor_ctrl = Control.new()
+	anchor_ctrl.size = Vector2(hex_width, hex_height)
+	anchor_ctrl.position = Vector2(-hex_width / 2.0, -hex_height / 2.0)
+	anchor_ctrl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	area.add_child(anchor_ctrl)
+
+	var badge = PanelContainer.new()
+	badge.name = "BuildingBadge"
+	badge.visible = false
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.z_index = 5
+	badge.anchor_left = 0.5
+	badge.anchor_right = 0.5
+	badge.anchor_top = 1.0
+	badge.anchor_bottom = 1.0
+	badge.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	badge.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	badge.offset_bottom = -12
+	badge.offset_top = -12
+
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.06, 0.07, 0.09, 0.85)
+	style.set_corner_radius_all(8)
+	style.set_border_width_all(1)
+	style.border_color = Color(0.85, 0.7, 0.35, 0.9)
+	style.content_margin_left = 8.0
+	style.content_margin_right = 8.0
+	style.content_margin_top = 3.0
+	style.content_margin_bottom = 3.0
+	style.shadow_color = Color(0, 0, 0, 0.45)
+	style.shadow_size = 5
+	badge.add_theme_stylebox_override("panel", style)
+	badge.set_meta("style_box", style)
+
+	var vbox = VBoxContainer.new()
+	vbox.name = "VBox"
+	vbox.add_theme_constant_override("separation", 1)
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	badge.add_child(vbox)
+
+	var top_row = HBoxContainer.new()
+	top_row.name = "TopRow"
+	top_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	top_row.add_theme_constant_override("separation", 4)
+	vbox.add_child(top_row)
+
+	var icon_lbl = Label.new()
+	icon_lbl.name = "Icon"
+	icon_lbl.add_theme_font_size_override("font_size", 13)
+	top_row.add_child(icon_lbl)
+
+	var name_lbl = Label.new()
+	name_lbl.name = "NameLabel"
+	name_lbl.add_theme_font_size_override("font_size", 12)
+	name_lbl.add_theme_color_override("font_color", Color(0.97, 0.95, 0.9))
+	name_lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
+	name_lbl.add_theme_constant_override("shadow_offset_x", 1)
+	name_lbl.add_theme_constant_override("shadow_offset_y", 1)
+	name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	top_row.add_child(name_lbl)
+
+	var level_row = HBoxContainer.new()
+	level_row.name = "LevelRow"
+	level_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	level_row.add_theme_constant_override("separation", 2)
+	vbox.add_child(level_row)
+
+	anchor_ctrl.add_child(badge)
+	return badge
+
+func _update_building_label(pos: Vector2, building_name: String, level: int) -> void:
+	if not label_nodes.has(pos): return
+	var badge: PanelContainer = label_nodes[pos]
+
+	var icon_lbl: Label = badge.get_node("VBox/TopRow/Icon")
+	var name_lbl: Label = badge.get_node("VBox/TopRow/NameLabel")
+	var level_row: HBoxContainer = badge.get_node("VBox/LevelRow")
+
+	if building_name == "Brak":
+		badge.visible = false
+		return
+
+	icon_lbl.text = _get_building_icon(building_name)
+	name_lbl.text = building_name
+
+	var style: StyleBoxFlat = badge.get_meta("style_box")
+	if style:
+		style.border_color = _get_building_accent_color(building_name)
+
+	for child in level_row.get_children():
+		child.queue_free()
+
+	var max_level := 3
+	if building_name == "Centrum Miasta":
+		level_row.visible = false
+	else:
+		level_row.visible = true
+		for i in range(max_level):
+			var star = Label.new()
+			star.add_theme_font_size_override("font_size", 10)
+			if i < level:
+				star.text = "★"
+				star.add_theme_color_override("font_color", Color(1.0, 0.82, 0.25))
+			else:
+				star.text = "★"
+				star.add_theme_color_override("font_color", Color(0.4, 0.4, 0.45, 0.5))
+			level_row.add_child(star)
+
+	badge.visible = true
+
+func _get_building_icon(building_name: String) -> String:
+	match building_name:
+		"Centrum Miasta": return "🏛️"
+		"Dom mieszkalny": return "🏠"
+		"Chata Drwala": return "🪓"
+		"Kopalnia Żelaza": return "⛏️"
+		"Kopalnia Węgla": return "🪨"
+		"Farma": return "🌾"
+		"Pastwisko": return "🐄"
+		"Laboratorium": return "🔬"
+		"Warsztat": return "🔧"
+		"Biblioteka": return "📚"
+		"Świątynia": return "⛩️"
+		"Baraki": return "🏹"
+		"Akademia generałów": return "🎖️"
+		_: return "🏗️"
+
+func _get_building_accent_color(building_name: String) -> Color:
+	match building_name:
+		"Centrum Miasta": return Color(1.0, 0.85, 0.35, 0.95)
+		"Dom mieszkalny": return Color(0.95, 0.62, 0.4, 0.9)
+		"Chata Drwala": return Color(0.5, 0.78, 0.4, 0.9)
+		"Kopalnia Żelaza": return Color(0.68, 0.72, 0.78, 0.9)
+		"Kopalnia Węgla": return Color(0.55, 0.55, 0.6, 0.9)
+		"Farma": return Color(0.85, 0.75, 0.3, 0.9)
+		"Pastwisko": return Color(0.78, 0.62, 0.38, 0.9)
+		"Laboratorium": return Color(0.4, 0.68, 0.95, 0.9)
+		"Warsztat": return Color(0.72, 0.52, 0.3, 0.9)
+		"Biblioteka": return Color(0.72, 0.46, 0.85, 0.9)
+		"Świątynia": return Color(0.92, 0.82, 0.5, 0.9)
+		"Baraki": return Color(0.85, 0.32, 0.32, 0.9)
+		"Akademia generałów": return Color(0.58, 0.36, 0.86, 0.9)
+		_: return Color(0.85, 0.7, 0.35, 0.9)
 
 func _get_tile_color(type: String) -> Color:
 	match type:
@@ -200,7 +337,7 @@ func create_city_at(pos: Vector2) -> void:
 	city_centers.append(pos)
 	map_data[pos]["building"] = "Centrum Miasta"
 	map_data[pos]["level"] = 1
-	if label_nodes.has(pos): label_nodes[pos].text = "🏢 Centrum"
+	_update_building_label(pos, "Centrum Miasta", 1)
 
 	_update_tile_texture_for_building(pos, "Centrum Miasta")
 
@@ -291,8 +428,7 @@ func build_on_tile(pos: Vector2, building_name: String) -> void:
 
 	_update_tile_texture_for_building(pos, building_name)
 
-	if label_nodes.has(pos):
-		label_nodes[pos].text = "%s\n(Lvl 1)" % building_name
+	_update_building_label(pos, building_name, 1)
 
 func upgrade_building(pos: Vector2) -> void:
 	var tile = map_data[pos]
@@ -301,8 +437,7 @@ func upgrade_building(pos: Vector2) -> void:
 	if EconomyManager.can_afford_upgrade(b_name, tile["level"]):
 		EconomyManager.deduct_upgrade_costs(b_name, tile["level"])
 		tile["level"] += 1
-		if label_nodes.has(pos):
-			label_nodes[pos].text = "%s\n(Lvl %d)" % [b_name, tile["level"]]
+		_update_building_label(pos, b_name, tile["level"])
 
 func _get_building_color(building_name: String) -> Color:
 	match building_name:
