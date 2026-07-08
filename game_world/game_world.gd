@@ -202,8 +202,7 @@ func create_city_at(pos: Vector2) -> void:
 	map_data[pos]["level"] = 1
 	if label_nodes.has(pos): label_nodes[pos].text = "🏢 Centrum"
 
-	var poly = tile_nodes[pos].get_child(0) as Polygon2D
-	if poly: poly.color = Color(0.2, 0.5, 0.8)
+	_update_tile_texture_for_building(pos, "Centrum Miasta")
 
 	claim_tile(pos)
 	for neighbor in HexUtils.get_neighbors(pos):
@@ -290,13 +289,7 @@ func build_on_tile(pos: Vector2, building_name: String) -> void:
 	tile["building"] = building_name
 	tile["level"] = 1
 
-	var poly = tile_nodes[pos].get_child(0) as Polygon2D
-	if poly: poly.color = _get_building_color(building_name)
-
-	if tile_sprites.has(pos):
-		# TODO: Zmień na docelową ścieżkę do obrazków budynków
-		# tile_sprites[pos].texture = load("res://assets/buildings/" + building_name + ".png")
-		pass
+	_update_tile_texture_for_building(pos, building_name)
 
 	if label_nodes.has(pos):
 		label_nodes[pos].text = "%s\n(Lvl 1)" % building_name
@@ -323,6 +316,84 @@ func _get_building_color(building_name: String) -> Color:
 		"Baraki": return Color(0.75, 0.2, 0.2)
 		"Akademia generałów": return Color(0.4, 0.2, 0.6)
 		_: return Color(0.85, 0.65, 0.15)
+
+func _update_tile_texture_for_building(pos: Vector2, building_name: String) -> void:
+	var poly = tile_nodes[pos].get_child(0) as Polygon2D
+	if not poly: return
+	
+	var texture_path = ""
+	var zoom_factor = 1.0
+	var stretch_y = 1.0
+	
+	match building_name:
+		"Centrum Miasta":
+			texture_path = "res://assets/tiles/hex_town_center.png"
+			zoom_factor = 1.20
+		"Dom mieszkalny":
+			texture_path = "res://assets/tiles/hex_residential_house.png"
+			zoom_factor = 1.20
+		"Chata Drwala": 
+			texture_path = "res://assets/tiles/hex_sawmill.png"
+			zoom_factor = 1.25
+		"Kopalnia Żelaza": 
+			texture_path = "res://assets/tiles/hex_iron_mine.png"
+			zoom_factor = 1.15
+		"Kopalnia Węgla": 
+			texture_path = "res://assets/tiles/hex_coal_mine.png"
+			zoom_factor = 1.15
+		"Farma": 
+			texture_path = "res://assets/tiles/hex_farm.png"
+			zoom_factor = 1.15
+			stretch_y = 1.20
+		"Pastwisko": 
+			texture_path = "res://assets/tiles/hex_pasture.png"
+			zoom_factor = 1.20
+			stretch_y = 1.35
+		"Laboratorium": 
+			texture_path = "res://assets/tiles/hex_lab.png"
+			zoom_factor = 1.20
+		"Warsztat": 
+			texture_path = "res://assets/tiles/hex_workshop.png"
+			zoom_factor = 1.20
+		"Biblioteka": 
+			texture_path = "res://assets/tiles/hex_library.png"
+			zoom_factor = 1.20
+		"Świątynia": 
+			texture_path = "res://assets/tiles/hex_temple.png"
+			zoom_factor = 1.20
+		"Baraki": 
+			texture_path = "res://assets/tiles/hex_barracks.png"
+			zoom_factor = 1.20
+		"Akademia generałów": 
+			texture_path = "res://assets/tiles/hex_military_academy.png"
+			zoom_factor = 1.20
+	
+	if texture_path != "":
+		poly.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
+		poly.color = Color(1, 1, 1, 1)
+		
+		var sprite_bg = null
+		for child in poly.get_children():
+			if child is Sprite2D:
+				sprite_bg = child
+				break
+				
+		if not sprite_bg:
+			sprite_bg = Sprite2D.new()
+			poly.add_child(sprite_bg)
+			
+		var tex = load(texture_path)
+		if tex:
+			sprite_bg.texture = tex
+			var tex_size = tex.get_size()
+			var s = max(hex_width / tex_size.x, hex_height / tex_size.y) * zoom_factor
+			sprite_bg.scale = Vector2(s, s * stretch_y)
+	else:
+		poly.clip_children = CanvasItem.CLIP_CHILDREN_DISABLED
+		for child in poly.get_children():
+			if child is Sprite2D:
+				child.queue_free()
+		poly.color = _get_building_color(building_name)
 
 func get_active_buildings_list() -> Array:
 	var list = []
