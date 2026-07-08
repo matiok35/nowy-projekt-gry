@@ -357,24 +357,59 @@ func next_turn(active_buildings_data: Array) -> void:
 					
 			current_culture_research = ""
 
+	for unit in player_army:
+		var turns_to_recruit = unit.get("turns_to_recruit", 0)
+		var turns_in_recruitment = unit.get("turns_in_recruitment", 0)
+		if turns_in_recruitment < turns_to_recruit:
+			unit["turns_in_recruitment"] = turns_in_recruitment + 1
+
 	notify_change()
 
 func notify_change() -> void:
 	economy_updated.emit(resources, current_turn, "")
 
-func calculate_unit_cost(unit: Dictionary) -> int:
+func calculate_recruitment_turns(unit: Dictionary) -> int:
 	var hp = unit.get("hp", 0)
 	var dmg = unit.get("dmg", 0)
 	var def = unit.get("def", 0)
-	return int((hp + dmg + def) * 1.5)
+	return max(1, int((hp + dmg + def) / 10))
+
+func calculate_unit_cost(unit: Dictionary) -> Dictionary:
+	var hp = unit.get("hp", 0)
+	var dmg = unit.get("dmg", 0)
+	var def = unit.get("def", 0)
+	
+	return {
+		"Złoto": int((hp + dmg + def) * 1.5),
+		"Żelazo": int((dmg * 2.0) + (def * 1.0)),
+		"Jedzenie": int(hp * 1.5)
+	}
 
 func can_recruit_unit(unit: Dictionary) -> bool:
 	var cost = calculate_unit_cost(unit)
-	return resources.get("Złoto", 0) >= cost
+	for res in cost:
+		if resources.get(res, 0) < cost[res]:
+			return false
+	return true
 
 func recruit_unit(unit: Dictionary) -> void:
-	var cost = calculate_unit_cost(unit)
-	if resources.get("Złoto", 0) >= cost:
-		resources["Złoto"] -= cost
-		player_army.append(unit)
+	if can_recruit_unit(unit):
+		var cost = calculate_unit_cost(unit)
+		for res in cost:
+			resources[res] -= cost[res]
+		
+		var new_unit = unit.duplicate()
+		new_unit["turns_to_recruit"] = calculate_recruitment_turns(new_unit)
+		new_unit["turns_in_recruitment"] = 0
+		
+		player_army.append(new_unit)
 		notify_change()
+
+func remove_unit(unit: Dictionary) -> void:
+	if unit in player_army:
+		player_army.erase(unit)
+		notify_change()
+
+func clear_army() -> void:
+	player_army.clear()
+	notify_change()

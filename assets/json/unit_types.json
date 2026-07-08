@@ -1,426 +1,468 @@
 {
-  "factions": [
-	{
-	  "id": "humans",
-	  "name": "Ludzie",
-	  "units": [
+	"factions": [
 		{
-		  "id": "human_knights",
-		  "name": "Rycerze",
-		  "short_name": "RYC",
-		  "role": "Ludzka kawaleria pancerna",
-		  "hp": 22,
-		  "dmg": 7,
-		  "def": 9,
-		  "speed": 3,
-		  "action_points": 1,
-		  "count": 8,
-		  "move_range": 3,
-		  "attack_range": 1,
-		  "resistance": "Brak",
-		  "portrait": "res://assets/characters/humans/ChatGPT Image 6 lip 2026, 12_21_05.png",
-		  "skill_ids": ["potezne_uderzenie"]
+			"id": "humans",
+			"name": "Ludzie",
+			"units": [
+				{
+					"id": "human_knights",
+					"name": "Rycerze",
+					"short_name": "RYC",
+					"role": "Ludzka kawaleria pancerna",
+					"hp": 22,
+					"dmg": 7,
+					"def": 9,
+					"speed": 3,
+					"action_points": 1,
+					"count": 8,
+					"move_range": 3,
+					"attack_range": 1,
+					"resistance": "Brak",
+					"portrait": "res://assets/humans/ChatGPT Image 6 lip 2026, 12_21_05.png",
+					"skill_ids": [
+						"potezne_uderzenie"
+					]
+				},
+				{
+					"id": "human_cavalry",
+					"name": "Konnica",
+					"short_name": "KON",
+					"role": "Szybka jednostka uderzeniowa",
+					"hp": 18,
+					"dmg": 8,
+					"def": 5,
+					"speed": 9,
+					"action_points": 1,
+					"count": 10,
+					"move_range": 6,
+					"attack_range": 1,
+					"resistance": "Brak",
+					"portrait": "res://assets/humans/ChatGPT Image 6 lip 2026, 12_31_33.png",
+					"skill_ids": [
+						"prowokacja"
+					]
+				},
+				{
+					"id": "human_archers",
+					"name": "Lucznicy",
+					"short_name": "LUC",
+					"role": "Dystansowa jednostka strzelecka",
+					"hp": 14,
+					"dmg": 6,
+					"def": 3,
+					"speed": 8,
+					"action_points": 1,
+					"count": 12,
+					"move_range": 4,
+					"attack_range": 4,
+					"resistance": "Brak",
+					"portrait": "res://assets/humans/ChatGPT Image 6 lip 2026, 12_28_29.png",
+					"skill_ids": [
+						"strzal_w_kolano"
+					]
+				},
+				{
+					"id": "human_mages",
+					"name": "Magowie",
+					"short_name": "MAG",
+					"role": "Ofensywny zaklinacz",
+					"hp": 10,
+					"dmg": 9,
+					"def": 2,
+					"speed": 7,
+					"action_points": 1,
+					"count": 8,
+					"move_range": 3,
+					"attack_range": 3,
+					"resistance": "Brak",
+					"portrait": "res://assets/characters/humans/replicate-prediction-mehwr8c30nrmw0cz6wfadpar2m-1.png",
+					"skill_ids": [
+						"sokole_oko",
+						"zatruty_sztylet"
+					]
+				}
+			]
 		},
 		{
-		  "id": "human_cavalry",
-		  "name": "Konnica",
-		  "short_name": "KON",
-		  "role": "Szybka jednostka uderzeniowa",
-		  "hp": 18,
-		  "dmg": 8,
-		  "def": 5,
-		  "speed": 9,
-		  "action_points": 1,
-		  "count": 10,
-		  "move_range": 6,
-		  "attack_range": 1,
-		  "resistance": "Brak",
-		  "portrait": "res://assets/characters/humans/ChatGPT Image 6 lip 2026, 12_31_33.png",
-		  "skill_ids": ["prowokacja"]
+			"id": "orcs",
+			"name": "Orkowie",
+			"units": [
+				{
+					"id": "orc_warrior",
+					"name": "Ork Wojownik",
+					"short_name": "OWO",
+					"role": "Uniwersalny waleczny ork",
+					"hp": 20,
+					"dmg": 8,
+					"def": 7,
+					"speed": 5,
+					"action_points": 1,
+					"count": 10,
+					"move_range": 4,
+					"attack_range": 1,
+					"resistance": "Brak",
+					"portrait": "res://assets/characters/humans/orcWarrior.png",
+					"skill_ids": [
+						"potezne_uderzenie"
+					]
+				},
+				{
+					"id": "orc_berserker",
+					"name": "Ork Berserker",
+					"short_name": "OBE",
+					"role": "Kruchy zabojca",
+					"hp": 16,
+					"dmg": 9,
+					"def": 4,
+					"speed": 7,
+					"action_points": 1,
+					"count": 8,
+					"move_range": 5,
+					"attack_range": 1,
+					"resistance": "Brak",
+					"portrait": "res://assets/characters/humans/orcBerserker.png",
+					"skill_ids": [
+						"prowokacja"
+					]
+				},
+				{
+					"id": "orc_shaman",
+					"name": "Ork Szaman",
+					"short_name": "OSZ",
+					"role": "Wsparcie i kontrola",
+					"hp": 14,
+					"dmg": 6,
+					"def": 3,
+					"speed": 6,
+					"action_points": 1,
+					"count": 8,
+					"move_range": 4,
+					"attack_range": 2,
+					"resistance": "Brak",
+					"portrait": "res://assets/characters/humans/orcShaman.png",
+					"skill_ids": [
+						"sokole_oko"
+					]
+				},
+				{
+					"id": "orc_shieldman",
+					"name": "Ork Tarczownik",
+					"short_name": "OTA",
+					"role": "Defensywna sciana",
+					"hp": 26,
+					"dmg": 5,
+					"def": 9,
+					"speed": 3,
+					"action_points": 1,
+					"count": 8,
+					"move_range": 3,
+					"attack_range": 1,
+					"resistance": "Brak",
+					"portrait": "res://assets/characters/humans/OrcShieldman.png",
+					"skill_ids": [
+						"prowokacja"
+					]
+				}
+			]
 		},
 		{
-		  "id": "human_archers",
-		  "name": "Lucznicy",
-		  "short_name": "LUC",
-		  "role": "Dystansowa jednostka strzelecka",
-		  "hp": 14,
-		  "dmg": 6,
-		  "def": 3,
-		  "speed": 8,
-		  "action_points": 1,
-		  "count": 12,
-		  "move_range": 4,
-		  "attack_range": 4,
-		  "resistance": "Brak",
-		  "portrait": "res://assets/characters/humans/ChatGPT Image 6 lip 2026, 12_28_29.png",
-		  "skill_ids": ["strzal_w_kolano"]
+			"id": "goblins",
+			"name": "Gobliny",
+			"units": [
+				{
+					"id": "goblin_thief",
+					"name": "Goblin Zlodziej",
+					"short_name": "GZL",
+					"role": "Szybki zlodziej",
+					"hp": 10,
+					"dmg": 4,
+					"def": 2,
+					"speed": 10,
+					"action_points": 1,
+					"count": 14,
+					"move_range": 6,
+					"attack_range": 1,
+					"resistance": "Brak",
+					"portrait": "res://assets/characters/humans/goblinTheft.png",
+					"skill_ids": [
+						"zatruty_sztylet"
+					]
+				},
+				{
+					"id": "goblin_warrior",
+					"name": "Goblin Wojownik",
+					"short_name": "GWO",
+					"role": "Podstawowa piechota",
+					"hp": 14,
+					"dmg": 6,
+					"def": 4,
+					"speed": 6,
+					"action_points": 1,
+					"count": 12,
+					"move_range": 4,
+					"attack_range": 1,
+					"resistance": "Brak",
+					"portrait": "res://assets/characters/humans/goblinWarrior.png",
+					"skill_ids": [
+						"potezne_uderzenie"
+					]
+				},
+				{
+					"id": "goblin_shaman",
+					"name": "Goblin Szaman",
+					"short_name": "GSZ",
+					"role": "Wsparcie magiczne",
+					"hp": 12,
+					"dmg": 5,
+					"def": 3,
+					"speed": 7,
+					"action_points": 1,
+					"count": 10,
+					"move_range": 4,
+					"attack_range": 2,
+					"resistance": "Brak",
+					"portrait": "res://assets/characters/humans/goblinShaman.png",
+					"skill_ids": [
+						"sokole_oko"
+					]
+				},
+				{
+					"id": "goblin_trapper",
+					"name": "Goblin Traper",
+					"short_name": "GTR",
+					"role": "Kontroler pola walki",
+					"hp": 16,
+					"dmg": 3,
+					"def": 5,
+					"speed": 8,
+					"action_points": 1,
+					"count": 10,
+					"move_range": 5,
+					"attack_range": 2,
+					"resistance": "Brak",
+					"portrait": "res://assets/characters/humans/goblinTrapper.png",
+					"skill_ids": [
+						"strzal_w_kolano"
+					]
+				}
+			]
 		},
 		{
-		  "id": "human_mages",
-		  "name": "Magowie",
-		  "short_name": "MAG",
-		  "role": "Ofensywny zaklinacz",
-		  "hp": 10,
-		  "dmg": 9,
-		  "def": 2,
-		  "speed": 7,
-		  "action_points": 1,
-		  "count": 8,
-		  "move_range": 3,
-		  "attack_range": 3,
-		  "resistance": "Brak",
-		  "portrait": "res://assets/characters/humans/replicate-prediction-mehwr8c30nrmw0cz6wfadpar2m-1.png",
-		  "skill_ids": ["sokole_oko", "zatruty_sztylet"]
+			"id": "elves",
+			"name": "Elfy",
+			"units": [
+				{
+					"id": "elf_archer",
+					"name": "Elf Lucznik",
+					"short_name": "ELU",
+					"role": "Elfi lucznik",
+					"hp": 14,
+					"dmg": 7,
+					"def": 3,
+					"speed": 9,
+					"action_points": 1,
+					"count": 12,
+					"move_range": 5,
+					"attack_range": 5,
+					"resistance": "Brak",
+					"portrait": "res://assets/characters/humans/elfArcher.png",
+					"skill_ids": [
+						"strzal_w_kolano"
+					]
+				},
+				{
+					"id": "elf_swordsman",
+					"name": "Elf Szermierz",
+					"short_name": "ESZ",
+					"role": "Mobilna jednostka wręcz",
+					"hp": 18,
+					"dmg": 6,
+					"def": 6,
+					"speed": 8,
+					"action_points": 1,
+					"count": 10,
+					"move_range": 5,
+					"attack_range": 1,
+					"resistance": "Brak",
+					"portrait": "res://assets/characters/humans/elfSwordsman.png",
+					"skill_ids": [
+						"potezne_uderzenie"
+					]
+				},
+				{
+					"id": "elf_mage",
+					"name": "Elf Mag",
+					"short_name": "EMA",
+					"role": "Elfi zaklinacz",
+					"hp": 10,
+					"dmg": 8,
+					"def": 2,
+					"speed": 8,
+					"action_points": 1,
+					"count": 8,
+					"move_range": 4,
+					"attack_range": 3,
+					"resistance": "Brak",
+					"portrait": "res://assets/characters/humans/elfMague.png",
+					"skill_ids": [
+						"sokole_oko",
+						"zatruty_sztylet"
+					]
+				},
+				{
+					"id": "elf_arcanotechnic",
+					"name": "Elf Arkanotechnik",
+					"short_name": "EAR",
+					"role": "Wsparcie technomagiczne",
+					"hp": 14,
+					"dmg": 5,
+					"def": 4,
+					"speed": 7,
+					"action_points": 1,
+					"count": 8,
+					"move_range": 4,
+					"attack_range": 3,
+					"resistance": "Brak",
+					"portrait": "res://assets/characters/humans/elfArcheMague.png",
+					"skill_ids": [
+						"sokole_oko"
+					]
+				}
+			]
+		},
+		{
+			"id": "dwarves",
+			"name": "Krasnoludy",
+			"units": [
+				{
+					"id": "dwarf_warrior",
+					"name": "Krasnolud Wojownik",
+					"short_name": "KWO",
+					"role": "Uniwersalny krasnoludzki wojownik",
+					"hp": 22,
+					"dmg": 7,
+					"def": 9,
+					"speed": 4,
+					"action_points": 1,
+					"count": 8,
+					"move_range": 3,
+					"attack_range": 1,
+					"resistance": "Brak",
+					"portrait": "res://assets/characters/humans/dwarfWarrior.png",
+					"skill_ids": [
+						"potezne_uderzenie"
+					]
+				},
+				{
+					"id": "dwarf_guardian",
+					"name": "Krasnolud Straznik",
+					"short_name": "KST",
+					"role": "Najtwardszy obrońca",
+					"hp": 28,
+					"dmg": 6,
+					"def": 10,
+					"speed": 3,
+					"action_points": 1,
+					"count": 6,
+					"move_range": 2,
+					"attack_range": 1,
+					"resistance": "Brak",
+					"portrait": "res://assets/characters/humans/dwarfShield.png",
+					"skill_ids": [
+						"prowokacja"
+					]
+				},
+				{
+					"id": "dwarf_axeman",
+					"name": "Krasnolud Topornik",
+					"short_name": "KTO",
+					"role": "Ciezka piechota uderzeniowa",
+					"hp": 24,
+					"dmg": 8,
+					"def": 7,
+					"speed": 4,
+					"action_points": 1,
+					"count": 8,
+					"move_range": 3,
+					"attack_range": 1,
+					"resistance": "Brak",
+					"portrait": "res://assets/characters/humans/dwarfHammer.png",
+					"skill_ids": [
+						"potezne_uderzenie"
+					]
+				},
+				{
+					"id": "dwarf_digger",
+					"name": "Krasnolud Kopacz",
+					"short_name": "KKO",
+					"role": "Wojownik z dynamitem",
+					"hp": 18,
+					"dmg": 7,
+					"def": 5,
+					"speed": 6,
+					"action_points": 1,
+					"count": 10,
+					"move_range": 4,
+					"attack_range": 2,
+					"resistance": "Brak",
+					"portrait": "res://assets/characters/humans/dwarfDigger.png",
+					"skill_ids": [
+						"strzal_w_kolano"
+					]
+				}
+			]
 		}
-	  ]
-	},
-	{
-	  "id": "orcs",
-	  "name": "Orkowie",
-	  "units": [
-		{
-		  "id": "orc_warrior",
-		  "name": "Ork Wojownik",
-		  "short_name": "OWO",
-		  "role": "Uniwersalny waleczny ork",
-		  "hp": 20,
-		  "dmg": 8,
-		  "def": 7,
-		  "speed": 5,
-		  "action_points": 1,
-		  "count": 10,
-		  "move_range": 4,
-		  "attack_range": 1,
-		  "resistance": "Brak",
-		  "portrait": "res://assets/characters/humans/orcWarrior.png",
-		  "skill_ids": ["potezne_uderzenie"]
+	],
+	"skill_library": {
+		"prowokacja": {
+			"id": "prowokacja",
+			"name": "Prowokacja",
+			"description": "Wrogowie w promieniu 2 hexow musza atakowac ta jednostke przez 1 ture i traca 20% DMG.",
+			"ap_cost": 1,
+			"cooldown": 3,
+			"range": 0,
+			"target_type": "self",
+			"effect_type": "taunt_burst"
 		},
-		{
-		  "id": "orc_berserker",
-		  "name": "Ork Berserker",
-		  "short_name": "OBE",
-		  "role": "Kruchy zabojca",
-		  "hp": 16,
-		  "dmg": 9,
-		  "def": 4,
-		  "speed": 7,
-		  "action_points": 1,
-		  "count": 8,
-		  "move_range": 5,
-		  "attack_range": 1,
-		  "resistance": "Brak",
-		  "portrait": "res://assets/characters/humans/orcBerserker.png",
-		  "skill_ids": ["prowokacja"]
+		"strzal_w_kolano": {
+			"id": "strzal_w_kolano",
+			"name": "Strzal w Kolano",
+			"description": "Zadaje 70% obrazen i naklada Unieruchomienie na 1 ture.",
+			"ap_cost": 1,
+			"cooldown": 3,
+			"range": 4,
+			"target_type": "enemy_unit",
+			"effect_type": "knee_shot"
 		},
-		{
-		  "id": "orc_shaman",
-		  "name": "Ork Szaman",
-		  "short_name": "OSZ",
-		  "role": "Wsparcie i kontrola",
-		  "hp": 14,
-		  "dmg": 6,
-		  "def": 3,
-		  "speed": 6,
-		  "action_points": 1,
-		  "count": 8,
-		  "move_range": 4,
-		  "attack_range": 2,
-		  "resistance": "Brak",
-		  "portrait": "res://assets/characters/humans/orcShaman.png",
-		  "skill_ids": ["sokole_oko"]
+		"zatruty_sztylet": {
+			"id": "zatruty_sztylet",
+			"name": "Zatruty Sztylet",
+			"description": "Zadaje 70% obrazen i naklada Toksyne na 3 tury, obnizajac DEF celu.",
+			"ap_cost": 1,
+			"cooldown": 2,
+			"range": 1,
+			"target_type": "enemy_unit",
+			"effect_type": "poison_dagger"
 		},
-		{
-		  "id": "orc_shieldman",
-		  "name": "Ork Tarczownik",
-		  "short_name": "OTA",
-		  "role": "Defensywna sciana",
-		  "hp": 26,
-		  "dmg": 5,
-		  "def": 9,
-		  "speed": 3,
-		  "action_points": 1,
-		  "count": 8,
-		  "move_range": 3,
-		  "attack_range": 1,
-		  "resistance": "Brak",
-		  "portrait": "res://assets/characters/humans/OrcShieldman.png",
-		  "skill_ids": ["prowokacja"]
+		"sokole_oko": {
+			"id": "sokole_oko",
+			"name": "Sokole Oko",
+			"description": "Jednostka traci reszte ruchu w tej turze, ale w nastepnej turze zyskuje +2 zasiegu i +25% DMG.",
+			"ap_cost": 1,
+			"cooldown": 3,
+			"range": 0,
+			"target_type": "self",
+			"effect_type": "eagle_eye"
+		},
+		"potezne_uderzenie": {
+			"id": "potezne_uderzenie",
+			"name": "Potezne Uderzenie",
+			"description": "Zadaje standardowe obrazenia i odpycha cel o 1 hex. Jesli trafi w przeszkode lub blokade, zostaje ogluszony na 1 ture.",
+			"ap_cost": 1,
+			"cooldown": 2,
+			"range": 1,
+			"target_type": "enemy_unit",
+			"effect_type": "heavy_strike"
 		}
-	  ]
-	},
-	{
-	  "id": "goblins",
-	  "name": "Gobliny",
-	  "units": [
-		{
-		  "id": "goblin_thief",
-		  "name": "Goblin Zlodziej",
-		  "short_name": "GZL",
-		  "role": "Szybki zlodziej",
-		  "hp": 10,
-		  "dmg": 4,
-		  "def": 2,
-		  "speed": 10,
-		  "action_points": 1,
-		  "count": 14,
-		  "move_range": 6,
-		  "attack_range": 1,
-		  "resistance": "Brak",
-		  "portrait": "res://assets/characters/humans/goblinTheft.png",
-		  "skill_ids": ["zatruty_sztylet"]
-		},
-		{
-		  "id": "goblin_warrior",
-		  "name": "Goblin Wojownik",
-		  "short_name": "GWO",
-		  "role": "Podstawowa piechota",
-		  "hp": 14,
-		  "dmg": 6,
-		  "def": 4,
-		  "speed": 6,
-		  "action_points": 1,
-		  "count": 12,
-		  "move_range": 4,
-		  "attack_range": 1,
-		  "resistance": "Brak",
-		  "portrait": "res://assets/characters/humans/goblinWarrior.png",
-		  "skill_ids": ["potezne_uderzenie"]
-		},
-		{
-		  "id": "goblin_shaman",
-		  "name": "Goblin Szaman",
-		  "short_name": "GSZ",
-		  "role": "Wsparcie magiczne",
-		  "hp": 12,
-		  "dmg": 5,
-		  "def": 3,
-		  "speed": 7,
-		  "action_points": 1,
-		  "count": 10,
-		  "move_range": 4,
-		  "attack_range": 2,
-		  "resistance": "Brak",
-		  "portrait": "res://assets/characters/humans/goblinShaman.png",
-		  "skill_ids": ["sokole_oko"]
-		},
-		{
-		  "id": "goblin_trapper",
-		  "name": "Goblin Traper",
-		  "short_name": "GTR",
-		  "role": "Kontroler pola walki",
-		  "hp": 16,
-		  "dmg": 3,
-		  "def": 5,
-		  "speed": 8,
-		  "action_points": 1,
-		  "count": 10,
-		  "move_range": 5,
-		  "attack_range": 2,
-		  "resistance": "Brak",
-		  "portrait": "res://assets/characters/humans/goblinTrapper.png",
-		  "skill_ids": ["strzal_w_kolano"]
-		}
-	  ]
-	},
-	{
-	  "id": "elves",
-	  "name": "Elfy",
-	  "units": [
-		{
-		  "id": "elf_archer",
-		  "name": "Elf Lucznik",
-		  "short_name": "ELU",
-		  "role": "Elfi lucznik",
-		  "hp": 14,
-		  "dmg": 7,
-		  "def": 3,
-		  "speed": 9,
-		  "action_points": 1,
-		  "count": 12,
-		  "move_range": 5,
-		  "attack_range": 5,
-		  "resistance": "Brak",
-		  "portrait": "res://assets/characters/humans/elfArcher.png",
-		  "skill_ids": ["strzal_w_kolano"]
-		},
-		{
-		  "id": "elf_swordsman",
-		  "name": "Elf Szermierz",
-		  "short_name": "ESZ",
-		  "role": "Mobilna jednostka wręcz",
-		  "hp": 18,
-		  "dmg": 6,
-		  "def": 6,
-		  "speed": 8,
-		  "action_points": 1,
-		  "count": 10,
-		  "move_range": 5,
-		  "attack_range": 1,
-		  "resistance": "Brak",
-		  "portrait": "res://assets/characters/humans/elfSwordsman.png",
-		  "skill_ids": ["potezne_uderzenie"]
-		},
-		{
-		  "id": "elf_mage",
-		  "name": "Elf Mag",
-		  "short_name": "EMA",
-		  "role": "Elfi zaklinacz",
-		  "hp": 10,
-		  "dmg": 8,
-		  "def": 2,
-		  "speed": 8,
-		  "action_points": 1,
-		  "count": 8,
-		  "move_range": 4,
-		  "attack_range": 3,
-		  "resistance": "Brak",
-		  "portrait": "res://assets/characters/humans/elfMague.png",
-		  "skill_ids": ["sokole_oko", "zatruty_sztylet"]
-		},
-		{
-		  "id": "elf_arcanotechnic",
-		  "name": "Elf Arkanotechnik",
-		  "short_name": "EAR",
-		  "role": "Wsparcie technomagiczne",
-		  "hp": 14,
-		  "dmg": 5,
-		  "def": 4,
-		  "speed": 7,
-		  "action_points": 1,
-		  "count": 8,
-		  "move_range": 4,
-		  "attack_range": 3,
-		  "resistance": "Brak",
-		  "portrait": "res://assets/characters/humans/elfArcheMague.png",
-		  "skill_ids": ["sokole_oko"]
-		}
-	  ]
-	},
-	{
-	  "id": "dwarves",
-	  "name": "Krasnoludy",
-	  "units": [
-		{
-		  "id": "dwarf_warrior",
-		  "name": "Krasnolud Wojownik",
-		  "short_name": "KWO",
-		  "role": "Uniwersalny krasnoludzki wojownik",
-		  "hp": 22,
-		  "dmg": 7,
-		  "def": 9,
-		  "speed": 4,
-		  "action_points": 1,
-		  "count": 8,
-		  "move_range": 3,
-		  "attack_range": 1,
-		  "resistance": "Brak",
-		  "portrait": "res://assets/characters/humans/dwarfWarrior.png",
-		  "skill_ids": ["potezne_uderzenie"]
-		},
-		{
-		  "id": "dwarf_guardian",
-		  "name": "Krasnolud Straznik",
-		  "short_name": "KST",
-		  "role": "Najtwardszy obrońca",
-		  "hp": 28,
-		  "dmg": 6,
-		  "def": 10,
-		  "speed": 3,
-		  "action_points": 1,
-		  "count": 6,
-		  "move_range": 2,
-		  "attack_range": 1,
-		  "resistance": "Brak",
-		  "portrait": "res://assets/characters/humans/dwarfShield.png",
-		  "skill_ids": ["prowokacja"]
-		},
-		{
-		  "id": "dwarf_axeman",
-		  "name": "Krasnolud Topornik",
-		  "short_name": "KTO",
-		  "role": "Ciezka piechota uderzeniowa",
-		  "hp": 24,
-		  "dmg": 8,
-		  "def": 7,
-		  "speed": 4,
-		  "action_points": 1,
-		  "count": 8,
-		  "move_range": 3,
-		  "attack_range": 1,
-		  "resistance": "Brak",
-		  "portrait": "res://assets/characters/humans/dwarfHammer.png",
-		  "skill_ids": ["potezne_uderzenie"]
-		},
-		{
-		  "id": "dwarf_digger",
-		  "name": "Krasnolud Kopacz",
-		  "short_name": "KKO",
-		  "role": "Wojownik z dynamitem",
-		  "hp": 18,
-		  "dmg": 7,
-		  "def": 5,
-		  "speed": 6,
-		  "action_points": 1,
-		  "count": 10,
-		  "move_range": 4,
-		  "attack_range": 2,
-		  "resistance": "Brak",
-		  "portrait": "res://assets/characters/humans/dwarfDigger.png",
-		  "skill_ids": ["strzal_w_kolano"]
-		}
-	  ]
 	}
-  ],
-  "skill_library": {
-	"prowokacja": {
-	  "id": "prowokacja",
-	  "name": "Prowokacja",
-	  "description": "Wrogowie w promieniu 2 hexow musza atakowac ta jednostke przez 1 ture i traca 20% DMG.",
-	  "ap_cost": 1,
-	  "cooldown": 3,
-	  "range": 0,
-	  "target_type": "self",
-	  "effect_type": "taunt_burst"
-	},
-	"strzal_w_kolano": {
-	  "id": "strzal_w_kolano",
-	  "name": "Strzal w Kolano",
-	  "description": "Zadaje 70% obrazen i naklada Unieruchomienie na 1 ture.",
-	  "ap_cost": 1,
-	  "cooldown": 3,
-	  "range": 4,
-	  "target_type": "enemy_unit",
-	  "effect_type": "knee_shot"
-	},
-	"zatruty_sztylet": {
-	  "id": "zatruty_sztylet",
-	  "name": "Zatruty Sztylet",
-	  "description": "Zadaje 70% obrazen i naklada Toksyne na 3 tury, obnizajac DEF celu.",
-	  "ap_cost": 1,
-	  "cooldown": 2,
-	  "range": 1,
-	  "target_type": "enemy_unit",
-	  "effect_type": "poison_dagger"
-	},
-	"sokole_oko": {
-	  "id": "sokole_oko",
-	  "name": "Sokole Oko",
-	  "description": "Jednostka traci reszte ruchu w tej turze, ale w nastepnej turze zyskuje +2 zasiegu i +25% DMG.",
-	  "ap_cost": 1,
-	  "cooldown": 3,
-	  "range": 0,
-	  "target_type": "self",
-	  "effect_type": "eagle_eye"
-	},
-	"potezne_uderzenie": {
-	  "id": "potezne_uderzenie",
-	  "name": "Potezne Uderzenie",
-	  "description": "Zadaje standardowe obrazenia i odpycha cel o 1 hex. Jesli trafi w przeszkode lub blokade, zostaje ogluszony na 1 ture.",
-	  "ap_cost": 1,
-	  "cooldown": 2,
-	  "range": 1,
-	  "target_type": "enemy_unit",
-	  "effect_type": "heavy_strike"
-	}
-  }
 }
