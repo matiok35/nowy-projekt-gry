@@ -10,23 +10,24 @@ const ARRIVAL_THRESHOLD: float = 4.0
 @export var move_range: int = 4
 
 var selected: bool = false  
-var _polygon: Polygon2D  
+var _sprite: Sprite2D  
 var path: Array[Vector2] = []
 
 func _ready() -> void:
-	_polygon = Polygon2D.new()
-	var points = PackedVector2Array()
-	for i in range(16):
-		var angle = (TAU / 16.0) * i
-		points.append(Vector2(cos(angle), sin(angle)) * 18.0)
-	_polygon.polygon = points
-	_polygon.color = Color(0.9, 0.2, 0.2) 
-	add_child(_polygon)
+	_sprite = Sprite2D.new()
+	var tex = load("res://assets/characters/gen.png")
+	if tex:
+		_sprite.texture = tex
+		var tex_size = tex.get_size()
+		var scale_factor = 72.0 / max(tex_size.x, tex_size.y)
+		_sprite.scale = Vector2(scale_factor, scale_factor)
+	add_child(_sprite)
 
 func set_selected(value: bool) -> void:
 	selected = value
-	if _polygon:
-		_polygon.color = Color(1.0, 0.6, 0.0) if selected else Color(0.9, 0.2, 0.2)
+	if _sprite:
+		# Highlight character when selected by brightening the sprite
+		_sprite.modulate = Color(1.5, 1.5, 1.0) if selected else Color(1.0, 1.0, 1.0)
 
 func is_selected() -> bool:
 	return selected

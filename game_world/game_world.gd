@@ -25,7 +25,7 @@ var astar: AStar2D = AStar2D.new()
 var cell_to_id: Dictionary = {}
 var cell_to_world: Dictionary = {}
 
-const BUILDINGS_RESET_TILE_TO_GRASS = ["Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia", "Baraki", "Akademia generałów"]
+const BUILDINGS_RESET_TILE_TO_GRASS = ["Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia", "Baraki"]
 
 func _ready() -> void:
 	hud_node = get_tree().current_scene.find_child("UI", true, false)
@@ -291,7 +291,6 @@ func _get_building_icon(building_name: String) -> String:
 		"Biblioteka": return "📚"
 		"Świątynia": return "⛩️"
 		"Baraki": return "🏹"
-		"Akademia generałów": return "🎖️"
 		_: return "🏗️"
 
 func _get_building_accent_color(building_name: String) -> Color:
@@ -307,8 +306,7 @@ func _get_building_accent_color(building_name: String) -> Color:
 		"Warsztat": return Color(0.72, 0.52, 0.3, 0.9)
 		"Biblioteka": return Color(0.72, 0.46, 0.85, 0.9)
 		"Świątynia": return Color(0.92, 0.82, 0.5, 0.9)
-		"Baraki": return Color(0.85, 0.32, 0.32, 0.9)
-		"Akademia generałów": return Color(0.58, 0.36, 0.86, 0.9)
+		"Baraki": return Color(0.86, 0.2, 0.2, 0.9)
 		_: return Color(0.85, 0.7, 0.35, 0.9)
 
 func _get_tile_color(type: String) -> Color:
@@ -438,6 +436,8 @@ func upgrade_building(pos: Vector2) -> void:
 		EconomyManager.deduct_upgrade_costs(b_name, tile["level"])
 		tile["level"] += 1
 		_update_building_label(pos, b_name, tile["level"])
+		if b_name == "Baraki" and hud_node and hud_node.has_method("upgrade_barracks_units"):
+			hud_node.upgrade_barracks_units()
 
 func _get_building_color(building_name: String) -> Color:
 	match building_name:
@@ -449,7 +449,6 @@ func _get_building_color(building_name: String) -> Color:
 		"Biblioteka": return Color(0.6, 0.3, 0.6)
 		"Świątynia": return Color(0.8, 0.7, 0.3)
 		"Baraki": return Color(0.75, 0.2, 0.2)
-		"Akademia generałów": return Color(0.4, 0.2, 0.6)
 		_: return Color(0.85, 0.65, 0.15)
 
 func _update_tile_texture_for_building(pos: Vector2, building_name: String) -> void:
@@ -497,10 +496,7 @@ func _update_tile_texture_for_building(pos: Vector2, building_name: String) -> v
 			texture_path = "res://assets/tiles/hex_temple.png"
 			zoom_factor = 1.20
 		"Baraki": 
-			texture_path = "res://assets/tiles/hex_barracks.png"
-			zoom_factor = 1.20
-		"Akademia generałów": 
-			texture_path = "res://assets/tiles/hex_military_academy.png"
+			texture_path = "res://assets/tiles/barracks_tile.png"
 			zoom_factor = 1.20
 	
 	if texture_path != "":

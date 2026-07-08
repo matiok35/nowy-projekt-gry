@@ -29,7 +29,6 @@ var btn_tech_2: Button
 var btn_naukowy_1: Button
 var btn_naukowy_2: Button
 var build_baraki: Button
-var build_akademia: Button
 
 var tech_tree_button: Button
 var culture_tree_button: Button
@@ -451,11 +450,8 @@ func setup_custom_popups():
 	btn_naukowy_2.pressed.connect(func(): execute_build("Świątynia"))
 
 	build_baraki = Button.new()
-	build_akademia = Button.new()
 	build_grid.add_child(build_baraki)
-	build_grid.add_child(build_akademia)
 	build_baraki.pressed.connect(func(): execute_build("Baraki"))
-	build_akademia.pressed.connect(func(): execute_build("Akademia generałów"))
 	
 	# 7. ZALOZ MIASTO MENU
 	menu_zalozenia_miasta = PopupPanel.new()
@@ -850,7 +846,6 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 	btn_naukowy_1.visible = false
 	btn_naukowy_2.visible = false
 	build_baraki.visible = false
-	build_akademia.visible = false
 	
 	if show_buildings:
 		update_button_state(build_chata, "Chata Drwala", tile_type)
@@ -864,7 +859,6 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 		update_button_state(btn_naukowy_1, "Biblioteka", tile_type)
 		update_button_state(btn_naukowy_2, "Świątynia", tile_type)
 		update_button_state(build_baraki, "Baraki", tile_type)
-		update_button_state(build_akademia, "Akademia generałów", tile_type)
 		
 		_show_building_category("zasobowe")
 		
@@ -889,7 +883,6 @@ func _show_building_category(category: String):
 
 	var is_wojskowe = (category == "wojskowe")
 	build_baraki.visible = is_wojskowe
-	build_akademia.visible = is_wojskowe
 	
 	var selected_color = Color(0.75, 0.65, 0.5)
 	var unselected_color = Color(0.65, 0.55, 0.4)
@@ -970,7 +963,7 @@ func update_button_state(btn: Button, b_name: String, tile_type: String):
 	btn.modulate.a = 1.0 if can_place else 0.35
 
 func execute_build(building_name: String) -> void:
-	if active_tile_type != "Trawa" and building_name in ["Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia", "Baraki", "Akademia generałów"]:
+	if active_tile_type != "Trawa" and building_name in ["Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia", "Baraki"]:
 		pending_building = building_name
 		confirm_dialog.popup_centered()
 		hide_all_menus()
@@ -1102,7 +1095,6 @@ func style_individual_buttons():
 	style_single_button(btn_naukowy_1, "Biblioteka", "Biblioteka")
 	style_single_button(btn_naukowy_2, "Świątynia", "Świątynia")
 	style_single_button(build_baraki, "Baraki", "Baraki")
-	style_single_button(build_akademia, "Akademia gen.", "Akademia generałów")
 
 func style_single_button(btn: Button, display_name: String, building_name := ""):
 	btn.text = ""
@@ -1491,3 +1483,30 @@ func _populate_army():
 			hbox.add_child(delete_unit_btn)
 			
 			vbox.add_child(panel)
+
+func upgrade_barracks_units() -> void:
+	if unit_data_json and unit_data_json.has("factions"):
+		for faction in unit_data_json["factions"]:
+			if faction.has("units"):
+				for unit in faction["units"]:
+					var hp_gain = max(1, int(unit.get("hp", 0) * 0.1))
+					unit["hp"] = unit.get("hp", 0) + hp_gain
+					var dmg_gain = max(1, int(unit.get("dmg", 0) * 0.1))
+					unit["dmg"] = unit.get("dmg", 0) + dmg_gain
+					var def_gain = max(1, int(unit.get("def", 0) * 0.1))
+					unit["def"] = unit.get("def", 0) + def_gain
+
+	for unit in EconomyManager.player_army:
+		var hp_gain = max(1, int(unit.get("hp", 0) * 0.1))
+		unit["hp"] = unit.get("hp", 0) + hp_gain
+		var dmg_gain = max(1, int(unit.get("dmg", 0) * 0.1))
+		unit["dmg"] = unit.get("dmg", 0) + dmg_gain
+		var def_gain = max(1, int(unit.get("def", 0) * 0.1))
+		unit["def"] = unit.get("def", 0) + def_gain
+
+	EconomyManager.notify_change()
+	
+	if barracks_window and barracks_window.visible:
+		barracks_window.visible = false
+	if army_window and army_window.visible:
+		_populate_army()
