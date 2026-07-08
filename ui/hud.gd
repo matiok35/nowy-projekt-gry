@@ -1279,8 +1279,9 @@ func _populate_barracks_units(faction: Dictionary):
 			
 			var btn_recruit = Button.new()
 			var cost = EconomyManager.calculate_unit_cost(unit)
-			btn_recruit.text = "Zwerbuj (%d Złota)" % cost
-			btn_recruit.custom_minimum_size = Vector2(180, 40)
+			btn_recruit.text = "Zwerbuj"
+			btn_recruit.tooltip_text = "Koszt:\n%d Złota\n%d Żelaza\n%d Jedzenia" % [cost.get("Złoto", 0), cost.get("Żelazo", 0), cost.get("Jedzenie", 0)]
+			btn_recruit.custom_minimum_size = Vector2(150, 40)
 			btn_recruit.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			if EconomyManager.can_recruit_unit(unit):
 				btn_recruit.pressed.connect(func():
@@ -1343,9 +1344,26 @@ func _populate_army():
 	close_btn.custom_minimum_size = Vector2(80, 40)
 	close_btn.pressed.connect(func(): army_window.visible = false)
 	
-	var spacer = Control.new()
-	spacer.custom_minimum_size = Vector2(80, 40)
-	header_hbox.add_child(spacer)
+	var clear_all_btn = Button.new()
+	clear_all_btn.text = "Zwolnij armię"
+	clear_all_btn.custom_minimum_size = Vector2(120, 40)
+	clear_all_btn.pressed.connect(func():
+		var dialog = ConfirmationDialog.new()
+		dialog.title = "Potwierdzenie"
+		dialog.dialog_text = "Czy na pewno chcesz zwolnić całą armię?"
+		dialog.confirmed.connect(func():
+			EconomyManager.clear_army()
+			_populate_army()
+			dialog.queue_free()
+		)
+		dialog.canceled.connect(func(): dialog.queue_free())
+		add_child(dialog)
+		dialog.popup_centered()
+	)
+	if EconomyManager.player_army.is_empty():
+		clear_all_btn.disabled = true
+	
+	header_hbox.add_child(clear_all_btn)
 	header_hbox.add_child(title_label)
 	header_hbox.add_child(close_btn)
 	army_content_vbox.add_child(header_hbox)
@@ -1369,10 +1387,34 @@ func _populate_army():
 		empty_lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 		vbox.add_child(empty_lbl)
 	else:
+		var grouped_army = {}
 		for unit in army_list:
+			var u_name = unit.get("name", "Nieznana")
+			var turns_in = unit.get("turns_in_recruitment", 0)
+			var turns_to = unit.get("turns_to_recruit", 0)
+			var is_recruiting = turns_in < turns_to
+			
+			var group_key = u_name
+			if is_recruiting:
+				group_key = "%s_%d" % [u_name, turns_in]
+				
+			if not grouped_army.has(group_key):
+				grouped_army[group_key] = {"unit": unit, "count": 1, "is_recruiting": is_recruiting, "turns_in": turns_in, "turns_to": turns_to}
+			else:
+				grouped_army[group_key]["count"] += 1
+				
+		for group in grouped_army.values():
+			var unit = group["unit"]
+			var count = group["count"]
+			var is_recruiting = group["is_recruiting"]
+			var turns_in = group["turns_in"]
+			var turns_to = group["turns_to"]
+			
 			var panel = PanelContainer.new()
 			var p_style = StyleBoxFlat.new()
 			p_style.bg_color = Color(0.15, 0.25, 0.3)
+			if is_recruiting:
+				p_style.bg_color = Color(0.1, 0.15, 0.2)
 			p_style.set_content_margin_all(10)
 			panel.add_theme_stylebox_override("panel", p_style)
 			
@@ -1386,7 +1428,27 @@ func _populate_army():
 			img_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			img_rect.custom_minimum_size = Vector2(64, 64)
 			img_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			hbox.add_child(img_rect)
+			
+			var img_container = Control.new()
+			img_container.custom_minimum_size = Vector2(64, 64)
+			
+			img_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+			img_container.add_child(img_rect)
+			
+			if is_recruiting:
+				img_rect.modulate = Color(0.4, 0.4, 0.4, 1.0)
+				var ring_ctrl = Control.new()
+				ring_ctrl.set_anchors_preset(Control.PRESET_FULL_RECT)
+				ring_ctrl.draw.connect(func():
+					var center = ring_ctrl.size / 2.0
+					var radius = min(ring_ctrl.size.x, ring_ctrl.size.y) / 2.0 + 2.0
+					var angle = (float(turns_in) / float(turns_to)) * TAU
+					ring_ctrl.draw_arc(center, radius, -PI/2, -PI/2 + angle, 32, Color(0.2, 0.8, 0.2), 4.0, true)
+					ring_ctrl.draw_arc(center, radius, -PI/2 + angle, -PI/2 + TAU, 32, Color(0.3, 0.3, 0.3), 4.0, true)
+				)
+				img_container.add_child(ring_ctrl)
+			
+			hbox.add_child(img_container)
 			
 			var info_vbox = VBoxContainer.new()
 			info_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1394,13 +1456,28 @@ func _populate_army():
 			hbox.add_child(info_vbox)
 			
 			var name_lbl = Label.new()
-			name_lbl.text = unit["name"] + " (" + unit.get("role", "") + ")"
+			var name_text = unit["name"] + " (" + unit.get("role", "") + ") x" + str(count)
+			if is_recruiting:
+				name_text += " [Rekrutacja: %d/%d tur]" % [turns_in, turns_to]
+			name_lbl.text = name_text
 			name_lbl.add_theme_font_size_override("font_size", 18)
+			if is_recruiting:
+				name_lbl.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
 			info_vbox.add_child(name_lbl)
 			
 			var stats_lbl = Label.new()
 			stats_lbl.text = "HP: %d | DMG: %d | DEF: %d | RUCH: %d" % [unit.get("hp", 0), unit.get("dmg", 0), unit.get("def", 0), unit.get("move_range", 0)]
-			stats_lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+			stats_lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8) if not is_recruiting else Color(0.5, 0.5, 0.5))
 			info_vbox.add_child(stats_lbl)
+			
+			var delete_unit_btn = Button.new()
+			delete_unit_btn.text = "Usuń"
+			delete_unit_btn.custom_minimum_size = Vector2(80, 40)
+			delete_unit_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			delete_unit_btn.pressed.connect(func():
+				EconomyManager.remove_unit(unit)
+				_populate_army()
+			)
+			hbox.add_child(delete_unit_btn)
 			
 			vbox.add_child(panel)
