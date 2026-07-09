@@ -35,7 +35,10 @@ func _ready() -> void:
 	hud_node = get_tree().current_scene.find_child("UI", true, false)
 	if hud_node == null: hud_node = get_tree().current_scene.find_child("HUD", true, false)
 	map_container = get_node_or_null("MapContainer")
-	randomize()
+	if GameSettings.use_custom_seed:
+		seed(GameSettings.current_seed)
+	else:
+		randomize()
 	_load_fractions()
 	generate_map()
 	generate_camps(8)

@@ -11,13 +11,14 @@ config_version=5
 [application]
 
 config/name="Nowy projekt gry"
-run/main_scene="uid://brkvg5whgb0os"
+run/main_scene="res://ui/main_menu.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
 EconomyManager="*uid://5d7hn5o8hbpc"
+GameSettings="*res://autoloads/GameSettings.gd"
 
 [display]
 

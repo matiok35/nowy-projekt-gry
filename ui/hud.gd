@@ -98,6 +98,8 @@ func _ready():
 	setup_tech_tree_ui()
 	setup_culture_tree_ui()
 	load_unit_data()
+	setup_seed_label()
+
 	setup_barracks_window()
 	setup_army_window()
 	setup_camp_windows()
@@ -109,6 +111,27 @@ func _ready():
 	load_faction_lore()
 	
 	EconomyManager.notify_change()
+
+func setup_seed_label():
+	var seed_lbl = Label.new()
+	seed_lbl.name = "SeedLabel"
+	if GameSettings.use_custom_seed:
+		seed_lbl.text = "Seed: " + str(GameSettings.current_seed)
+	else:
+		seed_lbl.text = "Seed: Losowy" # Fallback if started directly
+	seed_lbl.add_theme_font_size_override("font_size", 14)
+	seed_lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8, 0.7))
+	seed_lbl.anchor_left = 1.0
+	seed_lbl.anchor_right = 1.0
+	seed_lbl.anchor_top = 1.0
+	seed_lbl.anchor_bottom = 1.0
+	seed_lbl.offset_left = -200
+	seed_lbl.offset_top = -30
+	seed_lbl.offset_right = -10
+	seed_lbl.offset_bottom = -10
+	seed_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	seed_lbl.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	add_child(seed_lbl)
 
 func _process(_delta: float) -> void:
 	_update_battle_button()
