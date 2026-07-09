@@ -84,7 +84,7 @@ func _on_random_button_pressed() -> void:
 	randomize()
 	GameSettings.current_seed = randi()
 	GameSettings.use_custom_seed = true
-	get_tree().change_scene_to_file("res://game_world/game_world.tscn")
+	get_tree().change_scene_to_file("res://scenes/game_world.tscn")
 
 func _on_seed_button_pressed() -> void:
 	var seed_text = seed_input.text.strip_edges()
@@ -97,4 +97,4 @@ func _on_seed_button_pressed() -> void:
 		randomize()
 		GameSettings.current_seed = randi()
 	GameSettings.use_custom_seed = true
-	get_tree().change_scene_to_file("res://game_world/game_world.tscn")
+	get_tree().change_scene_to_file("res://scenes/game_world.tscn")

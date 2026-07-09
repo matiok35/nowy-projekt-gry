@@ -17,8 +17,8 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-EconomyManager="*uid://5d7hn5o8hbpc"
-GameSettings="*res://autoloads/GameSettings.gd"
+EconomyManager="*res://core/EconomyManager.gd"
+GameSettings="*res://core/GameSettings.gd"
 
 [display]
 

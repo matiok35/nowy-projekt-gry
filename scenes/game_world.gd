@@ -543,8 +543,8 @@ func upgrade_building(pos: Vector2) -> void:
 		EconomyManager.deduct_upgrade_costs(b_name, tile["level"])
 		tile["level"] += 1
 		_update_building_label(pos, b_name, tile["level"])
-		if b_name == "Baraki" and hud_node and hud_node.has_method("upgrade_barracks_units"):
-			hud_node.upgrade_barracks_units()
+		if b_name == "Baraki" and hud_node and hud_node.barracks_menu:
+			hud_node.barracks_menu.upgrade_barracks_units()
 
 func _get_building_color(building_name: String) -> Color:
 	match building_name:
