@@ -444,6 +444,9 @@ func create_city_at(pos: Vector2) -> void:
 
 func claim_tile(pos: Vector2) -> void:
 	if owned_tiles.has(pos): return
+	# Zabezpieczenie: pole obozowiska wroga lub jego terytorium nigdy nie może
+	# zostać automatycznie (ani ręcznie) przyznane graczowi.
+	if camps.has(pos) or camp_owned_tiles.has(pos): return
 	owned_tiles[pos] = true
 	var tile_area = tile_nodes[pos]
 	var base_poly = tile_area.get_child(0) as Polygon2D
@@ -457,6 +460,8 @@ func claim_tile(pos: Vector2) -> void:
 
 func buy_tile(pos: Vector2) -> void:
 	if owned_tiles.has(pos): return
+	# Nie pozwalamy kupić pola obozowiska wroga ani pola należącego do jego terytorium
+	if camps.has(pos) or camp_owned_tiles.has(pos): return
 	var borders_owned_territory = false
 	for neighbor in HexUtils.get_neighbors(pos):
 		if owned_tiles.has(neighbor):
@@ -480,6 +485,10 @@ func expand_territory_by_single_tile() -> void:
 	for owned in owned_tiles:
 		for neighbor in HexUtils.get_neighbors(owned):
 			if map_data.has(neighbor) and not owned_tiles.has(neighbor):
+				# Pomijamy pola zajęte przez obozowisko wroga lub należące do jego terytorium -
+				# takie pola nie mogą zostać automatycznie przyznane graczowi.
+				if camps.has(neighbor) or camp_owned_tiles.has(neighbor):
+					continue
 				if not candidates.has(neighbor):
 					candidates.append(neighbor)
 					candidate_distances.append(_get_hex_distance_to_nearest_city(neighbor))

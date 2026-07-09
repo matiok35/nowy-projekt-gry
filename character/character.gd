@@ -13,6 +13,10 @@ var selected: bool = false
 var _sprite: Sprite2D  
 var path: Array[Vector2] = []
 
+# Armia przypisana do generała (lista referencji do jednostek z EconomyManager.player_army)
+var army: Array = []
+var _army_label: Label
+
 func _ready() -> void:
 	_sprite = Sprite2D.new()
 	var tex = load("res://assets/characters/gen.png")
@@ -22,6 +26,45 @@ func _ready() -> void:
 		var scale_factor = 72.0 / max(tex_size.x, tex_size.y)
 		_sprite.scale = Vector2(scale_factor, scale_factor)
 	add_child(_sprite)
+
+	_army_label = Label.new()
+	_army_label.add_theme_font_size_override("font_size", 15)
+	_army_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	_army_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
+	_army_label.add_theme_constant_override("shadow_offset_x", 1)
+	_army_label.add_theme_constant_override("shadow_offset_y", 1)
+	_army_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_army_label.position = Vector2(-40, 28)
+	_army_label.size = Vector2(80, 20)
+	_army_label.visible = false
+	add_child(_army_label)
+
+# Przypisuje jednostki (dictionary z EconomyManager.player_army) do armii generała.
+func assign_army(units: Array) -> void:
+	for u in units:
+		if not army.has(u):
+			army.append(u)
+	_update_army_label()
+
+# Usuwa pojedynczą jednostkę z armii generała.
+func unassign_unit(unit) -> void:
+	if army.has(unit):
+		army.erase(unit)
+	_update_army_label()
+
+func has_army() -> bool:
+	return army.size() > 0
+
+func get_army_size() -> int:
+	return army.size()
+
+func _update_army_label() -> void:
+	if not _army_label: return
+	if army.is_empty():
+		_army_label.visible = false
+	else:
+		_army_label.visible = true
+		_army_label.text = "⚔️ %d" % army.size()
 
 func set_selected(value: bool) -> void:
 	selected = value

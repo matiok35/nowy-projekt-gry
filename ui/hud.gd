@@ -64,6 +64,8 @@ var camp_details_window: PanelContainer
 var camp_army_window: PanelContainer
 var faction_lore: Dictionary = {}
 
+var battle_button: Button
+
 var resources_container: HBoxContainer
 var resource_labels: Dictionary = {}
 
@@ -99,6 +101,7 @@ func _ready():
 	setup_barracks_window()
 	setup_army_window()
 	setup_camp_windows()
+	setup_battle_button()
 	setup_help_window()
 	style_main_hud_elements()
 	style_context_popup()
@@ -106,6 +109,77 @@ func _ready():
 	load_faction_lore()
 	
 	EconomyManager.notify_change()
+
+func _process(_delta: float) -> void:
+	_update_battle_button()
+
+# Sprawdza, czy generał (Character) stoi z przypisaną armią na polu wrogiego
+# obozowiska i w razie potrzeby pokazuje/ukrywa oraz pozycjonuje przycisk walki.
+func _update_battle_button() -> void:
+	if not battle_button: return
+
+	if not world_ref or not world_ref.get("character"):
+		battle_button.visible = false
+		return
+
+	var gen = world_ref.character
+	if not gen or not gen.has_method("has_army") or not gen.has_army():
+		battle_button.visible = false
+		return
+
+	# Podczas ruchu generała (niepusta ścieżka) lub gdy otwarte jest inne menu, nie pokazujemy przycisku
+	if not gen.path.is_empty() or any_menu_visible():
+		battle_button.visible = false
+		return
+
+	if not world_ref.get("camps"):
+		battle_button.visible = false
+		return
+
+	var tile_pos = world_ref.world_to_nearest_cell(gen.global_position)
+	if not world_ref.camps.has(tile_pos):
+		battle_button.visible = false
+		return
+
+	var cell_world_pos = world_ref.cell_to_world.get(tile_pos, null)
+	if cell_world_pos == null or gen.global_position.distance_to(cell_world_pos) > 40.0:
+		battle_button.visible = false
+		return
+
+	battle_button.visible = true
+	var screen_pos: Vector2 = get_viewport().canvas_transform * (gen.global_position + Vector2(0, -75))
+	battle_button.position = screen_pos - battle_button.size / 2.0
+
+func setup_battle_button() -> void:
+	battle_button = Button.new()
+	battle_button.text = "⚔️ Rozpocznij walkę"
+	battle_button.custom_minimum_size = Vector2(190, 46)
+	battle_button.visible = false
+	battle_button.z_index = 20
+	battle_button.tooltip_text = "Funkcja walki będzie dostępna wkrótce"
+
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.55, 0.1, 0.1, 0.95)
+	style.set_corner_radius_all(8)
+	style.set_border_width_all(2)
+	style.border_color = Color(0.95, 0.75, 0.25, 1.0)
+	style.set_content_margin_all(8)
+	style.shadow_color = Color(0, 0, 0, 0.5)
+	style.shadow_size = 6
+	battle_button.add_theme_stylebox_override("normal", style)
+
+	var hover_style = style.duplicate()
+	hover_style.bg_color = Color(0.7, 0.15, 0.15, 0.95)
+	battle_button.add_theme_stylebox_override("hover", hover_style)
+	battle_button.add_theme_font_size_override("font_size", 16)
+
+	battle_button.pressed.connect(_on_battle_button_pressed)
+	add_child(battle_button)
+
+func _on_battle_button_pressed() -> void:
+	# TODO: Tutaj zostanie podpięta logika rozpoczynania walki z obozowiskiem.
+	# Na razie przycisk celowo nic nie robi.
+	pass
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_TAB:
@@ -1399,6 +1473,16 @@ func show_army_menu():
 	var viewport_size = get_viewport_rect().size
 	army_window.position = (viewport_size - army_window.custom_minimum_size) / 2.0
 	_populate_army()
+	_recenter_window_deferred(army_window)
+
+# Czeka aż kontenery przeliczą swój faktyczny rozmiar (może być większy niż
+# custom_minimum_size, gdy treść jest szersza) i dopiero wtedy centruje okno,
+# żeby nie "odstawało" w bok.
+func _recenter_window_deferred(win: Control) -> void:
+	await get_tree().process_frame
+	if not is_instance_valid(win) or not win.visible: return
+	var viewport_size = get_viewport_rect().size
+	win.position = ((viewport_size - win.size) / 2.0).round()
 
 func _populate_army():
 	for child in army_content_vbox.get_children():
@@ -1426,6 +1510,9 @@ func _populate_army():
 		dialog.dialog_text = "Czy na pewno chcesz zwolnić całą armię?"
 		dialog.confirmed.connect(func():
 			EconomyManager.clear_army()
+			if world_ref and world_ref.get("character") and world_ref.character:
+				world_ref.character.army.clear()
+				world_ref.character._update_army_label()
 			_populate_army()
 			dialog.queue_free()
 		)
@@ -1466,15 +1553,19 @@ func _populate_army():
 			var turns_in = unit.get("turns_in_recruitment", 0)
 			var turns_to = unit.get("turns_to_recruit", 0)
 			var is_recruiting = turns_in < turns_to
+			var is_assigned = unit.get("assigned_general", false)
 			
 			var group_key = u_name
 			if is_recruiting:
-				group_key = "%s_%d" % [u_name, turns_in]
+				group_key = "%s_r%d" % [u_name, turns_in]
+			elif is_assigned:
+				group_key = "%s_gen" % u_name
 				
 			if not grouped_army.has(group_key):
-				grouped_army[group_key] = {"unit": unit, "count": 1, "is_recruiting": is_recruiting, "turns_in": turns_in, "turns_to": turns_to}
+				grouped_army[group_key] = {"unit": unit, "count": 1, "is_recruiting": is_recruiting, "turns_in": turns_in, "turns_to": turns_to, "is_assigned": is_assigned, "units": [unit]}
 			else:
 				grouped_army[group_key]["count"] += 1
+				grouped_army[group_key]["units"].append(unit)
 				
 		for group in grouped_army.values():
 			var unit = group["unit"]
@@ -1482,12 +1573,18 @@ func _populate_army():
 			var is_recruiting = group["is_recruiting"]
 			var turns_in = group["turns_in"]
 			var turns_to = group["turns_to"]
+			var is_assigned = group["is_assigned"]
+			var group_units = group["units"]
 			
 			var panel = PanelContainer.new()
 			var p_style = StyleBoxFlat.new()
 			p_style.bg_color = Color(0.15, 0.25, 0.3)
 			if is_recruiting:
 				p_style.bg_color = Color(0.1, 0.15, 0.2)
+			elif is_assigned:
+				p_style.bg_color = Color(0.25, 0.2, 0.1)
+				p_style.set_border_width_all(1)
+				p_style.border_color = Color(0.9, 0.75, 0.3, 0.8)
 			p_style.set_content_margin_all(10)
 			panel.add_theme_stylebox_override("panel", p_style)
 			
@@ -1532,7 +1629,11 @@ func _populate_army():
 			var name_text = unit["name"] + " (" + unit.get("role", "") + ") x" + str(count)
 			if is_recruiting:
 				name_text += " [Rekrutacja: %d/%d tur]" % [turns_in, turns_to]
+			elif is_assigned:
+				name_text += " 🎖️ [Armia Generała]"
 			name_lbl.text = name_text
+			name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			name_lbl.clip_text = false
 			name_lbl.add_theme_font_size_override("font_size", 18)
 			if is_recruiting:
 				name_lbl.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
@@ -1543,17 +1644,60 @@ func _populate_army():
 			stats_lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8) if not is_recruiting else Color(0.5, 0.5, 0.5))
 			info_vbox.add_child(stats_lbl)
 			
+			var actions_vbox = VBoxContainer.new()
+			actions_vbox.add_theme_constant_override("separation", 6)
+			actions_vbox.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			actions_vbox.custom_minimum_size = Vector2(150, 0)
+
+			if not is_recruiting:
+				var assign_btn = Button.new()
+				assign_btn.custom_minimum_size = Vector2(150, 34)
+				assign_btn.add_theme_font_size_override("font_size", 13)
+				assign_btn.clip_text = true
+				if is_assigned:
+					assign_btn.text = "↩️ Odwołaj z armii"
+					assign_btn.pressed.connect(func():
+						_unassign_units_from_general(group_units)
+					)
+				else:
+					assign_btn.text = "🎖️ Przypisz do generała"
+					assign_btn.pressed.connect(func():
+						_assign_units_to_general(group_units)
+					)
+				actions_vbox.add_child(assign_btn)
+
 			var delete_unit_btn = Button.new()
 			delete_unit_btn.text = "Usuń"
-			delete_unit_btn.custom_minimum_size = Vector2(80, 40)
-			delete_unit_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			delete_unit_btn.custom_minimum_size = Vector2(150, 34)
+			delete_unit_btn.add_theme_font_size_override("font_size", 13)
 			delete_unit_btn.pressed.connect(func():
+				if world_ref and world_ref.get("character") and unit.get("assigned_general", false):
+					world_ref.character.unassign_unit(unit)
 				EconomyManager.remove_unit(unit)
 				_populate_army()
 			)
-			hbox.add_child(delete_unit_btn)
+			actions_vbox.add_child(delete_unit_btn)
+
+			hbox.add_child(actions_vbox)
 			
 			vbox.add_child(panel)
+
+func _assign_units_to_general(units: Array) -> void:
+	if not world_ref or not world_ref.get("character"): return
+	var gen = world_ref.character
+	if not gen: return
+	for u in units:
+		u["assigned_general"] = true
+	gen.assign_army(units)
+	_populate_army()
+
+func _unassign_units_from_general(units: Array) -> void:
+	if not world_ref or not world_ref.get("character"): return
+	var gen = world_ref.character
+	for u in units:
+		u["assigned_general"] = false
+		if gen: gen.unassign_unit(u)
+	_populate_army()
 
 func setup_help_window():
 	help_window = PanelContainer.new()
