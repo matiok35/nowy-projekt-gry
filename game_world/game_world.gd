@@ -13,6 +13,10 @@ var tile_sprites = {}
 var label_nodes = {}
 var owned_tiles: Dictionary = {}
 var city_centers: Array[Vector2] = []
+var camps: Dictionary = {}
+var camp_owned_tiles: Dictionary = {}
+var camp_territory_overlays: Dictionary = {}
+var fraction_data: Dictionary = {}
 var territory_overlays: Dictionary = {}
 var last_expansion_turn: int = 1
 
@@ -32,7 +36,9 @@ func _ready() -> void:
 	if hud_node == null: hud_node = get_tree().current_scene.find_child("HUD", true, false)
 	map_container = get_node_or_null("MapContainer")
 	randomize()
+	_load_fractions()
 	generate_map()
+	generate_camps(8)
 	build_astar_graph()
 	character = get_node_or_null("Character")
 	path_line = get_node_or_null("PathLine")
@@ -76,6 +82,93 @@ func generate_map() -> void:
 				"fertility": fertility
 			}
 			create_procedural_hex(pos, type, deposit_size)
+
+func _load_fractions() -> void:
+	var dir = DirAccess.open("res://data/fractions")
+	if dir:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		while file_name != "":
+			if not dir.current_is_dir() and file_name.ends_with(".json"):
+				var file = FileAccess.open("res://data/fractions/" + file_name, FileAccess.READ)
+				if file:
+					var json_text = file.get_as_text()
+					var json = JSON.new()
+					var err = json.parse(json_text)
+					if err == OK:
+						var data = json.get_data()
+						if data.has("faction"):
+							var faction_id = data["faction"]["id"]
+							fraction_data[faction_id] = data["faction"]
+			file_name = dir.get_next()
+
+func generate_camps(count: int) -> void:
+	if fraction_data.is_empty(): return
+	var available_positions = []
+	for pos in map_data.keys():
+		if map_data[pos]["building"] == "Brak":
+			available_positions.append(pos)
+	available_positions.shuffle()
+	var faction_keys = fraction_data.keys()
+	
+	for i in range(min(count, available_positions.size())):
+		var pos = available_positions[i]
+		var faction_id = faction_keys[randi() % faction_keys.size()]
+		var faction_info = fraction_data[faction_id]
+		
+		var camp_level = randi_range(1, 3)
+		var army = []
+		if faction_info.has("units") and faction_info["units"].size() > 0:
+			var units = faction_info["units"]
+			var min_units = camp_level * 2 - 1 # Lvl 1: 1, Lvl 2: 3, Lvl 3: 5
+			var max_units = camp_level * 3     # Lvl 1: 3, Lvl 2: 6, Lvl 3: 9
+			for u in range(randi_range(min_units, max_units)):
+				var random_unit = units[randi() % units.size()]
+				army.append(random_unit["id"])
+		
+		var camp_data = {
+			"faction": faction_id,
+			"faction_name": faction_info.get("name", faction_id),
+			"army": army,
+			"resources": {
+				"gold": randi_range(50, 150) * camp_level,
+				"wood": randi_range(20, 80) * camp_level,
+				"iron": randi_range(10, 50) * camp_level
+			},
+			"level": camp_level
+		}
+		camps[pos] = camp_data
+		var building_name = "Obóz " + camp_data["faction_name"]
+		map_data[pos]["building"] = building_name
+		map_data[pos]["level"] = camp_level
+		_update_building_label(pos, building_name, camp_level)
+		
+		# Claim territory for camp
+		_claim_camp_territory(pos, camp_level)
+
+func _claim_camp_territory(center_pos: Vector2, level: int) -> void:
+	var to_claim = [center_pos]
+	if level >= 2:
+		for n in HexUtils.get_neighbors(center_pos):
+			to_claim.append(n)
+	if level >= 3:
+		for n in HexUtils.get_neighbors(center_pos):
+			for nn in HexUtils.get_neighbors(n):
+				if not to_claim.has(nn):
+					to_claim.append(nn)
+	
+	for tile in to_claim:
+		if map_data.has(tile) and not owned_tiles.has(tile) and not camp_owned_tiles.has(tile):
+			camp_owned_tiles[tile] = true
+			var tile_area = tile_nodes[tile]
+			var base_poly = tile_area.get_child(0) as Polygon2D
+			if base_poly:
+				var overlay = Polygon2D.new()
+				overlay.polygon = base_poly.polygon
+				overlay.color = Color(0.8, 0.1, 0.1, 0.25)
+				overlay.z_index = 1
+				tile_area.add_child(overlay)
+				camp_territory_overlays[tile] = overlay
 
 func create_procedural_hex(pos: Vector2, type: String, deposit_size: String) -> void:
 	var area = Area2D.new()
@@ -278,6 +371,7 @@ func _update_building_label(pos: Vector2, building_name: String, level: int) -> 
 	badge.visible = true
 
 func _get_building_icon(building_name: String) -> String:
+	if building_name.begins_with("Obóz"): return "⛺"
 	match building_name:
 		"Centrum Miasta": return "🏛️"
 		"Dom mieszkalny": return "🏠"
@@ -294,6 +388,7 @@ func _get_building_icon(building_name: String) -> String:
 		_: return "🏗️"
 
 func _get_building_accent_color(building_name: String) -> Color:
+	if building_name.begins_with("Obóz"): return Color(0.8, 0.2, 0.2, 0.9)
 	match building_name:
 		"Centrum Miasta": return Color(1.0, 0.85, 0.35, 0.95)
 		"Dom mieszkalny": return Color(0.95, 0.62, 0.4, 0.9)

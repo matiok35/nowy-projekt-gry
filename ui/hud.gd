@@ -59,6 +59,11 @@ var army_window: PanelContainer
 var army_content_vbox: VBoxContainer
 var army_button: Button
 
+var camp_details_btn: Button
+var camp_details_window: PanelContainer
+var camp_army_window: PanelContainer
+var faction_lore: Dictionary = {}
+
 var resources_container: HBoxContainer
 var resource_labels: Dictionary = {}
 
@@ -93,10 +98,12 @@ func _ready():
 	load_unit_data()
 	setup_barracks_window()
 	setup_army_window()
+	setup_camp_windows()
 	setup_help_window()
 	style_main_hud_elements()
 	style_context_popup()
 	style_individual_buttons()
+	load_faction_lore()
 	
 	EconomyManager.notify_change()
 
@@ -403,6 +410,19 @@ func setup_custom_popups():
 	tile_info_vbox.add_child(upgrade_button)
 	tile_info_vbox.add_child(army_button)
 	tile_info_vbox.add_child(recruit_button)
+	
+	camp_details_btn = Button.new()
+	camp_details_btn.text = "⛺ Szczegóły Obozowiska"
+	camp_details_btn.pressed.connect(func():
+		hide_all_menus()
+		show_camp_details_menu(active_tile_pos)
+	)
+	var style_camp_btn = StyleBoxFlat.new()
+	style_camp_btn.bg_color = Color(0.6, 0.3, 0.2)
+	style_camp_btn.set_corner_radius_all(6)
+	style_camp_btn.set_content_margin_all(12)
+	camp_details_btn.add_theme_stylebox_override("normal", style_camp_btn)
+	tile_info_vbox.add_child(camp_details_btn)
 	
 	kup_pole_button = Button.new()
 	kup_pole_button.text = "🪙 Kup to pole (50 złota)"
@@ -817,10 +837,25 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 	var show_upgrade = is_owned and has_building and building_name != "Centrum Miasta" and building_level < 3
 	
 	if has_building:
-		info_label.text = "🏢 Budynek: %s (Lvl %d)\nPodłoże: %s" % [building_name, building_level, tile_type]
-		if show_upgrade:
-			var preview_cost = EconomyManager.get_upgrade_cost(building_name, building_level)
-			info_label.text += "\n⬆️ Koszt ulepszenia: %s" % _format_cost_dict(preview_cost)
+		if building_name.begins_with("Obóz"):
+			var camp_data = {}
+			if world_ref and world_ref.get("camps") and world_ref.camps.has(active_tile_pos):
+				camp_data = world_ref.camps[active_tile_pos]
+			
+			var army_text = "Brak"
+			if camp_data.has("army") and camp_data["army"].size() > 0:
+				army_text = str(camp_data["army"].size()) + " jednostek"
+				
+			var res_text = ""
+			if camp_data.has("resources"):
+				res_text = "🪙 %d | 🪵 %d | ⛏️ %d" % [camp_data["resources"]["gold"], camp_data["resources"]["wood"], camp_data["resources"]["iron"]]
+				
+			info_label.text = "⛺ %s (Lvl %d)\n⚔️ Nacja: %s\n📦 Surowce: %s\n🛡️ Armia: %s" % [building_name, building_level, camp_data.get("faction_name", "Nieznana"), res_text, army_text]
+		else:
+			info_label.text = "🏢 Budynek: %s (Lvl %d)\nPodłoże: %s" % [building_name, building_level, tile_type]
+			if show_upgrade:
+				var preview_cost = EconomyManager.get_upgrade_cost(building_name, building_level)
+				info_label.text += "\n⬆️ Koszt ulepszenia: %s" % _format_cost_dict(preview_cost)
 	elif tile_type == "Trawa":
 		info_label.text = "🌱 Typ: %s\n✨ Żyzność pola: %d%%" % [tile_type, int(fertility * 100)]
 	else:
@@ -831,13 +866,19 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 	else:
 		kup_pole_button.visible = true
 		var can_afford = EconomyManager.resources["Złoto"] >= 50
-		var can_buy = can_afford and borders_owned
+		var is_camp_territory = world_ref and world_ref.get("camp_owned_tiles") and world_ref.camp_owned_tiles.has(active_tile_pos)
+		var can_buy = can_afford and borders_owned and not is_camp_territory
 		kup_pole_button.disabled = not can_buy
 		kup_pole_button.modulate.a = 1.0 if can_buy else 0.35
+		if is_camp_territory:
+			kup_pole_button.tooltip_text = "To pole należy do wrogiego obozowiska!"
+		else:
+			kup_pole_button.tooltip_text = ""
 
 	upgrade_button.visible = show_upgrade
 	recruit_button.visible = (has_building and building_name == "Baraki" and is_owned)
 	army_button.visible = (has_building and building_name == "Baraki" and is_owned)
+	camp_details_btn.visible = (has_building and building_name.begins_with("Obóz"))
 	if show_upgrade:
 		var can_upgrade = EconomyManager.can_afford_upgrade(building_name, building_level)
 		upgrade_button.disabled = not can_upgrade
@@ -933,10 +974,12 @@ func hide_all_menus():
 	if culture_tree_window: culture_tree_window.visible = false
 	if barracks_window: barracks_window.visible = false
 	if army_window: army_window.visible = false
+	if camp_details_window: camp_details_window.visible = false
+	if camp_army_window: camp_army_window.visible = false
 	if help_window: help_window.visible = false
 
 func any_menu_visible() -> bool:
-	return menu_budowania.visible or (tile_info_menu and tile_info_menu.visible) or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) or (tech_tree_window and tech_tree_window.visible) or (culture_tree_window and culture_tree_window.visible) or (barracks_window and barracks_window.visible) or (army_window and army_window.visible) or (help_window and help_window.visible)
+	return menu_budowania.visible or (tile_info_menu and tile_info_menu.visible) or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) or (tech_tree_window and tech_tree_window.visible) or (culture_tree_window and culture_tree_window.visible) or (barracks_window and barracks_window.visible) or (army_window and army_window.visible) or (help_window and help_window.visible) or (camp_details_window and camp_details_window.visible) or (camp_army_window and camp_army_window.visible)
 
 func _reposition_menu(menu: Control, base_pos: Vector2):
 	var vbox = menu.get_node("VBoxContainer") as VBoxContainer
@@ -1671,3 +1714,208 @@ func upgrade_barracks_units() -> void:
 		barracks_window.visible = false
 	if army_window and army_window.visible:
 		_populate_army()
+
+func load_faction_lore():
+	var file = FileAccess.open("res://data/faction_lore.json", FileAccess.READ)
+	if file:
+		var json = JSON.new()
+		if json.parse(file.get_as_text()) == OK:
+			faction_lore = json.data
+
+func setup_camp_windows():
+	camp_details_window = PanelContainer.new()
+	camp_details_window.visible = false
+	camp_details_window.custom_minimum_size = Vector2(700, 450)
+	var style_panel = StyleBoxFlat.new()
+	style_panel.bg_color = Color(0.12, 0.1, 0.1, 0.95)
+	style_panel.set_corner_radius_all(10)
+	style_panel.set_border_width_all(2)
+	style_panel.border_color = Color(0.8, 0.3, 0.2, 0.8)
+	style_panel.set_content_margin_all(20)
+	camp_details_window.add_theme_stylebox_override("panel", style_panel)
+	add_child(camp_details_window)
+
+	camp_army_window = PanelContainer.new()
+	camp_army_window.visible = false
+	camp_army_window.custom_minimum_size = Vector2(800, 500)
+	var style_army = style_panel.duplicate()
+	style_army.bg_color = Color(0.15, 0.12, 0.12, 0.95)
+	camp_army_window.add_theme_stylebox_override("panel", style_army)
+	add_child(camp_army_window)
+
+func show_camp_details_menu(pos: Vector2):
+	camp_details_window.visible = true
+	var viewport_size = get_viewport_rect().size
+	camp_details_window.position = (viewport_size - camp_details_window.custom_minimum_size) / 2.0
+	
+	for child in camp_details_window.get_children():
+		child.queue_free()
+		
+	var camp_data = world_ref.camps[pos] if world_ref and world_ref.get("camps") and world_ref.camps.has(pos) else {}
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 15)
+	camp_details_window.add_child(vbox)
+	
+	var header_hbox = HBoxContainer.new()
+	var title_lbl = Label.new()
+	title_lbl.text = "Obozowisko: " + camp_data.get("faction_name", "Nieznana") + " (Poziom " + str(camp_data.get("level", 1)) + ")"
+	title_lbl.add_theme_font_size_override("font_size", 24)
+	title_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var close_btn = Button.new()
+	close_btn.text = "Zamknij"
+	close_btn.custom_minimum_size = Vector2(80, 40)
+	close_btn.pressed.connect(func(): camp_details_window.visible = false)
+	header_hbox.add_child(title_lbl)
+	header_hbox.add_child(close_btn)
+	vbox.add_child(header_hbox)
+	
+	var lore_lbl = RichTextLabel.new()
+	var f_id = camp_data.get("faction", "")
+	lore_lbl.text = faction_lore.get(f_id, "Nieznana frakcja, ostrożnie!")
+	lore_lbl.fit_content = true
+	lore_lbl.add_theme_font_size_override("normal_font_size", 16)
+	lore_lbl.add_theme_color_override("default_color", Color(0.8, 0.8, 0.8))
+	vbox.add_child(lore_lbl)
+	
+	var res_hbox = HBoxContainer.new()
+	res_hbox.add_theme_constant_override("separation", 20)
+	var r = camp_data.get("resources", {})
+	var r_lbl = Label.new()
+	r_lbl.text = "Zgromadzone surowce:\n🪙 Złoto: %d\n🪵 Drewno: %d\n⛏️ Żelazo: %d" % [r.get("gold", 0), r.get("wood", 0), r.get("iron", 0)]
+	r_lbl.add_theme_color_override("font_color", Color(0.9, 0.85, 0.4))
+	res_hbox.add_child(r_lbl)
+	
+	var t_lbl = Label.new()
+	t_lbl.text = "Kontrolowane ziemie:\n"
+	
+	# Obliczanie zasobów kafelkowych
+	var tiles_owned = []
+	if world_ref and world_ref.get("camp_owned_tiles"):
+		for t in world_ref.camp_owned_tiles:
+			var center_dist = HexUtils.get_distance(t, pos)
+			# Uproszczone sprawdzanie czy należy do tego obozu. Wersja pelna moglaby zapisywac ID obozu do kafelek.
+			# Skoro obozowiska max maja promien 3, policzmy w tym promieniu:
+			if center_dist <= camp_data.get("level", 1) + 1:
+				if world_ref.map_data.has(t) and not tiles_owned.has(t):
+					tiles_owned.append(world_ref.map_data[t]["type"])
+	
+	var type_counts = {}
+	for type in tiles_owned:
+		if type == "Trawa": continue
+		if not type_counts.has(type): type_counts[type] = 0
+		type_counts[type] += 1
+		
+	if type_counts.is_empty():
+		t_lbl.text += "Brak specjalnych złóż"
+	else:
+		for type in type_counts:
+			t_lbl.text += "• %d x %s\n" % [type_counts[type], type]
+	
+	res_hbox.add_child(t_lbl)
+	vbox.add_child(res_hbox)
+	
+	var spacer = Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(spacer)
+	
+	var army_btn = Button.new()
+	army_btn.text = "⚔️ Pokaż armię"
+	army_btn.custom_minimum_size = Vector2(200, 50)
+	army_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var army_btn_style = StyleBoxFlat.new()
+	army_btn_style.bg_color = Color(0.6, 0.2, 0.2)
+	army_btn_style.set_corner_radius_all(8)
+	army_btn.add_theme_stylebox_override("normal", army_btn_style)
+	army_btn.pressed.connect(func(): show_camp_army_menu(camp_data))
+	vbox.add_child(army_btn)
+
+func show_camp_army_menu(camp_data: Dictionary):
+	camp_army_window.visible = true
+	var viewport_size = get_viewport_rect().size
+	camp_army_window.position = (viewport_size - camp_army_window.custom_minimum_size) / 2.0
+	
+	for child in camp_army_window.get_children():
+		child.queue_free()
+		
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 15)
+	camp_army_window.add_child(vbox)
+	
+	var header_hbox = HBoxContainer.new()
+	var title_lbl = Label.new()
+	title_lbl.text = "Armia wroga: " + camp_data.get("faction_name", "Nieznana")
+	title_lbl.add_theme_font_size_override("font_size", 24)
+	title_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var close_btn = Button.new()
+	close_btn.text = "Zamknij"
+	close_btn.custom_minimum_size = Vector2(80, 40)
+	close_btn.pressed.connect(func(): camp_army_window.visible = false)
+	header_hbox.add_child(title_lbl)
+	header_hbox.add_child(close_btn)
+	vbox.add_child(header_hbox)
+	
+	var scroll = ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	vbox.add_child(scroll)
+	
+	var list_vbox = VBoxContainer.new()
+	list_vbox.add_theme_constant_override("separation", 10)
+	list_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(list_vbox)
+	
+	var army_ids = camp_data.get("army", [])
+	if army_ids.is_empty():
+		var empty_lbl = Label.new()
+		empty_lbl.text = "Obóz nie posiada żadnych sił obronnych!"
+		list_vbox.add_child(empty_lbl)
+	else:
+		var counts = {}
+		for u_id in army_ids:
+			if not counts.has(u_id): counts[u_id] = 0
+			counts[u_id] += 1
+			
+		for u_id in counts:
+			var unit_dict = null
+			for f in unit_data_json.get("factions", []):
+				for u in f.get("units", []):
+					if u.get("id") == u_id:
+						unit_dict = u
+						break
+				if unit_dict: break
+				
+			if unit_dict:
+				var panel = PanelContainer.new()
+				var p_style = StyleBoxFlat.new()
+				p_style.bg_color = Color(0.2, 0.15, 0.15)
+				p_style.set_content_margin_all(10)
+				panel.add_theme_stylebox_override("panel", p_style)
+				
+				var row = HBoxContainer.new()
+				row.add_theme_constant_override("separation", 15)
+				panel.add_child(row)
+				
+				var img = TextureRect.new()
+				var tex = load(unit_dict.get("portrait", "")) if unit_dict.get("portrait", "") != "" else null
+				if tex: img.texture = tex
+				img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+				img.custom_minimum_size = Vector2(64, 64)
+				img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				row.add_child(img)
+				
+				var info_vbox = VBoxContainer.new()
+				info_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+				row.add_child(info_vbox)
+				
+				var name_lbl = Label.new()
+				name_lbl.text = unit_dict.get("name", "Nieznana") + " x" + str(counts[u_id])
+				name_lbl.add_theme_font_size_override("font_size", 18)
+				name_lbl.add_theme_color_override("font_color", Color(1, 0.6, 0.6))
+				info_vbox.add_child(name_lbl)
+				
+				var stats_lbl = Label.new()
+				stats_lbl.text = "HP: %d | DMG: %d | DEF: %d | RUCH: %d" % [unit_dict.get("hp", 0), unit_dict.get("dmg", 0), unit_dict.get("def", 0), unit_dict.get("move_range", 0)]
+				stats_lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+				info_vbox.add_child(stats_lbl)
+				
+				list_vbox.add_child(panel)
