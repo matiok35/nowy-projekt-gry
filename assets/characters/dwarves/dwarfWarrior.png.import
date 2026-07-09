@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cqdujknlysr3v"
-path="res://.godot/imported/ChatGPT Image 6 lip 2026, 12_21_05.png-662f9ed4d81a808ee27be22a1436ce79.ctex"
+uid="uid://bwsgjnpptm8j0"
+path="res://.godot/imported/dwarfWarrior.png-3f54230daaa843e0bcf69097630db913.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/humans/ChatGPT Image 6 lip 2026, 12_21_05.png"
-dest_files=["res://.godot/imported/ChatGPT Image 6 lip 2026, 12_21_05.png-662f9ed4d81a808ee27be22a1436ce79.ctex"]
+source_file="res://assets/characters/dwarves/dwarfWarrior.png"
+dest_files=["res://.godot/imported/dwarfWarrior.png-3f54230daaa843e0bcf69097630db913.ctex"]
 
 [params]
 

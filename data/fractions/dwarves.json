@@ -1,0 +1,92 @@
+{
+  "faction": {
+	"id": "dwarves",
+	"name": "Krasnoludy",
+	"units": [
+	  {
+		"id": "dwarf_warrior",
+		"name": "Krasnolud Wojownik",
+		"short_name": "KWO",
+		"role": "Uniwersalny krasnoludzki wojownik",
+		"hp": 22,
+		"dmg": 7,
+		"def": 9,
+		"speed": 4,
+		"action_points": 1,
+		"count": 8,
+		"move_range": 3,
+		"attack_range": 1,
+		"resistance": "Brak",
+		"portrait": "res://assets/characters/humans/dwarfWarrior.png",
+		"skill_ids": [
+		  "potezne_uderzenie",
+		  "zelazna_kurtyna",
+          "tarcza"
+		]
+	  },
+	  {
+		"id": "dwarf_guardian",
+		"name": "Krasnolud Straznik",
+		"short_name": "KST",
+		"role": "Najtwardszy obrońca",
+		"hp": 28,
+		"dmg": 6,
+		"def": 10,
+		"speed": 3,
+		"action_points": 1,
+		"count": 6,
+		"move_range": 2,
+		"attack_range": 1,
+		"resistance": "Brak",
+		"portrait": "res://assets/characters/humans/dwarfShield.png",
+		"skill_ids": [
+		  "prowokacja",
+		  "tarcza",
+          "zelazna_kurtyna"
+		]
+	  },
+	  {
+		"id": "dwarf_axeman",
+		"name": "Krasnolud Topornik",
+		"short_name": "KTO",
+		"role": "Ciezka piechota uderzeniowa",
+		"hp": 24,
+		"dmg": 8,
+		"def": 7,
+		"speed": 4,
+		"action_points": 1,
+		"count": 8,
+		"move_range": 3,
+		"attack_range": 1,
+		"resistance": "Brak",
+		"portrait": "res://assets/characters/humans/dwarfHammer.png",
+		"skill_ids": [
+		  "potezne_uderzenie",
+		  "skupiony_cios",
+          "berserk"
+		]
+	  },
+	  {
+		"id": "dwarf_digger",
+		"name": "Krasnolud Kopacz",
+		"short_name": "KKO",
+		"role": "Wojownik z dynamitem",
+		"hp": 18,
+		"dmg": 7,
+		"def": 5,
+		"speed": 6,
+		"action_points": 1,
+		"count": 10,
+		"move_range": 4,
+		"attack_range": 2,
+		"resistance": "Brak",
+		"portrait": "res://assets/characters/humans/dwarfDigger.png",
+		"skill_ids": [
+		  "strzal_w_kolano",
+		  "precyzyjny_strzal",
+          "zatruta_strzala"
+		]
+	  }
+	]
+  }
+}

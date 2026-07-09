@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bqbtqoicsarm7"
-path="res://.godot/imported/ChatGPT Image 6 lip 2026, 12_28_29.png-556563121b83d4d9ce752714a665bab8.ctex"
+uid="uid://c41jcxi2vq2dh"
+path="res://.godot/imported/elfArcheMague.png-1ac979a6ba277fae05d6d775d9fda2b8.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/humans/ChatGPT Image 6 lip 2026, 12_28_29.png"
-dest_files=["res://.godot/imported/ChatGPT Image 6 lip 2026, 12_28_29.png-556563121b83d4d9ce752714a665bab8.ctex"]
+source_file="res://assets/characters/elves/elfArcheMague.png"
+dest_files=["res://.godot/imported/elfArcheMague.png-1ac979a6ba277fae05d6d775d9fda2b8.ctex"]
 
 [params]
 

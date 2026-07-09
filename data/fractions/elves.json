@@ -1,0 +1,92 @@
+{
+  "faction": {
+    "id": "elves",
+    "name": "Elfy",
+    "units": [
+      {
+        "id": "elf_archer",
+        "name": "Elf Lucznik",
+        "short_name": "ELU",
+        "role": "Elfi lucznik",
+        "hp": 14,
+        "dmg": 7,
+        "def": 3,
+        "speed": 9,
+        "action_points": 1,
+        "count": 12,
+        "move_range": 5,
+        "attack_range": 5,
+        "resistance": "Brak",
+        "portrait": "res://assets/characters/humans/elfArcher.png",
+        "skill_ids": [
+          "strzal_w_kolano",
+          "sokole_oko",
+          "precyzyjny_strzal"
+        ]
+      },
+      {
+        "id": "elf_swordsman",
+        "name": "Elf Szermierz",
+        "short_name": "ESZ",
+        "role": "Mobilna jednostka wręcz",
+        "hp": 18,
+        "dmg": 6,
+        "def": 6,
+        "speed": 8,
+        "action_points": 1,
+        "count": 10,
+        "move_range": 5,
+        "attack_range": 1,
+        "resistance": "Brak",
+        "portrait": "res://assets/characters/humans/elfSwordsman.png",
+        "skill_ids": [
+          "potezne_uderzenie",
+          "skupiony_cios",
+          "runiczna_ochrona"
+        ]
+      },
+      {
+        "id": "elf_mage",
+        "name": "Elf Mag",
+        "short_name": "EMA",
+        "role": "Elfi zaklinacz",
+        "hp": 10,
+        "dmg": 8,
+        "def": 2,
+        "speed": 8,
+        "action_points": 1,
+        "count": 8,
+        "move_range": 4,
+        "attack_range": 3,
+        "resistance": "Brak",
+        "portrait": "res://assets/characters/humans/elfMague.png",
+        "skill_ids": [
+          "kula_ognia",
+          "lodowe_podloze",
+          "medytacja"
+        ]
+      },
+      {
+        "id": "elf_arcanotechnic",
+        "name": "Elf Arkanotechnik",
+        "short_name": "EAR",
+        "role": "Wsparcie technomagiczne",
+        "hp": 14,
+        "dmg": 5,
+        "def": 4,
+        "speed": 7,
+        "action_points": 1,
+        "count": 8,
+        "move_range": 4,
+        "attack_range": 3,
+        "resistance": "Brak",
+        "portrait": "res://assets/characters/humans/elfArcheMague.png",
+        "skill_ids": [
+          "sokole_oko",
+          "runiczna_ochrona",
+          "przyspieszenie"
+        ]
+      }
+    ]
+  }
+}

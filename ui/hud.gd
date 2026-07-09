@@ -1178,14 +1178,26 @@ func style_single_button(btn: Button, display_name: String, building_name := "")
 		btn.tooltip_text = EconomyManager.get_building_tooltip(building_name)
 
 func load_unit_data():
-	var file = FileAccess.open("res://assets/json/unit_types.json", FileAccess.READ)
-	if file:
-		var content = file.get_as_text()
-		var json = JSON.new()
-		var error = json.parse(content)
-		if error == OK:
-			unit_data_json = json.data
-		file.close()
+	unit_data_json = {"factions": []}
+	var dir = DirAccess.open("res://data/fractions")
+	if dir:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		while file_name != "":
+			if not dir.current_is_dir() and file_name.ends_with(".json"):
+				var file = FileAccess.open("res://data/fractions/" + file_name, FileAccess.READ)
+				if file:
+					var content = file.get_as_text()
+					var json = JSON.new()
+					var error = json.parse(content)
+					if error == OK and typeof(json.data) == TYPE_DICTIONARY:
+						if json.data.has("faction"):
+							unit_data_json["factions"].append(json.data["faction"])
+						elif json.data.has("factions"):
+							unit_data_json["factions"].append_array(json.data["factions"])
+					file.close()
+			file_name = dir.get_next()
+		dir.list_dir_end()
 
 func setup_barracks_window():
 	barracks_window = PanelContainer.new()

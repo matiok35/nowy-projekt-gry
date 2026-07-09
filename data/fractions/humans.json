@@ -1,0 +1,92 @@
+{
+  "faction": {
+    "id": "humans",
+    "name": "Ludzie",
+    "units": [
+      {
+        "id": "human_knights",
+        "name": "Rycerze",
+        "short_name": "RYC",
+        "role": "Ludzka kawaleria pancerna",
+        "hp": 22,
+        "dmg": 7,
+        "def": 9,
+        "speed": 3,
+        "action_points": 1,
+        "count": 8,
+        "move_range": 3,
+        "attack_range": 1,
+        "resistance": "Brak",
+        "portrait": "res://assets/characters/humans/ChatGPT Image 6 lip 2026, 12_21_05.png",
+        "skill_ids": [
+          "potezne_uderzenie",
+          "zelazna_kurtyna",
+          "tarcza"
+        ]
+      },
+      {
+        "id": "human_cavalry",
+        "name": "Konnica",
+        "short_name": "KON",
+        "role": "Szybka jednostka uderzeniowa",
+        "hp": 18,
+        "dmg": 8,
+        "def": 5,
+        "speed": 9,
+        "action_points": 1,
+        "count": 10,
+        "move_range": 6,
+        "attack_range": 1,
+        "resistance": "Brak",
+        "portrait": "res://assets/characters/humans/ChatGPT Image 6 lip 2026, 12_31_33.png",
+        "skill_ids": [
+          "prowokacja",
+          "szarza",
+          "przyspieszenie"
+        ]
+      },
+      {
+        "id": "human_archers",
+        "name": "Lucznicy",
+        "short_name": "LUC",
+        "role": "Dystansowa jednostka strzelecka",
+        "hp": 14,
+        "dmg": 6,
+        "def": 3,
+        "speed": 8,
+        "action_points": 1,
+        "count": 12,
+        "move_range": 4,
+        "attack_range": 4,
+        "resistance": "Brak",
+        "portrait": "res://assets/characters/humans/ChatGPT Image 6 lip 2026, 12_28_29.png",
+        "skill_ids": [
+          "strzal_w_kolano",
+          "sokole_oko",
+          "precyzyjny_strzal"
+        ]
+      },
+      {
+        "id": "human_mages",
+        "name": "Magowie",
+        "short_name": "MAG",
+        "role": "Ofensywny zaklinacz",
+        "hp": 10,
+        "dmg": 9,
+        "def": 2,
+        "speed": 7,
+        "action_points": 1,
+        "count": 8,
+        "move_range": 3,
+        "attack_range": 3,
+        "resistance": "Brak",
+        "portrait": "res://assets/characters/humans/mag.png",
+        "skill_ids": [
+          "kula_ognia",
+          "lodowe_podloze",
+          "medytacja"
+        ]
+      }
+    ]
+  }
+}

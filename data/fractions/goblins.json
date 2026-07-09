@@ -1,0 +1,92 @@
+{
+  "faction": {
+    "id": "goblins",
+    "name": "Gobliny",
+    "units": [
+      {
+        "id": "goblin_thief",
+        "name": "Goblin Zlodziej",
+        "short_name": "GZL",
+        "role": "Szybki zlodziej",
+        "hp": 10,
+        "dmg": 4,
+        "def": 2,
+        "speed": 10,
+        "action_points": 1,
+        "count": 14,
+        "move_range": 6,
+        "attack_range": 1,
+        "resistance": "Brak",
+        "portrait": "res://assets/characters/humans/goblinTheft.png",
+        "skill_ids": [
+          "zatruty_sztylet",
+          "chmura_toksyczna",
+          "mistrz_trucizn"
+        ]
+      },
+      {
+        "id": "goblin_warrior",
+        "name": "Goblin Wojownik",
+        "short_name": "GWO",
+        "role": "Podstawowa piechota",
+        "hp": 14,
+        "dmg": 6,
+        "def": 4,
+        "speed": 6,
+        "action_points": 1,
+        "count": 12,
+        "move_range": 4,
+        "attack_range": 1,
+        "resistance": "Brak",
+        "portrait": "res://assets/characters/humans/goblinWarrior.png",
+        "skill_ids": [
+          "potezne_uderzenie",
+          "skupiony_cios",
+          "tarcza"
+        ]
+      },
+      {
+        "id": "goblin_shaman",
+        "name": "Goblin Szaman",
+        "short_name": "GSZ",
+        "role": "Wsparcie magiczne",
+        "hp": 12,
+        "dmg": 5,
+        "def": 3,
+        "speed": 7,
+        "action_points": 1,
+        "count": 10,
+        "move_range": 4,
+        "attack_range": 2,
+        "resistance": "Brak",
+        "portrait": "res://assets/characters/humans/goblinShaman.png",
+        "skill_ids": [
+          "sokole_oko",
+          "medytacja",
+          "przyspieszenie"
+        ]
+      },
+      {
+        "id": "goblin_trapper",
+        "name": "Goblin Traper",
+        "short_name": "GTR",
+        "role": "Kontroler pola walki",
+        "hp": 16,
+        "dmg": 3,
+        "def": 5,
+        "speed": 8,
+        "action_points": 1,
+        "count": 10,
+        "move_range": 5,
+        "attack_range": 2,
+        "resistance": "Brak",
+        "portrait": "res://assets/characters/humans/goblinTrapper.png",
+        "skill_ids": [
+          "strzal_w_kolano",
+          "zatruta_strzala",
+          "zwinnosc"
+        ]
+      }
+    ]
+  }
+}

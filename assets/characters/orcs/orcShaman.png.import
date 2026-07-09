@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b3q81rdck4028"
-path="res://.godot/imported/ChatGPT Image 6 lip 2026, 12_31_33.png-5a1e8b8b6f6247f573711ffabf528401.ctex"
+uid="uid://7d4wavlatqhx"
+path="res://.godot/imported/orcShaman.png-c8cc68e45a5d0c9b8ecda12172c5e6b0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/humans/ChatGPT Image 6 lip 2026, 12_31_33.png"
-dest_files=["res://.godot/imported/ChatGPT Image 6 lip 2026, 12_31_33.png-5a1e8b8b6f6247f573711ffabf528401.ctex"]
+source_file="res://assets/characters/orcs/orcShaman.png"
+dest_files=["res://.godot/imported/orcShaman.png-c8cc68e45a5d0c9b8ecda12172c5e6b0.ctex"]
 
 [params]
 

@@ -1,0 +1,50 @@
+{
+  "faction": {
+    "id": "testowa",
+    "name": "Frakcja testowa",
+    "units": [
+      {
+        "id": "test_ally_1",
+        "name": "Testowy Sojusznik 1",
+        "short_name": "TS1",
+        "role": "Jednostka testowa bez grafiki",
+        "hp": 18,
+        "dmg": 6,
+        "def": 5,
+        "speed": 500,
+        "action_points": 100,
+        "count": 6,
+        "move_range": 4,
+        "attack_range": 1,
+        "resistance": "Brak",
+        "portrait": "res://assets/characters/humans/elfSwordsman.png",
+        "skill_ids": [
+          "bariera_energetyczna",
+          "mistrz_trucizn",
+          "chmura_toksyczna"
+        ]
+      },
+      {
+        "id": "test_ally_2",
+        "name": "Testowy Sojusznik 2",
+        "short_name": "TS2",
+        "role": "Jednostka testowa bez grafiki",
+        "hp": 14,
+        "dmg": 5,
+        "def": 3,
+        "speed": 8,
+        "action_points": 1,
+        "count": 8,
+        "move_range": 5,
+        "attack_range": 3,
+        "resistance": "Brak",
+        "portrait": "res://assets/characters/humans/elfArcher.png",
+        "skill_ids": [
+          "strzal_w_kolano",
+          "precyzyjny_strzal",
+          "sokole_oko"
+        ]
+      }
+    ]
+  }
+}

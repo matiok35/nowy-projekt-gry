@@ -1,0 +1,92 @@
+{
+  "faction": {
+    "id": "orcs",
+    "name": "Orkowie",
+    "units": [
+      {
+        "id": "orc_warrior",
+        "name": "Ork Wojownik",
+        "short_name": "OWO",
+        "role": "Uniwersalny waleczny ork",
+        "hp": 20,
+        "dmg": 8,
+        "def": 7,
+        "speed": 5,
+        "action_points": 1,
+        "count": 10,
+        "move_range": 4,
+        "attack_range": 1,
+        "resistance": "Brak",
+        "portrait": "res://assets/characters/humans/orcWarrior.png",
+        "skill_ids": [
+          "potezne_uderzenie",
+          "skupiony_cios",
+          "tarcza"
+        ]
+      },
+      {
+        "id": "orc_berserker",
+        "name": "Ork Berserker",
+        "short_name": "OBE",
+        "role": "Kruchy zabojca",
+        "hp": 16,
+        "dmg": 9,
+        "def": 4,
+        "speed": 7,
+        "action_points": 1,
+        "count": 8,
+        "move_range": 5,
+        "attack_range": 1,
+        "resistance": "Brak",
+        "portrait": "res://assets/characters/humans/orcBerserker.png",
+        "skill_ids": [
+          "prowokacja",
+          "berserk",
+          "krwawa_ofiara"
+        ]
+      },
+      {
+        "id": "orc_shaman",
+        "name": "Ork Szaman",
+        "short_name": "OSZ",
+        "role": "Wsparcie i kontrola",
+        "hp": 14,
+        "dmg": 6,
+        "def": 3,
+        "speed": 6,
+        "action_points": 1,
+        "count": 8,
+        "move_range": 4,
+        "attack_range": 2,
+        "resistance": "Brak",
+        "portrait": "res://assets/characters/humans/orcShaman.png",
+        "skill_ids": [
+          "sokole_oko",
+          "medytacja",
+          "przyspieszenie"
+        ]
+      },
+      {
+        "id": "orc_shieldman",
+        "name": "Ork Tarczownik",
+        "short_name": "OTA",
+        "role": "Defensywna sciana",
+        "hp": 26,
+        "dmg": 5,
+        "def": 9,
+        "speed": 3,
+        "action_points": 1,
+        "count": 8,
+        "move_range": 3,
+        "attack_range": 1,
+        "resistance": "Brak",
+        "portrait": "res://assets/characters/humans/OrcShieldman.png",
+        "skill_ids": [
+          "prowokacja",
+          "tarcza",
+          "zelazna_kurtyna"
+        ]
+      }
+    ]
+  }
+}
