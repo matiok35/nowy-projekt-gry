@@ -80,6 +80,26 @@ var help_content_label: RichTextLabel
 var help_tab_buttons: Dictionary = {}
 var help_current_tab: String = "sterowanie"
 
+var settings_window: PanelContainer
+var settings_seed_value_label: Label
+var settings_copy_button: Button
+var settings_volume_slider: HSlider
+
+# --- PALETA "DARK FANTASY" -------------------------------------------------
+# Wspólne kolory używane w całym HUD-zie, żeby całość wyglądała spójnie:
+# głębokie, prawie czarne tła z chłodnym odcieniem, postarzałe złoto jako
+# główny akcent oraz krwista czerwień dla akcji bojowych/niebezpiecznych.
+const DF_BG: Color = Color(0.071, 0.063, 0.078, 0.97)
+const DF_BG_LIGHT: Color = Color(0.11, 0.095, 0.09, 0.96)
+const DF_BG_PARCHMENT: Color = Color(0.22, 0.18, 0.13, 0.97)
+const DF_GOLD: Color = Color(0.62, 0.49, 0.24, 1.0)
+const DF_GOLD_BRIGHT: Color = Color(0.85, 0.7, 0.36, 1.0)
+const DF_GOLD_TEXT: Color = Color(0.86, 0.72, 0.4, 1.0)
+const DF_BLOOD: Color = Color(0.45, 0.08, 0.09, 1.0)
+const DF_BLOOD_BRIGHT: Color = Color(0.62, 0.13, 0.14, 1.0)
+const DF_TEXT: Color = Color(0.85, 0.8, 0.7, 1.0)
+const DF_TEXT_DIM: Color = Color(0.6, 0.56, 0.5, 0.85)
+
 func _ready():
 	world_ref = get_tree().current_scene
 	if world_ref == null or not world_ref.has_method("build_on_tile"):
@@ -105,6 +125,7 @@ func _ready():
 	setup_camp_windows()
 	setup_battle_button()
 	setup_help_window()
+	setup_settings_window()
 	style_main_hud_elements()
 	style_context_popup()
 	style_individual_buttons()
@@ -120,7 +141,7 @@ func setup_seed_label():
 	else:
 		seed_lbl.text = "Seed: Losowy" # Fallback if started directly
 	seed_lbl.add_theme_font_size_override("font_size", 14)
-	seed_lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8, 0.7))
+	seed_lbl.add_theme_color_override("font_color", Color(DF_GOLD_TEXT.r, DF_GOLD_TEXT.g, DF_GOLD_TEXT.b, 0.75))
 	seed_lbl.anchor_left = 1.0
 	seed_lbl.anchor_right = 1.0
 	seed_lbl.anchor_top = 1.0
@@ -131,6 +152,7 @@ func setup_seed_label():
 	seed_lbl.offset_bottom = -10
 	seed_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	seed_lbl.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	seed_lbl.tooltip_text = "Naciśnij ESC, aby otworzyć ustawienia i skopiować seed"
 	add_child(seed_lbl)
 
 func _process(_delta: float) -> void:
@@ -212,6 +234,13 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		else:
 			hide_all_menus()
 			show_help_menu()
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+		get_viewport().set_input_as_handled()
+		if settings_window and settings_window.visible:
+			settings_window.visible = false
+		else:
+			hide_all_menus()
+			show_settings_menu()
 
 func setup_points_panel():
 	points_panel = PanelContainer.new()
@@ -224,14 +253,16 @@ func setup_points_panel():
 	points_panel.offset_top = 60
 
 	var style_panel = StyleBoxFlat.new()
-	style_panel.bg_color = Color(0.12, 0.16, 0.18, 0.85)
+	style_panel.bg_color = DF_BG
 	style_panel.set_corner_radius_all(10)
 	style_panel.set_border_width_all(2)
-	style_panel.border_color = Color(0.2, 0.3, 0.4, 0.5)
+	style_panel.border_color = DF_GOLD
 	style_panel.content_margin_left = 12
 	style_panel.content_margin_right = 12
 	style_panel.content_margin_top = 12
 	style_panel.content_margin_bottom = 12
+	style_panel.shadow_color = Color(0, 0, 0, 0.5)
+	style_panel.shadow_size = 4
 	points_panel.add_theme_stylebox_override("panel", style_panel)
 	
 	var vbox = VBoxContainer.new()
@@ -283,14 +314,16 @@ func setup_points_panel():
 	culture_tree_button.text = "Drzewo Kultury"
 	culture_tree_button.custom_minimum_size = Vector2(0, 40)
 	var culture_style = StyleBoxFlat.new()
-	culture_style.bg_color = Color(0.45, 0.15, 0.65)
-	culture_style.border_color = Color(0.8, 0.55, 1.0)
+	culture_style.bg_color = Color(0.28, 0.1, 0.32, 0.95)
+	culture_style.border_color = DF_GOLD
 	culture_style.set_border_width_all(1)
 	culture_style.set_corner_radius_all(4)
 	culture_tree_button.add_theme_stylebox_override("normal", culture_style)
 	var culture_hover = culture_style.duplicate()
-	culture_hover.bg_color = Color(0.60, 0.25, 0.80)
+	culture_hover.bg_color = Color(0.38, 0.15, 0.42, 0.95)
+	culture_hover.border_color = DF_GOLD_BRIGHT
 	culture_tree_button.add_theme_stylebox_override("hover", culture_hover)
+	culture_tree_button.add_theme_color_override("font_color", DF_TEXT)
 	culture_vbox.add_child(culture_tree_button)
 
 	vbox.add_child(culture_vbox)
@@ -405,7 +438,7 @@ func setup_custom_popups():
 	var title_label = Label.new()
 	title_label.text = "Menu Budowy"
 	title_label.add_theme_font_size_override("font_size", 18)
-	title_label.add_theme_color_override("font_color", Color(0.9, 0.85, 0.75))
+	title_label.add_theme_color_override("font_color", DF_GOLD_TEXT)
 	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	
@@ -413,6 +446,7 @@ func setup_custom_popups():
 	close_btn.text = "X"
 	close_btn.custom_minimum_size = Vector2(30, 30)
 	close_btn.pressed.connect(func(): hide_all_menus())
+	_style_df_button(close_btn)
 	
 	header_hbox.add_child(Control.new()) # Spacer
 	header_hbox.get_child(0).size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -451,11 +485,13 @@ func setup_custom_popups():
 	tile_info_menu = PanelContainer.new()
 	tile_info_menu.visible = false
 	var tile_info_style = StyleBoxFlat.new()
-	tile_info_style.bg_color = Color(0.05, 0.05, 0.07, 0.95)  
+	tile_info_style.bg_color = DF_BG
 	tile_info_style.set_border_width_all(2) 
-	tile_info_style.border_color = Color(0.2, 0.6, 1.0, 0.8) 
+	tile_info_style.border_color = DF_GOLD
 	tile_info_style.set_corner_radius_all(10)
 	tile_info_style.set_content_margin_all(8)
+	tile_info_style.shadow_color = Color(0, 0, 0, 0.5)
+	tile_info_style.shadow_size = 4
 	tile_info_menu.add_theme_stylebox_override("panel", tile_info_style)
 	
 	var tile_info_vbox = VBoxContainer.new()
@@ -464,7 +500,7 @@ func setup_custom_popups():
 	
 	info_label = Label.new()
 	info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	info_label.add_theme_color_override("font_color", Color(0.4, 0.9, 1.0))
+	info_label.add_theme_color_override("font_color", DF_GOLD_TEXT)
 	
 	upgrade_button = Button.new()
 	upgrade_button.text = "⬆️ Ulepsz budynek"
@@ -474,10 +510,13 @@ func setup_custom_popups():
 		hide_all_menus()
 	)
 	var style_upg = StyleBoxFlat.new()
-	style_upg.bg_color = Color(0.3, 0.6, 0.2)
+	style_upg.bg_color = Color(0.15, 0.28, 0.12, 0.95)
+	style_upg.set_border_width_all(1)
+	style_upg.border_color = DF_GOLD
 	style_upg.set_corner_radius_all(6)
 	style_upg.set_content_margin_all(12)
 	upgrade_button.add_theme_stylebox_override("normal", style_upg)
+	upgrade_button.add_theme_color_override("font_color", DF_TEXT)
 
 	recruit_button = Button.new()
 	recruit_button.text = "⚔️ Rekrutuj"
@@ -486,10 +525,13 @@ func setup_custom_popups():
 		show_barracks_menu()
 	)
 	var style_recruit = StyleBoxFlat.new()
-	style_recruit.bg_color = Color(0.6, 0.2, 0.2)
+	style_recruit.bg_color = DF_BLOOD
+	style_recruit.set_border_width_all(1)
+	style_recruit.border_color = DF_GOLD
 	style_recruit.set_corner_radius_all(6)
 	style_recruit.set_content_margin_all(12)
 	recruit_button.add_theme_stylebox_override("normal", style_recruit)
+	recruit_button.add_theme_color_override("font_color", DF_TEXT)
 
 	army_button = Button.new()
 	army_button.text = "🛡️ Moja Armia"
@@ -498,10 +540,13 @@ func setup_custom_popups():
 		show_army_menu()
 	)
 	var style_army = StyleBoxFlat.new()
-	style_army.bg_color = Color(0.2, 0.4, 0.6)
+	style_army.bg_color = Color(0.13, 0.16, 0.22, 0.95)
+	style_army.set_border_width_all(1)
+	style_army.border_color = DF_GOLD
 	style_army.set_corner_radius_all(6)
 	style_army.set_content_margin_all(12)
 	army_button.add_theme_stylebox_override("normal", style_army)
+	army_button.add_theme_color_override("font_color", DF_TEXT)
 
 	tile_info_vbox.add_child(info_label)
 	tile_info_vbox.add_child(upgrade_button)
@@ -515,20 +560,26 @@ func setup_custom_popups():
 		show_camp_details_menu(active_tile_pos)
 	)
 	var style_camp_btn = StyleBoxFlat.new()
-	style_camp_btn.bg_color = Color(0.6, 0.3, 0.2)
+	style_camp_btn.bg_color = Color(0.32, 0.18, 0.1, 0.95)
+	style_camp_btn.set_border_width_all(1)
+	style_camp_btn.border_color = DF_GOLD
 	style_camp_btn.set_corner_radius_all(6)
 	style_camp_btn.set_content_margin_all(12)
 	camp_details_btn.add_theme_stylebox_override("normal", style_camp_btn)
+	camp_details_btn.add_theme_color_override("font_color", DF_TEXT)
 	tile_info_vbox.add_child(camp_details_btn)
 	
 	kup_pole_button = Button.new()
 	kup_pole_button.text = "🪙 Kup to pole (50 złota)"
 	kup_pole_button.custom_minimum_size = Vector2(180, 35)
 	var style_buy = StyleBoxFlat.new()
-	style_buy.bg_color = Color(0.15, 0.35, 0.4)
+	style_buy.bg_color = Color(0.14, 0.13, 0.08, 0.95)
+	style_buy.set_border_width_all(1)
+	style_buy.border_color = DF_GOLD
 	style_buy.set_corner_radius_all(6)
 	style_buy.set_content_margin_all(12)
 	kup_pole_button.add_theme_stylebox_override("normal", style_buy)
+	kup_pole_button.add_theme_color_override("font_color", DF_GOLD_TEXT)
 	tile_info_vbox.add_child(kup_pole_button)
 	
 	kup_pole_button.pressed.connect(func():
@@ -589,9 +640,9 @@ func setup_custom_popups():
 	menu_zalozenia_miasta = PopupPanel.new()
 	menu_zalozenia_miasta.visible = false
 	var mz_style = StyleBoxFlat.new()
-	mz_style.bg_color = Color(0.05, 0.05, 0.07, 0.95)  
+	mz_style.bg_color = DF_BG
 	mz_style.set_border_width_all(2) 
-	mz_style.border_color = Color(0.0, 0.75, 1.0, 0.8) 
+	mz_style.border_color = DF_GOLD
 	mz_style.set_corner_radius_all(10)
 	mz_style.set_content_margin_all(8)
 	menu_zalozenia_miasta.add_theme_stylebox_override("panel", mz_style)
@@ -605,6 +656,7 @@ func setup_custom_popups():
 	zaloz_miasto_button = Button.new()
 	zaloz_miasto_button.text = "👑 Załóż Miasto tutaj"
 	zaloz_miasto_button.custom_minimum_size = Vector2(160, 35)
+	_style_df_button(zaloz_miasto_button)
 	margin_container.add_child(zaloz_miasto_button)
 	menu_zalozenia_miasta.add_child(margin_container)
 	add_child(menu_zalozenia_miasta)
@@ -626,11 +678,16 @@ func setup_tech_tree_ui():
 	tech_tree_button.text = "Drzewo Rozwoju"
 	tech_tree_button.custom_minimum_size = Vector2(0, 40)
 	var btn_style = StyleBoxFlat.new()
-	btn_style.bg_color = Color(0.18, 0.24, 0.35)
+	btn_style.bg_color = Color(0.1, 0.16, 0.22, 0.95)
 	btn_style.set_border_width_all(1)
-	btn_style.border_color = Color(0.38, 0.55, 0.78)
+	btn_style.border_color = DF_GOLD
 	btn_style.set_corner_radius_all(4)
 	tech_tree_button.add_theme_stylebox_override("normal", btn_style)
+	var btn_style_hover = btn_style.duplicate() as StyleBoxFlat
+	btn_style_hover.bg_color = Color(0.15, 0.22, 0.3, 0.95)
+	btn_style_hover.border_color = DF_GOLD_BRIGHT
+	tech_tree_button.add_theme_stylebox_override("hover", btn_style_hover)
+	tech_tree_button.add_theme_color_override("font_color", DF_TEXT)
 	var vbox = points_panel.get_child(0)
 	vbox.add_child(tech_tree_button)
 	
@@ -638,9 +695,9 @@ func setup_tech_tree_ui():
 		tech_tree_window.visible = false
 		tech_tree_window.z_index = 10
 		var style_tree = StyleBoxFlat.new()
-		style_tree.bg_color = Color(0.14, 0.13, 0.11, 0.98) 
+		style_tree.bg_color = DF_BG
 		style_tree.set_border_width_all(3)
-		style_tree.border_color = Color(0.45, 0.38, 0.28)
+		style_tree.border_color = DF_GOLD
 		style_tree.set_corner_radius_all(4)
 		tech_tree_window.add_theme_stylebox_override("panel", style_tree)
 		var close_btn = tech_tree_window.get_node_or_null("CloseButton")
@@ -667,9 +724,9 @@ func setup_culture_tree_ui():
 		culture_tree_window.visible = false
 		culture_tree_window.z_index = 10
 		var style_tree = StyleBoxFlat.new()
-		style_tree.bg_color = Color(0.14, 0.13, 0.11, 0.98)
+		style_tree.bg_color = DF_BG
 		style_tree.set_border_width_all(3)
-		style_tree.border_color = Color(0.55, 0.25, 0.80)
+		style_tree.border_color = DF_GOLD
 		style_tree.set_corner_radius_all(4)
 		culture_tree_window.add_theme_stylebox_override("panel", style_tree)
 		var close_btn = culture_tree_window.get_node_or_null("CloseButton")
@@ -1074,9 +1131,10 @@ func hide_all_menus():
 	if camp_details_window: camp_details_window.visible = false
 	if camp_army_window: camp_army_window.visible = false
 	if help_window: help_window.visible = false
+	if settings_window: settings_window.visible = false
 
 func any_menu_visible() -> bool:
-	return menu_budowania.visible or (tile_info_menu and tile_info_menu.visible) or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) or (tech_tree_window and tech_tree_window.visible) or (culture_tree_window and culture_tree_window.visible) or (barracks_window and barracks_window.visible) or (army_window and army_window.visible) or (help_window and help_window.visible) or (camp_details_window and camp_details_window.visible) or (camp_army_window and camp_army_window.visible)
+	return menu_budowania.visible or (tile_info_menu and tile_info_menu.visible) or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) or (tech_tree_window and tech_tree_window.visible) or (culture_tree_window and culture_tree_window.visible) or (barracks_window and barracks_window.visible) or (army_window and army_window.visible) or (help_window and help_window.visible) or (camp_details_window and camp_details_window.visible) or (camp_army_window and camp_army_window.visible) or (settings_window and settings_window.visible)
 
 func _reposition_menu(menu: Control, base_pos: Vector2):
 	var vbox = menu.get_node("VBoxContainer") as VBoxContainer
@@ -1182,14 +1240,14 @@ func style_main_hud_elements():
 	top_panel.offset_bottom = 50
 	
 	var style_top = StyleBoxFlat.new()
-	style_top.bg_color = Color(0.12, 0.13, 0.14, 0.98) 
+	style_top.bg_color = DF_BG
 	style_top.border_width_bottom = 3
 	style_top.border_width_left = 3
 	style_top.border_width_right = 3
 	style_top.border_width_top = 3
-	style_top.border_color = Color(0.4, 0.38, 0.33) 
+	style_top.border_color = DF_GOLD
 	style_top.set_corner_radius_all(10)
-	style_top.shadow_color = Color(0, 0, 0, 0.6)
+	style_top.shadow_color = Color(0, 0, 0, 0.65)
 	style_top.shadow_size = 4
 	style_top.shadow_offset = Vector2(0, 3)
 	top_panel.add_theme_stylebox_override("panel", style_top)
@@ -1198,47 +1256,50 @@ func style_main_hud_elements():
 	resources_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	resources_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	resources_label.add_theme_font_size_override("font_size", 14)
-	resources_label.add_theme_color_override("font_color", Color(0.9, 0.88, 0.8))
+	resources_label.add_theme_color_override("font_color", DF_TEXT)
 	
 	var style_turn = StyleBoxFlat.new()
-	style_turn.bg_color = Color(0.5, 0.1, 0.7) 
+	style_turn.bg_color = DF_BLOOD
 	style_turn.set_corner_radius_all(12)
+	style_turn.set_border_width_all(2)
+	style_turn.border_color = DF_GOLD
 	style_turn.border_width_bottom = 4
-	style_turn.border_color = Color(0.35, 0.05, 0.5)  
 	
 	var style_turn_hover = style_turn.duplicate() as StyleBoxFlat
-	style_turn_hover.bg_color = Color(0.65, 0.15, 0.85) 
+	style_turn_hover.bg_color = DF_BLOOD_BRIGHT
+	style_turn_hover.border_color = DF_GOLD_BRIGHT
 	
 	turn_button.add_theme_stylebox_override("normal", style_turn)
 	turn_button.add_theme_stylebox_override("hover", style_turn_hover)
-	turn_button.add_theme_color_override("font_color", Color.WHITE)
+	turn_button.add_theme_color_override("font_color", DF_TEXT)
 
 func style_context_popup():
 	var style_box = StyleBoxFlat.new()
-	style_box.bg_color = Color(0.85, 0.78, 0.65, 1.0) # Parchment background
-	style_box.set_border_width_all(4) 
-	style_box.border_color = Color(0.3, 0.25, 0.2, 1.0) # Dark brown border
+	style_box.bg_color = DF_BG_PARCHMENT # Postarzały, przygaszony pergamin zamiast jasnego papieru
+	style_box.set_border_width_all(3) 
+	style_box.border_color = DF_GOLD # Złota, "kuta" ramka
 	style_box.set_corner_radius_all(8)
 	style_box.set_content_margin_all(10)
+	style_box.shadow_color = Color(0, 0, 0, 0.55)
+	style_box.shadow_size = 6
 	menu_budowania.add_theme_stylebox_override("panel", style_box)
 	$MenuBudowania/VBoxContainer.add_theme_constant_override("separation", 8)
 	
 	var tab_style = StyleBoxFlat.new()
-	tab_style.bg_color = Color(0.65, 0.55, 0.4)
+	tab_style.bg_color = Color(0.16, 0.12, 0.08, 0.95)
 	tab_style.set_corner_radius_all(6)
 	tab_style.set_content_margin_all(8)
-	tab_style.border_color = Color(0.3, 0.25, 0.2)
-	tab_style.set_border_width_all(2)
+	tab_style.border_color = DF_GOLD
+	tab_style.set_border_width_all(1)
 	
-	cat_zasobowe.add_theme_stylebox_override("normal", tab_style.duplicate())
-	cat_naukowe.add_theme_stylebox_override("normal", tab_style.duplicate())
-	cat_tech.add_theme_stylebox_override("normal", tab_style.duplicate())
-	cat_wojskowe.add_theme_stylebox_override("normal", tab_style.duplicate())
+	var tab_style_hover = tab_style.duplicate() as StyleBoxFlat
+	tab_style_hover.bg_color = Color(0.24, 0.18, 0.1, 0.95)
+	tab_style_hover.border_color = DF_GOLD_BRIGHT
 	
-	cat_zasobowe.add_theme_color_override("font_color", Color(0.2, 0.15, 0.1))
-	cat_naukowe.add_theme_color_override("font_color", Color(0.2, 0.15, 0.1))
-	cat_tech.add_theme_color_override("font_color", Color(0.2, 0.15, 0.1))
-	cat_wojskowe.add_theme_color_override("font_color", Color(0.2, 0.15, 0.1))
+	for tab_btn in [cat_zasobowe, cat_naukowe, cat_tech, cat_wojskowe]:
+		tab_btn.add_theme_stylebox_override("normal", tab_style.duplicate())
+		tab_btn.add_theme_stylebox_override("hover", tab_style_hover.duplicate())
+		tab_btn.add_theme_color_override("font_color", DF_GOLD_TEXT)
 
 func style_individual_buttons():
 	style_single_button(build_chata, "Tartak", "Chata Drwala")
@@ -1280,39 +1341,32 @@ func style_single_button(btn: Button, display_name: String, building_name := "")
 	vbox.add_child(icon)
 	vbox.add_child(lbl)
 	
-	var base_color = Color(0.75, 0.65, 0.5)
-	var hover_color = Color(0.85, 0.75, 0.6)
+	var base_color = Color(0.2, 0.17, 0.13, 0.95)
+	var hover_color = Color(0.28, 0.23, 0.16, 0.95)
 	
 	var normal = StyleBoxFlat.new()
 	normal.bg_color = base_color
 	normal.set_corner_radius_all(6)
 	normal.set_border_width_all(2)
-	normal.border_color = Color(0.4, 0.35, 0.3)
+	normal.border_color = DF_GOLD
 	normal.set_content_margin_all(8)
 	
 	var hover = normal.duplicate() as StyleBoxFlat
 	hover.bg_color = hover_color
-	hover.border_color = Color(0.6, 0.55, 0.4)
+	hover.border_color = DF_GOLD_BRIGHT
 	
 	var disabled = StyleBoxFlat.new()
-	disabled.bg_color = Color(0.6, 0.5, 0.4, 0.5) 
+	disabled.bg_color = Color(0.15, 0.13, 0.11, 0.5)
 	disabled.set_corner_radius_all(6)
-	disabled.content_margin_left = 12
-	btn.add_theme_stylebox_override("normal", normal)
-	btn.add_theme_stylebox_override("hover", hover)
-	btn.add_theme_stylebox_override("disabled", disabled)
-	btn.add_theme_color_override("font_color", Color.WHITE)
-	btn.add_theme_color_override("font_disabled_color", Color(0.5, 0.5, 0.5))
-	if building_name != "": btn.tooltip_text = EconomyManager.get_building_tooltip(building_name)
 	disabled.set_border_width_all(2)
-	disabled.border_color = Color(0.3, 0.25, 0.2, 0.5)
+	disabled.border_color = Color(0.4, 0.32, 0.16, 0.5)
 	disabled.set_content_margin_all(8)
 	
 	btn.add_theme_stylebox_override("normal", normal)
 	btn.add_theme_stylebox_override("hover", hover)
 	btn.add_theme_stylebox_override("disabled", disabled)
-	btn.add_theme_color_override("font_color", Color(0.2, 0.15, 0.1))
-	btn.add_theme_color_override("font_disabled_color", Color(0.3, 0.25, 0.2, 0.6))
+	btn.add_theme_color_override("font_color", DF_GOLD_TEXT)
+	btn.add_theme_color_override("font_disabled_color", Color(0.5, 0.45, 0.35, 0.6))
 	
 	if building_name != "":
 		btn.tooltip_text = EconomyManager.get_building_tooltip(building_name)
@@ -1345,14 +1399,16 @@ func setup_barracks_window():
 	barracks_window.custom_minimum_size = Vector2(800, 500)
 	
 	var style_panel = StyleBoxFlat.new()
-	style_panel.bg_color = Color(0.12, 0.16, 0.18, 0.95)
+	style_panel.bg_color = DF_BG
 	style_panel.set_corner_radius_all(10)
 	style_panel.set_border_width_all(2)
-	style_panel.border_color = Color(0.8, 0.2, 0.2, 0.8)
+	style_panel.border_color = DF_GOLD
 	style_panel.content_margin_left = 20
 	style_panel.content_margin_right = 20
 	style_panel.content_margin_top = 20
 	style_panel.content_margin_bottom = 20
+	style_panel.shadow_color = Color(0, 0, 0, 0.55)
+	style_panel.shadow_size = 6
 	barracks_window.add_theme_stylebox_override("panel", style_panel)
 	
 	barracks_content_vbox = VBoxContainer.new()
@@ -1475,14 +1531,16 @@ func setup_army_window():
 	army_window.custom_minimum_size = Vector2(800, 500)
 	
 	var style_panel = StyleBoxFlat.new()
-	style_panel.bg_color = Color(0.12, 0.16, 0.22, 0.95)
+	style_panel.bg_color = DF_BG
 	style_panel.set_corner_radius_all(10)
 	style_panel.set_border_width_all(2)
-	style_panel.border_color = Color(0.2, 0.6, 1.0, 0.8)
+	style_panel.border_color = DF_GOLD
 	style_panel.content_margin_left = 20
 	style_panel.content_margin_right = 20
 	style_panel.content_margin_top = 20
 	style_panel.content_margin_bottom = 20
+	style_panel.shadow_color = Color(0, 0, 0, 0.55)
+	style_panel.shadow_size = 6
 	army_window.add_theme_stylebox_override("panel", style_panel)
 	
 	army_content_vbox = VBoxContainer.new()
@@ -1728,14 +1786,16 @@ func setup_help_window():
 	help_window.custom_minimum_size = Vector2(760, 520)
 
 	var style_panel = StyleBoxFlat.new()
-	style_panel.bg_color = Color(0.1, 0.13, 0.12, 0.97)
+	style_panel.bg_color = DF_BG
 	style_panel.set_corner_radius_all(10)
 	style_panel.set_border_width_all(2)
-	style_panel.border_color = Color(0.35, 0.7, 0.4, 0.8)
+	style_panel.border_color = DF_GOLD
 	style_panel.content_margin_left = 20
 	style_panel.content_margin_right = 20
 	style_panel.content_margin_top = 16
 	style_panel.content_margin_bottom = 16
+	style_panel.shadow_color = Color(0, 0, 0, 0.55)
+	style_panel.shadow_size = 6
 	help_window.add_theme_stylebox_override("panel", style_panel)
 
 	var main_vbox = VBoxContainer.new()
@@ -1747,12 +1807,14 @@ func setup_help_window():
 	var title_label = Label.new()
 	title_label.text = "📖 Pomoc — Sterowanie i Instrukcje"
 	title_label.add_theme_font_size_override("font_size", 22)
+	title_label.add_theme_color_override("font_color", DF_GOLD_TEXT)
 	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var close_btn = Button.new()
 	close_btn.text = "X"
 	close_btn.custom_minimum_size = Vector2(30, 30)
 	close_btn.pressed.connect(func(): help_window.visible = false)
+	_style_df_button(close_btn)
 	header_hbox.add_child(title_label)
 	header_hbox.add_child(close_btn)
 	main_vbox.add_child(header_hbox)
@@ -1774,6 +1836,14 @@ func setup_help_window():
 		btn.toggle_mode = true
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		btn.pressed.connect(func(): _show_help_tab(key))
+		_style_df_button(btn)
+		var pressed_style = StyleBoxFlat.new()
+		pressed_style.bg_color = Color(0.3, 0.23, 0.1, 0.95)
+		pressed_style.set_corner_radius_all(6)
+		pressed_style.set_border_width_all(1)
+		pressed_style.border_color = DF_GOLD_BRIGHT
+		pressed_style.set_content_margin_all(8)
+		btn.add_theme_stylebox_override("pressed", pressed_style)
 		tabs_hbox.add_child(btn)
 		help_tab_buttons[key] = btn
 	main_vbox.add_child(tabs_hbox)
@@ -1855,6 +1925,189 @@ func show_help_menu():
 	help_window.position = (viewport_size - help_window.custom_minimum_size) / 2.0
 	_show_help_tab(help_current_tab)
 
+func setup_settings_window():
+	settings_window = PanelContainer.new()
+	settings_window.visible = false
+	settings_window.custom_minimum_size = Vector2(440, 0)
+
+	var style_panel = StyleBoxFlat.new()
+	style_panel.bg_color = DF_BG
+	style_panel.set_corner_radius_all(10)
+	style_panel.set_border_width_all(2)
+	style_panel.border_color = DF_GOLD
+	style_panel.content_margin_left = 24
+	style_panel.content_margin_right = 24
+	style_panel.content_margin_top = 18
+	style_panel.content_margin_bottom = 18
+	style_panel.shadow_color = Color(0, 0, 0, 0.6)
+	style_panel.shadow_size = 8
+	settings_window.add_theme_stylebox_override("panel", style_panel)
+
+	var main_vbox = VBoxContainer.new()
+	main_vbox.add_theme_constant_override("separation", 16)
+	settings_window.add_child(main_vbox)
+
+	# HEADER
+	var header_hbox = HBoxContainer.new()
+	var title_label = Label.new()
+	title_label.text = "⚙️ Ustawienia"
+	title_label.add_theme_font_size_override("font_size", 22)
+	title_label.add_theme_color_override("font_color", DF_GOLD_TEXT)
+	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var close_btn = Button.new()
+	close_btn.text = "X"
+	close_btn.custom_minimum_size = Vector2(30, 30)
+	close_btn.pressed.connect(func(): settings_window.visible = false)
+	_style_df_button(close_btn)
+	header_hbox.add_child(title_label)
+	header_hbox.add_child(close_btn)
+	main_vbox.add_child(header_hbox)
+
+	var sep1 = HSeparator.new()
+	sep1.add_theme_color_override("separator", DF_GOLD)
+	main_vbox.add_child(sep1)
+
+	# SEED SECTION
+	var seed_section = VBoxContainer.new()
+	seed_section.add_theme_constant_override("separation", 8)
+	var seed_title = Label.new()
+	seed_title.text = "Seed świata"
+	seed_title.add_theme_font_size_override("font_size", 16)
+	seed_title.add_theme_color_override("font_color", DF_GOLD_TEXT)
+	seed_section.add_child(seed_title)
+
+	var seed_row = HBoxContainer.new()
+	seed_row.add_theme_constant_override("separation", 10)
+	settings_seed_value_label = Label.new()
+	settings_seed_value_label.add_theme_font_size_override("font_size", 14)
+	settings_seed_value_label.add_theme_color_override("font_color", DF_TEXT)
+	settings_seed_value_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	settings_seed_value_label.clip_text = true
+
+	settings_copy_button = Button.new()
+	settings_copy_button.text = "📋 Kopiuj seed"
+	settings_copy_button.custom_minimum_size = Vector2(140, 36)
+	_style_df_button(settings_copy_button)
+	settings_copy_button.pressed.connect(_on_copy_seed_pressed)
+
+	seed_row.add_child(settings_seed_value_label)
+	seed_row.add_child(settings_copy_button)
+	seed_section.add_child(seed_row)
+	main_vbox.add_child(seed_section)
+
+	var sep2 = HSeparator.new()
+	sep2.add_theme_color_override("separator", DF_GOLD)
+	main_vbox.add_child(sep2)
+
+	# DŹWIĘK SECTION
+	var sound_section = VBoxContainer.new()
+	sound_section.add_theme_constant_override("separation", 8)
+	var sound_title = Label.new()
+	sound_title.text = "Głośność"
+	sound_title.add_theme_font_size_override("font_size", 16)
+	sound_title.add_theme_color_override("font_color", DF_GOLD_TEXT)
+	sound_section.add_child(sound_title)
+
+	settings_volume_slider = HSlider.new()
+	settings_volume_slider.min_value = 0
+	settings_volume_slider.max_value = 100
+	settings_volume_slider.step = 1
+	var master_idx = AudioServer.get_bus_index("Master")
+	if master_idx >= 0:
+		var current_db = AudioServer.get_bus_volume_db(master_idx)
+		settings_volume_slider.value = clamp(db_to_linear(current_db) * 100.0, 0, 100)
+	else:
+		settings_volume_slider.value = 100
+	settings_volume_slider.custom_minimum_size = Vector2(0, 24)
+	settings_volume_slider.value_changed.connect(_on_volume_changed)
+	sound_section.add_child(settings_volume_slider)
+	main_vbox.add_child(sound_section)
+
+	var sep3 = HSeparator.new()
+	sep3.add_theme_color_override("separator", DF_GOLD)
+	main_vbox.add_child(sep3)
+
+	# ACTION BUTTONS
+	var resume_btn = Button.new()
+	resume_btn.text = "▶️ Wróć do gry"
+	resume_btn.custom_minimum_size = Vector2(0, 42)
+	_style_df_button(resume_btn)
+	resume_btn.pressed.connect(func(): settings_window.visible = false)
+	main_vbox.add_child(resume_btn)
+
+	var menu_btn = Button.new()
+	menu_btn.text = "🏠 Wróć do menu głównego"
+	menu_btn.custom_minimum_size = Vector2(0, 42)
+	_style_df_button(menu_btn)
+	menu_btn.pressed.connect(func():
+		get_tree().change_scene_to_file("res://ui/main_menu.tscn")
+	)
+	main_vbox.add_child(menu_btn)
+
+	var quit_btn = Button.new()
+	quit_btn.text = "❌ Wyjdź z gry"
+	quit_btn.custom_minimum_size = Vector2(0, 42)
+	var quit_style = StyleBoxFlat.new()
+	quit_style.bg_color = DF_BLOOD
+	quit_style.set_corner_radius_all(6)
+	quit_style.set_border_width_all(1)
+	quit_style.border_color = DF_GOLD
+	quit_style.set_content_margin_all(8)
+	var quit_hover = quit_style.duplicate() as StyleBoxFlat
+	quit_hover.bg_color = DF_BLOOD_BRIGHT
+	quit_btn.add_theme_stylebox_override("normal", quit_style)
+	quit_btn.add_theme_stylebox_override("hover", quit_hover)
+	quit_btn.add_theme_color_override("font_color", DF_TEXT)
+	quit_btn.pressed.connect(func(): get_tree().quit())
+	main_vbox.add_child(quit_btn)
+
+	add_child(settings_window)
+
+func _style_df_button(btn: Button) -> void:
+	var normal = StyleBoxFlat.new()
+	normal.bg_color = DF_BG_LIGHT
+	normal.set_corner_radius_all(6)
+	normal.set_border_width_all(1)
+	normal.border_color = DF_GOLD
+	normal.set_content_margin_all(8)
+
+	var hover = normal.duplicate() as StyleBoxFlat
+	hover.bg_color = Color(0.18, 0.15, 0.12, 0.96)
+	hover.border_color = DF_GOLD_BRIGHT
+
+	btn.add_theme_stylebox_override("normal", normal)
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_color_override("font_color", DF_TEXT)
+
+func _on_volume_changed(value: float) -> void:
+	var master_idx = AudioServer.get_bus_index("Master")
+	if master_idx >= 0:
+		if value <= 0.0:
+			AudioServer.set_bus_mute(master_idx, true)
+		else:
+			AudioServer.set_bus_mute(master_idx, false)
+			AudioServer.set_bus_volume_db(master_idx, linear_to_db(value / 100.0))
+
+func _on_copy_seed_pressed() -> void:
+	var seed_str = str(GameSettings.current_seed) if GameSettings.use_custom_seed else "Losowy"
+	DisplayServer.clipboard_set(seed_str)
+	settings_copy_button.text = "✅ Skopiowano!"
+	await get_tree().create_timer(1.2).timeout
+	if is_instance_valid(settings_copy_button):
+		settings_copy_button.text = "📋 Kopiuj seed"
+
+func show_settings_menu():
+	if settings_seed_value_label:
+		if GameSettings.use_custom_seed:
+			settings_seed_value_label.text = "Seed: " + str(GameSettings.current_seed)
+		else:
+			settings_seed_value_label.text = "Seed: Losowy"
+	settings_window.visible = true
+	var viewport_size = get_viewport_rect().size
+	settings_window.reset_size()
+	settings_window.position = ((viewport_size - settings_window.size) / 2.0).round()
+
 func upgrade_barracks_units() -> void:
 	if unit_data_json and unit_data_json.has("factions"):
 		for faction in unit_data_json["factions"]:
@@ -1894,11 +2147,13 @@ func setup_camp_windows():
 	camp_details_window.visible = false
 	camp_details_window.custom_minimum_size = Vector2(700, 450)
 	var style_panel = StyleBoxFlat.new()
-	style_panel.bg_color = Color(0.12, 0.1, 0.1, 0.95)
+	style_panel.bg_color = Color(0.13, 0.07, 0.07, 0.96)
 	style_panel.set_corner_radius_all(10)
 	style_panel.set_border_width_all(2)
-	style_panel.border_color = Color(0.8, 0.3, 0.2, 0.8)
+	style_panel.border_color = DF_GOLD
 	style_panel.set_content_margin_all(20)
+	style_panel.shadow_color = Color(0, 0, 0, 0.55)
+	style_panel.shadow_size = 6
 	camp_details_window.add_theme_stylebox_override("panel", style_panel)
 	add_child(camp_details_window)
 
@@ -1906,7 +2161,7 @@ func setup_camp_windows():
 	camp_army_window.visible = false
 	camp_army_window.custom_minimum_size = Vector2(800, 500)
 	var style_army = style_panel.duplicate()
-	style_army.bg_color = Color(0.15, 0.12, 0.12, 0.95)
+	style_army.bg_color = Color(0.16, 0.08, 0.08, 0.96)
 	camp_army_window.add_theme_stylebox_override("panel", style_army)
 	add_child(camp_army_window)
 
