@@ -1,13 +1,7 @@
-[gd_scene format=3 uid="uid://bj88xr116tx2b"]
-
-[ext_resource type="Script" path="res://game_world.gd" id="1_hly68"]
-[ext_resource type="Script" path="res://HUD.gd" id="2_bvgre"]
-[ext_resource type="Script" path="res://StrategyCamera.gd" id="3_ea1x0"]
-[ext_resource type="Script" path="res://character.gd" id="4_e08lw"]
+[gd_scene format=3 uid="uid://t1refngcvjl1"]
 
 [node name="GameWorld" type="Node2D" unique_id=1651233416]
 position = Vector2(0, 10)
-script = ExtResource("1_hly68")
 
 [node name="MapContainer" type="Node2D" parent="." unique_id=558576273]
 
@@ -21,7 +15,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
-script = ExtResource("2_bvgre")
 
 [node name="TurnButton" type="Button" parent="CanvasLayer/UI" unique_id=1194572768]
 layout_mode = 0
@@ -147,11 +140,9 @@ layout_mode = 2
 layout_mode = 2
 
 [node name="StrategyCamera" type="Camera2D" parent="." unique_id=2022214429]
-script = ExtResource("3_ea1x0")
 
 [node name="PathLine" type="Line2D" parent="." unique_id=885739978]
 
 [node name="Character" type="Node2D" parent="." unique_id=2077451359]
-script = ExtResource("4_e08lw")
 
 [node name="Polygon2D" type="Polygon2D" parent="Character" unique_id=299314696]

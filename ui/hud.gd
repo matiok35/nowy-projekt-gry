@@ -30,18 +30,10 @@ var btn_naukowy_1: Button
 var btn_naukowy_2: Button
 var build_baraki: Button
 
-var tech_tree_button: Button
+var tech_tree_menu: TechTreeMenu
+var culture_tree_menu: CultureTreeMenu
+
 var culture_tree_button: Button
-
-@onready var tech_tree_window = $TechTreeWindow
-@onready var tech_tree_map = $TechTreeWindow/ScrollContainer/TechTreeMap
-
-@onready var culture_tree_window = $CultureTreeWindow
-@onready var culture_tree_map = $CultureTreeWindow/ScrollContainer/CultureTreeMap
-
-const X_SPACING: float = 280.0
-const Y_SPACING: float = 90.0
-const OFFSET_POS: Vector2 = Vector2(80, 50)
 
 var world_ref: Node2D
 var active_tile_pos: Vector2 = Vector2.ZERO
@@ -50,20 +42,13 @@ var last_mouse_pos: Vector2 = Vector2.ZERO
 var confirm_dialog: ConfirmationDialog
 var pending_building: String = ""
 
-var barracks_window: PanelContainer
-var barracks_content_vbox: VBoxContainer
+var barracks_menu: BarracksMenu
+var army_menu: ArmyMenu
+var camp_menu: CampMenu
 var unit_data_json: Dictionary = {}
 var recruit_button: Button
-
-var army_window: PanelContainer
-var army_content_vbox: VBoxContainer
 var army_button: Button
-
 var camp_details_btn: Button
-var camp_details_window: PanelContainer
-var camp_army_window: PanelContainer
-var faction_lore: Dictionary = {}
-
 var battle_button: Button
 
 var resources_container: HBoxContainer
@@ -75,15 +60,9 @@ var culture_bar: ProgressBar
 var tech_label: Label
 var tech_bar: ProgressBar
 
-var help_window: PanelContainer
-var help_content_label: RichTextLabel
-var help_tab_buttons: Dictionary = {}
-var help_current_tab: String = "sterowanie"
+var help_menu: HelpMenu
 
-var settings_window: PanelContainer
-var settings_seed_value_label: Label
-var settings_copy_button: Button
-var settings_volume_slider: HSlider
+var settings_menu: SettingsMenu
 
 # --- PALETA "DARK FANTASY" -------------------------------------------------
 # Wspólne kolory używane w całym HUD-zie, żeby całość wyglądała spójnie:
@@ -115,21 +94,27 @@ func _ready():
 	setup_points_panel()
 	setup_resources_header()
 	setup_custom_popups()
-	setup_tech_tree_ui()
-	setup_culture_tree_ui()
+	tech_tree_menu = TechTreeMenu.new(self)
+	tech_tree_menu.setup_tech_tree_ui()
+	culture_tree_menu = CultureTreeMenu.new(self)
+	culture_tree_menu.setup_culture_tree_ui()
 	load_unit_data()
 	setup_seed_label()
 
-	setup_barracks_window()
-	setup_army_window()
-	setup_camp_windows()
+	barracks_menu = BarracksMenu.new(self)
+	barracks_menu.setup_barracks_window()
+	army_menu = ArmyMenu.new(self)
+	army_menu.setup_army_window()
+	camp_menu = CampMenu.new(self)
+	camp_menu.setup_camp_windows()
 	setup_battle_button()
-	setup_help_window()
-	setup_settings_window()
+	help_menu = HelpMenu.new(self)
+	help_menu.setup_help_window()
+	settings_menu = SettingsMenu.new(self)
+	settings_menu.setup_settings_window()
 	style_main_hud_elements()
 	style_context_popup()
 	style_individual_buttons()
-	load_faction_lore()
 	
 	EconomyManager.notify_change()
 
@@ -229,18 +214,18 @@ func _on_battle_button_pressed() -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_TAB:
 		get_viewport().set_input_as_handled()
-		if help_window and help_window.visible:
-			help_window.visible = false
+		if help_menu and help_menu.help_window and help_menu.help_window.visible:
+			help_menu.help_window.visible = false
 		else:
 			hide_all_menus()
-			show_help_menu()
+			help_menu.show_help_menu()
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
 		get_viewport().set_input_as_handled()
-		if settings_window and settings_window.visible:
-			settings_window.visible = false
+		if settings_menu and settings_menu.settings_window and settings_menu.settings_window.visible:
+			settings_menu.settings_window.visible = false
 		else:
 			hide_all_menus()
-			show_settings_menu()
+			settings_menu.show_settings_menu()
 
 func setup_points_panel():
 	points_panel = PanelContainer.new()
@@ -522,7 +507,7 @@ func setup_custom_popups():
 	recruit_button.text = "⚔️ Rekrutuj"
 	recruit_button.pressed.connect(func():
 		hide_all_menus()
-		show_barracks_menu()
+		barracks_menu.show_barracks_menu()
 	)
 	var style_recruit = StyleBoxFlat.new()
 	style_recruit.bg_color = DF_BLOOD
@@ -537,7 +522,7 @@ func setup_custom_popups():
 	army_button.text = "🛡️ Moja Armia"
 	army_button.pressed.connect(func():
 		hide_all_menus()
-		show_army_menu()
+		army_menu.show_army_menu()
 	)
 	var style_army = StyleBoxFlat.new()
 	style_army.bg_color = Color(0.13, 0.16, 0.22, 0.95)
@@ -557,7 +542,7 @@ func setup_custom_popups():
 	camp_details_btn.text = "⛺ Szczegóły Obozowiska"
 	camp_details_btn.pressed.connect(func():
 		hide_all_menus()
-		show_camp_details_menu(active_tile_pos)
+		camp_menu.show_camp_details_menu(active_tile_pos)
 	)
 	var style_camp_btn = StyleBoxFlat.new()
 	style_camp_btn.bg_color = Color(0.32, 0.18, 0.1, 0.95)
@@ -672,303 +657,6 @@ func setup_custom_popups():
 	confirm_dialog.dialog_text = "Czy na pewno chcesz postawić ten budynek na tym polu?\nPostawienie go tutaj bezpowrotnie zniszczy obecne złoże i zamieni pole w trawę."
 	confirm_dialog.confirmed.connect(_on_confirm_build_on_resource)
 	add_child(confirm_dialog)
-
-func setup_tech_tree_ui():
-	tech_tree_button = Button.new()
-	tech_tree_button.text = "Drzewo Rozwoju"
-	tech_tree_button.custom_minimum_size = Vector2(0, 40)
-	var btn_style = StyleBoxFlat.new()
-	btn_style.bg_color = Color(0.1, 0.16, 0.22, 0.95)
-	btn_style.set_border_width_all(1)
-	btn_style.border_color = DF_GOLD
-	btn_style.set_corner_radius_all(4)
-	tech_tree_button.add_theme_stylebox_override("normal", btn_style)
-	var btn_style_hover = btn_style.duplicate() as StyleBoxFlat
-	btn_style_hover.bg_color = Color(0.15, 0.22, 0.3, 0.95)
-	btn_style_hover.border_color = DF_GOLD_BRIGHT
-	tech_tree_button.add_theme_stylebox_override("hover", btn_style_hover)
-	tech_tree_button.add_theme_color_override("font_color", DF_TEXT)
-	var vbox = points_panel.get_child(0)
-	vbox.add_child(tech_tree_button)
-	
-	if tech_tree_window:
-		tech_tree_window.visible = false
-		tech_tree_window.z_index = 10
-		var style_tree = StyleBoxFlat.new()
-		style_tree.bg_color = DF_BG
-		style_tree.set_border_width_all(3)
-		style_tree.border_color = DF_GOLD
-		style_tree.set_corner_radius_all(4)
-		tech_tree_window.add_theme_stylebox_override("panel", style_tree)
-		var close_btn = tech_tree_window.get_node_or_null("CloseButton")
-		if close_btn: close_btn.pressed.connect(func(): tech_tree_window.visible = false)
-		var scroll = tech_tree_window.get_node_or_null("ScrollContainer")
-		if scroll:
-			scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-			scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	if tech_tree_map: tech_tree_map.draw.connect(_draw_tech_connections)
-	
-	tech_tree_button.pressed.connect(func():
-		hide_all_menus()
-		if tech_tree_window:
-			tech_tree_window.visible = true
-			tech_tree_window.custom_minimum_size = Vector2(900, 600)
-			tech_tree_window.size = Vector2(900, 600)
-			var screen_center = get_viewport_rect().size / 2
-			tech_tree_window.global_position = screen_center - (tech_tree_window.size / 2)
-			refresh_technology_tree_view()
-	)
-
-func setup_culture_tree_ui():
-	if culture_tree_window:
-		culture_tree_window.visible = false
-		culture_tree_window.z_index = 10
-		var style_tree = StyleBoxFlat.new()
-		style_tree.bg_color = DF_BG
-		style_tree.set_border_width_all(3)
-		style_tree.border_color = DF_GOLD
-		style_tree.set_corner_radius_all(4)
-		culture_tree_window.add_theme_stylebox_override("panel", style_tree)
-		var close_btn = culture_tree_window.get_node_or_null("CloseButton")
-		if close_btn:
-			close_btn.pressed.connect(func(): culture_tree_window.visible = false)
-		var scroll = culture_tree_window.get_node_or_null("ScrollContainer")
-		if scroll:
-			scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-			scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-
-	if culture_tree_map:
-		culture_tree_map.draw.connect(_draw_culture_connections)
-
-	culture_tree_button.pressed.connect(func():
-		hide_all_menus()
-		if culture_tree_window:
-			culture_tree_window.visible = true
-			culture_tree_window.custom_minimum_size = Vector2(900,600)
-			culture_tree_window.size = Vector2(900,600)
-			var center = get_viewport_rect().size / 2
-			culture_tree_window.global_position = center - culture_tree_window.size / 2
-			refresh_culture_tree_view()
-	)
-
-func _get_tech_node_position(grid_coords: Vector2) -> Vector2:
-	return Vector2(
-		grid_coords.x * X_SPACING + OFFSET_POS.x,
-		grid_coords.y * Y_SPACING + OFFSET_POS.y
-	)
-
-func _draw_tech_connections():
-	for tech_name in EconomyManager.technology_tree:
-		var tech = EconomyManager.technology_tree[tech_name]
-		var start_pos = _get_tech_node_position(tech["grid_coords"]) + Vector2(210, 32) 
-		for req_name in tech["req"]:
-			if EconomyManager.technology_tree.has(req_name):
-				var req_tech = EconomyManager.technology_tree[req_name]
-				var end_pos = _get_tech_node_position(req_tech["grid_coords"]) + Vector2(0, 32) 
-				var line_color = Color(0.25, 0.22, 0.18, 1.0) 
-				var line_width = 2.5
-				if req_tech["unlocked"] and tech["unlocked"]:
-					line_color = Color(0.32, 0.68, 0.85, 0.9) 
-					line_width = 3.5
-				elif req_tech["unlocked"] and EconomyManager.current_research == tech_name:
-					line_color = Color(0.72, 0.55, 0.25, 0.8)  
-				var mid_x = start_pos.x + (end_pos.x - start_pos.x) / 2.0
-				tech_tree_map.draw_line(start_pos, Vector2(mid_x, start_pos.y), line_color, line_width)
-				tech_tree_map.draw_line(Vector2(mid_x, start_pos.y), Vector2(mid_x, end_pos.y), line_color, line_width)
-				tech_tree_map.draw_line(Vector2(mid_x, end_pos.y), end_pos, line_color, line_width)
-
-func _draw_culture_connections():
-	for tech_name in EconomyManager.culture_tree:
-		var tech = EconomyManager.culture_tree[tech_name]
-		var start_pos = _get_tech_node_position(tech["grid_coords"]) + Vector2(210, 32)
-		for req_name in tech["req"]:
-			if EconomyManager.culture_tree.has(req_name):
-				var req_tech = EconomyManager.culture_tree[req_name]
-				var end_pos = _get_tech_node_position(req_tech["grid_coords"]) + Vector2(0, 32)
-				var line_color = Color(0.25, 0.22, 0.18, 1.0)
-				var line_width = 2.5
-				if req_tech["unlocked"] and tech["unlocked"]:
-					line_color = Color(0.75, 0.35, 1.0, 0.9)
-					line_width = 3.5
-				elif req_tech["unlocked"] and EconomyManager.current_culture_research == tech_name:
-					line_color = Color(0.85, 0.45, 1.0, 0.8)
-				var mid_x = start_pos.x + (end_pos.x - start_pos.x) / 2.0
-				culture_tree_map.draw_line(start_pos, Vector2(mid_x, start_pos.y), line_color, line_width)
-				culture_tree_map.draw_line(Vector2(mid_x, start_pos.y), Vector2(mid_x, end_pos.y), line_color, line_width)
-				culture_tree_map.draw_line(Vector2(mid_x, end_pos.y), end_pos, line_color, line_width)
-
-func refresh_technology_tree_view():
-	if not tech_tree_map: return
-	for child in tech_tree_map.get_children(): child.queue_free()
-	tech_tree_map.queue_redraw()
-	var max_size := Vector2.ZERO
-	for tech_name in EconomyManager.technology_tree:
-		var tech = EconomyManager.technology_tree[tech_name]
-		var node_pos = _get_tech_node_position(tech["grid_coords"])
-		var node_end = node_pos + Vector2(300, 150)
-		max_size.x = max(max_size.x, node_end.x)
-		max_size.y = max(max_size.y, node_end.y)
-		var node_panel = PanelContainer.new()
-		node_panel.position = node_pos
-		node_panel.custom_minimum_size = Vector2(210, 64)
-		var node_style = StyleBoxFlat.new()
-		node_style.bg_color = Color(0.18, 0.16, 0.14)
-		node_style.set_corner_radius_all(32)  
-		node_style.set_border_width_all(2)
-		node_style.border_color = Color(0.35, 0.3, 0.24)
-		node_style.set_content_margin_all(6)
-		node_panel.add_theme_stylebox_override("panel", node_style)
-		var hbox = HBoxContainer.new()
-		hbox.add_theme_constant_override("separation", 8)
-		node_panel.add_child(hbox)
-		var icon_panel = PanelContainer.new()
-		icon_panel.custom_minimum_size = Vector2(46, 46)
-		var icon_style = StyleBoxFlat.new()
-		icon_style.bg_color = Color(0.24, 0.22, 0.18)
-		icon_style.set_corner_radius_all(23) 
-		icon_style.set_border_width_all(1)
-		icon_style.border_color = Color(0.5, 0.44, 0.35)
-		icon_panel.add_theme_stylebox_override("panel", icon_style)
-		var icon_label = Label.new()
-		icon_label.text = tech["icon"]
-		icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		icon_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		icon_label.add_theme_font_size_override("font_size", 18)
-		icon_panel.add_child(icon_label)
-		hbox.add_child(icon_panel)
-		var vbox = VBoxContainer.new()
-		vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-		hbox.add_child(vbox)
-		var lbl_title = Label.new()
-		lbl_title.text = tech_name
-		lbl_title.add_theme_font_size_override("font_size", 12)
-		lbl_title.add_theme_color_override("font_color", Color(0.9, 0.85, 0.75))
-		vbox.add_child(lbl_title)
-		var lbl_desc = Label.new()
-		lbl_desc.text = "%s\n💎 Koszt: %d pkt" % [tech["desc"], tech["research_cost"]]
-		lbl_desc.add_theme_font_size_override("font_size", 9)
-		lbl_desc.add_theme_color_override("font_color", Color(0.75, 0.65, 0.85))
-		vbox.add_child(lbl_desc)
-
-		var invisible_button = Button.new()
-		invisible_button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		invisible_button.flat = true
-		node_panel.add_child(invisible_button)
-		
-		var reqs_ok = true
-		for r in tech["req"]:
-			if not EconomyManager.technology_tree[r]["unlocked"]: reqs_ok = false
-				
-		if tech["unlocked"]:
-			node_style.border_color = Color(0.3, 0.75, 0.45) 
-			node_style.bg_color = Color(0.12, 0.22, 0.15)
-			invisible_button.disabled = true
-		elif EconomyManager.current_research == tech_name:
-			node_style.border_color = Color(0.85, 0.64, 0.22) 
-			node_style.bg_color = Color(0.24, 0.2, 0.14)
-			var current_science = EconomyManager.resources["Nauka"]
-			var progress = tech["research_cost"] - EconomyManager.resources["Nauka"]
-			progress = clamp(progress, 0, tech["research_cost"])
-			lbl_title.text = "%s (%d tur)" % [tech_name, EconomyManager.research_turns_left]
-			invisible_button.disabled = true
-		elif not reqs_ok:
-			node_panel.modulate.a = 0.35 
-			invisible_button.disabled = true
-		else:
-			invisible_button.pressed.connect(func():
-				EconomyManager.start_research(tech_name)
-				refresh_technology_tree_view()
-			)
-		tech_tree_map.add_child(node_panel)
-	tech_tree_map.custom_minimum_size = max_size
-
-func refresh_culture_tree_view():
-	if not culture_tree_map: return
-	for child in culture_tree_map.get_children(): child.queue_free()
-	culture_tree_map.queue_redraw()
-	var max_size := Vector2.ZERO
-	for tech_name in EconomyManager.culture_tree:
-		var tech = EconomyManager.culture_tree[tech_name]
-		var node_pos = _get_tech_node_position(tech["grid_coords"])
-		var node_end = node_pos + Vector2(300, 150)
-		max_size.x = max(max_size.x, node_end.x)
-		max_size.y = max(max_size.y, node_end.y)
-		var node_panel = PanelContainer.new()
-		node_panel.position = node_pos
-		node_panel.custom_minimum_size = Vector2(210, 64)
-		var node_style = StyleBoxFlat.new()
-		node_style.bg_color = Color(0.18, 0.16, 0.14)
-		node_style.set_corner_radius_all(32)  
-		node_style.set_border_width_all(2)
-		node_style.border_color = Color(0.45, 0.25, 0.70)
-		node_style.set_content_margin_all(6)
-		node_panel.add_theme_stylebox_override("panel", node_style)
-		var hbox = HBoxContainer.new()
-		hbox.add_theme_constant_override("separation", 8)
-		node_panel.add_child(hbox)
-		var icon_panel = PanelContainer.new()
-		icon_panel.custom_minimum_size = Vector2(46, 46)
-		var icon_style = StyleBoxFlat.new()
-		icon_style.bg_color = Color(0.24, 0.22, 0.18)
-		icon_style.set_corner_radius_all(23) 
-		icon_style.set_border_width_all(1)
-		icon_style.border_color = Color(0.6, 0.3, 0.9)
-		icon_panel.add_theme_stylebox_override("panel", icon_style)
-		var icon_label = Label.new()
-		icon_label.text = tech["icon"]
-		icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		icon_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		icon_label.add_theme_font_size_override("font_size", 18)
-		icon_panel.add_child(icon_label)
-		hbox.add_child(icon_panel)
-		var vbox = VBoxContainer.new()
-		vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-		hbox.add_child(vbox)
-		var lbl_title = Label.new()
-		lbl_title.text = tech_name
-		lbl_title.add_theme_font_size_override("font_size", 12)
-		lbl_title.add_theme_color_override("font_color", Color(1.0, 0.85, 1.0))
-		vbox.add_child(lbl_title)
-		var lbl_desc = Label.new()
-		lbl_desc.text = "%s\n💎 Koszt: %d pkt" % [tech["desc"], tech["research_cost"]]
-		lbl_desc.add_theme_font_size_override("font_size", 9)
-		lbl_desc.add_theme_color_override("font_color", Color(0.75, 0.65, 0.85))
-		vbox.add_child(lbl_desc)
-
-		var invisible_button = Button.new()
-		invisible_button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		invisible_button.flat = true
-		node_panel.add_child(invisible_button)
-		
-		var reqs_ok = true
-		for r in tech["req"]:
-			if not EconomyManager.culture_tree[r]["unlocked"]: reqs_ok = false
-				
-		if tech["unlocked"]:
-			node_style.border_color = Color(0.5, 1.0, 0.6) 
-			node_style.bg_color = Color(0.15, 0.22, 0.16)
-			invisible_button.disabled = true
-		elif EconomyManager.current_culture_research == tech_name:
-			node_style.border_color = Color(0.85, 0.3, 1.0) 
-			node_style.bg_color = Color(0.28, 0.18, 0.35)
-			var current = EconomyManager.resources["Kultura"]
-			var progress = tech["research_cost"] - EconomyManager.resources["Kultura"]
-			progress = clamp(progress, 0, tech["research_cost"])
-			lbl_title.text = "%s (%d tur)" % [tech_name, EconomyManager.culture_turns_left]
-			invisible_button.disabled = true
-		elif not reqs_ok:
-			node_panel.modulate.a = 0.35 
-			invisible_button.disabled = true
-		else:
-			invisible_button.pressed.connect(func():
-				EconomyManager.start_culture_research(tech_name)
-				refresh_culture_tree_view()
-			)
-		culture_tree_map.add_child(node_panel)
-	culture_tree_map.custom_minimum_size = max_size
-
 func _format_cost_dict(cost: Dictionary) -> String:
 	var parts: Array = []
 	for res in cost:
@@ -1124,17 +812,17 @@ func hide_all_menus():
 	menu_budowania.visible = false
 	if tile_info_menu: tile_info_menu.visible = false
 	if menu_zalozenia_miasta: menu_zalozenia_miasta.visible = false
-	if tech_tree_window: tech_tree_window.visible = false
-	if culture_tree_window: culture_tree_window.visible = false
-	if barracks_window: barracks_window.visible = false
-	if army_window: army_window.visible = false
-	if camp_details_window: camp_details_window.visible = false
-	if camp_army_window: camp_army_window.visible = false
-	if help_window: help_window.visible = false
-	if settings_window: settings_window.visible = false
+	if tech_tree_menu and tech_tree_menu.tech_tree_window: tech_tree_menu.tech_tree_window.visible = false
+	if culture_tree_menu and culture_tree_menu.culture_tree_window: culture_tree_menu.culture_tree_window.visible = false
+	if barracks_menu and barracks_menu.barracks_window: barracks_menu.barracks_window.visible = false
+	if army_menu and army_menu.army_window: army_menu.army_window.visible = false
+	if camp_menu and camp_menu.camp_details_window: camp_menu.camp_details_window.visible = false
+	if camp_menu and camp_menu.camp_army_window: camp_menu.camp_army_window.visible = false
+	if help_menu and help_menu.help_window: help_menu.help_window.visible = false
+	if settings_menu and settings_menu.settings_window: settings_menu.settings_window.visible = false
 
 func any_menu_visible() -> bool:
-	return menu_budowania.visible or (tile_info_menu and tile_info_menu.visible) or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) or (tech_tree_window and tech_tree_window.visible) or (culture_tree_window and culture_tree_window.visible) or (barracks_window and barracks_window.visible) or (army_window and army_window.visible) or (help_window and help_window.visible) or (camp_details_window and camp_details_window.visible) or (camp_army_window and camp_army_window.visible) or (settings_window and settings_window.visible)
+	return menu_budowania.visible or (tile_info_menu and tile_info_menu.visible) or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) or (tech_tree_menu and tech_tree_menu.tech_tree_window and tech_tree_menu.tech_tree_window.visible) or (culture_tree_menu and culture_tree_menu.culture_tree_window and culture_tree_menu.culture_tree_window.visible) or (barracks_menu and barracks_menu.barracks_window and barracks_menu.barracks_window.visible) or (army_menu and army_menu.army_window and army_menu.army_window.visible) or (help_menu and help_menu.help_window and help_menu.help_window.visible) or (camp_menu and camp_menu.camp_details_window and camp_menu.camp_details_window.visible) or (camp_menu and camp_menu.camp_army_window and camp_menu.camp_army_window.visible) or (settings_menu and settings_menu.settings_window and settings_menu.settings_window.visible)
 
 func _reposition_menu(menu: Control, base_pos: Vector2):
 	var vbox = menu.get_node("VBoxContainer") as VBoxContainer
@@ -1220,7 +908,7 @@ func _on_economy_updated(balances: Dictionary, turn: int, _selected_build: Strin
 		tech_bar.max_value = t_max
 		tech_bar.value = t_val
 	
-	if tech_tree_window and tech_tree_window.visible: refresh_technology_tree_view()
+	if tech_tree_menu and tech_tree_menu.tech_tree_window and tech_tree_menu.tech_tree_window.visible: tech_tree_menu.refresh_technology_tree_view()
 
 func _on_turn_pressed():
 	hide_all_menus()
@@ -1393,677 +1081,6 @@ func load_unit_data():
 			file_name = dir.get_next()
 		dir.list_dir_end()
 
-func setup_barracks_window():
-	barracks_window = PanelContainer.new()
-	barracks_window.visible = false
-	barracks_window.custom_minimum_size = Vector2(800, 500)
-	
-	var style_panel = StyleBoxFlat.new()
-	style_panel.bg_color = DF_BG
-	style_panel.set_corner_radius_all(10)
-	style_panel.set_border_width_all(2)
-	style_panel.border_color = DF_GOLD
-	style_panel.content_margin_left = 20
-	style_panel.content_margin_right = 20
-	style_panel.content_margin_top = 20
-	style_panel.content_margin_bottom = 20
-	style_panel.shadow_color = Color(0, 0, 0, 0.55)
-	style_panel.shadow_size = 6
-	barracks_window.add_theme_stylebox_override("panel", style_panel)
-	
-	barracks_content_vbox = VBoxContainer.new()
-	barracks_content_vbox.add_theme_constant_override("separation", 15)
-	barracks_window.add_child(barracks_content_vbox)
-	
-	add_child(barracks_window)
-
-func show_barracks_menu():
-	barracks_window.visible = true
-	var viewport_size = get_viewport_rect().size
-	barracks_window.position = (viewport_size - barracks_window.custom_minimum_size) / 2.0
-	
-	var humans_faction = null
-	if unit_data_json.has("factions"):
-		for faction in unit_data_json["factions"]:
-			if faction.get("id") == "humans":
-				humans_faction = faction
-				break
-				
-	if humans_faction != null:
-		_populate_barracks_units(humans_faction)
-
-func _populate_barracks_units(faction: Dictionary):
-	for child in barracks_content_vbox.get_children():
-		child.queue_free()
-		
-	var header_hbox = HBoxContainer.new()
-	header_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	
-	var spacer = Control.new()
-	spacer.custom_minimum_size = Vector2(80, 40)
-	
-	var title_label = Label.new()
-	title_label.text = "Jednostki: " + faction["name"]
-	title_label.add_theme_font_size_override("font_size", 24)
-	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	
-	var close_btn = Button.new()
-	close_btn.text = "Zamknij"
-	close_btn.custom_minimum_size = Vector2(80, 40)
-	close_btn.pressed.connect(func(): barracks_window.visible = false)
-	
-	header_hbox.add_child(spacer)
-	header_hbox.add_child(title_label)
-	header_hbox.add_child(close_btn)
-	barracks_content_vbox.add_child(header_hbox)
-	
-	var scroll = ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	barracks_content_vbox.add_child(scroll)
-	
-	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 10)
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(vbox)
-	
-	if faction.has("units"):
-		for unit in faction["units"]:
-			var panel = PanelContainer.new()
-			var p_style = StyleBoxFlat.new()
-			p_style.bg_color = Color(0.2, 0.2, 0.25)
-			p_style.set_content_margin_all(10)
-			panel.add_theme_stylebox_override("panel", p_style)
-			
-			var hbox = HBoxContainer.new()
-			hbox.add_theme_constant_override("separation", 15)
-			panel.add_child(hbox)
-			
-			var img_rect = TextureRect.new()
-			var tex = load(unit["portrait"]) if unit.has("portrait") else null
-			if tex: img_rect.texture = tex
-			img_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			img_rect.custom_minimum_size = Vector2(64, 64)
-			img_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			hbox.add_child(img_rect)
-			
-			var info_vbox = VBoxContainer.new()
-			info_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			info_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-			hbox.add_child(info_vbox)
-			
-			var name_lbl = Label.new()
-			name_lbl.text = unit["name"] + " (" + unit.get("role", "") + ")"
-			name_lbl.add_theme_font_size_override("font_size", 18)
-			info_vbox.add_child(name_lbl)
-			
-			var stats_lbl = Label.new()
-			stats_lbl.text = "HP: %d | DMG: %d | DEF: %d | RUCH: %d" % [unit.get("hp", 0), unit.get("dmg", 0), unit.get("def", 0), unit.get("move_range", 0)]
-			stats_lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
-			info_vbox.add_child(stats_lbl)
-			
-			var btn_recruit = Button.new()
-			var cost = EconomyManager.calculate_unit_cost(unit)
-			btn_recruit.text = "Zwerbuj"
-			btn_recruit.tooltip_text = "Koszt:\n%d Złota\n%d Żelaza\n%d Jedzenia\n%d Populacji" % [cost.get("Złoto", 0), cost.get("Żelazo", 0), cost.get("Jedzenie", 0), cost.get("Populacja", 0)]
-			btn_recruit.custom_minimum_size = Vector2(150, 40)
-			btn_recruit.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			if EconomyManager.can_recruit_unit(unit):
-				btn_recruit.pressed.connect(func():
-					EconomyManager.recruit_unit(unit)
-					_populate_barracks_units(faction)
-				)
-				var style_ok = StyleBoxFlat.new()
-				style_ok.bg_color = Color(0.2, 0.6, 0.2)
-				style_ok.set_corner_radius_all(4)
-				btn_recruit.add_theme_stylebox_override("normal", style_ok)
-			else:
-				btn_recruit.disabled = true
-			
-			hbox.add_child(btn_recruit)
-			
-			vbox.add_child(panel)
-
-func setup_army_window():
-	army_window = PanelContainer.new()
-	army_window.visible = false
-	army_window.custom_minimum_size = Vector2(800, 500)
-	
-	var style_panel = StyleBoxFlat.new()
-	style_panel.bg_color = DF_BG
-	style_panel.set_corner_radius_all(10)
-	style_panel.set_border_width_all(2)
-	style_panel.border_color = DF_GOLD
-	style_panel.content_margin_left = 20
-	style_panel.content_margin_right = 20
-	style_panel.content_margin_top = 20
-	style_panel.content_margin_bottom = 20
-	style_panel.shadow_color = Color(0, 0, 0, 0.55)
-	style_panel.shadow_size = 6
-	army_window.add_theme_stylebox_override("panel", style_panel)
-	
-	army_content_vbox = VBoxContainer.new()
-	army_content_vbox.add_theme_constant_override("separation", 15)
-	army_window.add_child(army_content_vbox)
-	
-	add_child(army_window)
-
-func show_army_menu():
-	army_window.visible = true
-	var viewport_size = get_viewport_rect().size
-	army_window.position = (viewport_size - army_window.custom_minimum_size) / 2.0
-	_populate_army()
-	_recenter_window_deferred(army_window)
-
-# Czeka aż kontenery przeliczą swój faktyczny rozmiar (może być większy niż
-# custom_minimum_size, gdy treść jest szersza) i dopiero wtedy centruje okno,
-# żeby nie "odstawało" w bok.
-func _recenter_window_deferred(win: Control) -> void:
-	await get_tree().process_frame
-	if not is_instance_valid(win) or not win.visible: return
-	var viewport_size = get_viewport_rect().size
-	win.position = ((viewport_size - win.size) / 2.0).round()
-
-func _populate_army():
-	for child in army_content_vbox.get_children():
-		child.queue_free()
-		
-	var header_hbox = HBoxContainer.new()
-	header_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	var title_label = Label.new()
-	title_label.text = "Moja Armia"
-	title_label.add_theme_font_size_override("font_size", 24)
-	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	
-	var close_btn = Button.new()
-	close_btn.text = "Zamknij"
-	close_btn.custom_minimum_size = Vector2(80, 40)
-	close_btn.pressed.connect(func(): army_window.visible = false)
-	
-	var clear_all_btn = Button.new()
-	clear_all_btn.text = "Zwolnij armię"
-	clear_all_btn.custom_minimum_size = Vector2(120, 40)
-	clear_all_btn.pressed.connect(func():
-		var dialog = ConfirmationDialog.new()
-		dialog.title = "Potwierdzenie"
-		dialog.dialog_text = "Czy na pewno chcesz zwolnić całą armię?"
-		dialog.confirmed.connect(func():
-			EconomyManager.clear_army()
-			if world_ref and world_ref.get("character") and world_ref.character:
-				world_ref.character.army.clear()
-				world_ref.character._update_army_label()
-			_populate_army()
-			dialog.queue_free()
-		)
-		dialog.canceled.connect(func(): dialog.queue_free())
-		add_child(dialog)
-		dialog.popup_centered()
-	)
-	if EconomyManager.player_army.is_empty():
-		clear_all_btn.disabled = true
-	
-	header_hbox.add_child(clear_all_btn)
-	header_hbox.add_child(title_label)
-	header_hbox.add_child(close_btn)
-	army_content_vbox.add_child(header_hbox)
-	
-	var scroll = ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	army_content_vbox.add_child(scroll)
-	
-	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 10)
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(vbox)
-	
-	var army_list = EconomyManager.player_army
-	if army_list.is_empty():
-		var empty_lbl = Label.new()
-		empty_lbl.text = "Nie posiadasz jeszcze żadnych zwerbowanych jednostek."
-		empty_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		empty_lbl.add_theme_font_size_override("font_size", 18)
-		empty_lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
-		vbox.add_child(empty_lbl)
-	else:
-		var grouped_army = {}
-		for unit in army_list:
-			var u_name = unit.get("name", "Nieznana")
-			var turns_in = unit.get("turns_in_recruitment", 0)
-			var turns_to = unit.get("turns_to_recruit", 0)
-			var is_recruiting = turns_in < turns_to
-			var is_assigned = unit.get("assigned_general", false)
-			
-			var group_key = u_name
-			if is_recruiting:
-				group_key = "%s_r%d" % [u_name, turns_in]
-			elif is_assigned:
-				group_key = "%s_gen" % u_name
-				
-			if not grouped_army.has(group_key):
-				grouped_army[group_key] = {"unit": unit, "count": 1, "is_recruiting": is_recruiting, "turns_in": turns_in, "turns_to": turns_to, "is_assigned": is_assigned, "units": [unit]}
-			else:
-				grouped_army[group_key]["count"] += 1
-				grouped_army[group_key]["units"].append(unit)
-				
-		for group in grouped_army.values():
-			var unit = group["unit"]
-			var count = group["count"]
-			var is_recruiting = group["is_recruiting"]
-			var turns_in = group["turns_in"]
-			var turns_to = group["turns_to"]
-			var is_assigned = group["is_assigned"]
-			var group_units = group["units"]
-			
-			var panel = PanelContainer.new()
-			var p_style = StyleBoxFlat.new()
-			p_style.bg_color = Color(0.15, 0.25, 0.3)
-			if is_recruiting:
-				p_style.bg_color = Color(0.1, 0.15, 0.2)
-			elif is_assigned:
-				p_style.bg_color = Color(0.25, 0.2, 0.1)
-				p_style.set_border_width_all(1)
-				p_style.border_color = Color(0.9, 0.75, 0.3, 0.8)
-			p_style.set_content_margin_all(10)
-			panel.add_theme_stylebox_override("panel", p_style)
-			
-			var hbox = HBoxContainer.new()
-			hbox.add_theme_constant_override("separation", 15)
-			panel.add_child(hbox)
-			
-			var img_rect = TextureRect.new()
-			var tex = load(unit["portrait"]) if unit.has("portrait") else null
-			if tex: img_rect.texture = tex
-			img_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			img_rect.custom_minimum_size = Vector2(64, 64)
-			img_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			
-			var img_container = Control.new()
-			img_container.custom_minimum_size = Vector2(64, 64)
-			
-			img_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-			img_container.add_child(img_rect)
-			
-			if is_recruiting:
-				img_rect.modulate = Color(0.4, 0.4, 0.4, 1.0)
-				var ring_ctrl = Control.new()
-				ring_ctrl.set_anchors_preset(Control.PRESET_FULL_RECT)
-				ring_ctrl.draw.connect(func():
-					var center = ring_ctrl.size / 2.0
-					var radius = min(ring_ctrl.size.x, ring_ctrl.size.y) / 2.0 + 2.0
-					var angle = (float(turns_in) / float(turns_to)) * TAU
-					ring_ctrl.draw_arc(center, radius, -PI/2, -PI/2 + angle, 32, Color(0.2, 0.8, 0.2), 4.0, true)
-					ring_ctrl.draw_arc(center, radius, -PI/2 + angle, -PI/2 + TAU, 32, Color(0.3, 0.3, 0.3), 4.0, true)
-				)
-				img_container.add_child(ring_ctrl)
-			
-			hbox.add_child(img_container)
-			
-			var info_vbox = VBoxContainer.new()
-			info_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			info_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-			hbox.add_child(info_vbox)
-			
-			var name_lbl = Label.new()
-			var name_text = unit["name"] + " (" + unit.get("role", "") + ") x" + str(count)
-			if is_recruiting:
-				name_text += " [Rekrutacja: %d/%d tur]" % [turns_in, turns_to]
-			elif is_assigned:
-				name_text += " 🎖️ [Armia Generała]"
-			name_lbl.text = name_text
-			name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			name_lbl.clip_text = false
-			name_lbl.add_theme_font_size_override("font_size", 18)
-			if is_recruiting:
-				name_lbl.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
-			info_vbox.add_child(name_lbl)
-			
-			var stats_lbl = Label.new()
-			stats_lbl.text = "HP: %d | DMG: %d | DEF: %d | RUCH: %d" % [unit.get("hp", 0), unit.get("dmg", 0), unit.get("def", 0), unit.get("move_range", 0)]
-			stats_lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8) if not is_recruiting else Color(0.5, 0.5, 0.5))
-			info_vbox.add_child(stats_lbl)
-			
-			var actions_vbox = VBoxContainer.new()
-			actions_vbox.add_theme_constant_override("separation", 6)
-			actions_vbox.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			actions_vbox.custom_minimum_size = Vector2(150, 0)
-
-			if not is_recruiting:
-				var assign_btn = Button.new()
-				assign_btn.custom_minimum_size = Vector2(150, 34)
-				assign_btn.add_theme_font_size_override("font_size", 13)
-				assign_btn.clip_text = true
-				if is_assigned:
-					assign_btn.text = "↩️ Odwołaj z armii"
-					assign_btn.pressed.connect(func():
-						_unassign_units_from_general(group_units)
-					)
-				else:
-					assign_btn.text = "🎖️ Przypisz do generała"
-					assign_btn.pressed.connect(func():
-						_assign_units_to_general(group_units)
-					)
-				actions_vbox.add_child(assign_btn)
-
-			var delete_unit_btn = Button.new()
-			delete_unit_btn.text = "Usuń"
-			delete_unit_btn.custom_minimum_size = Vector2(150, 34)
-			delete_unit_btn.add_theme_font_size_override("font_size", 13)
-			delete_unit_btn.pressed.connect(func():
-				if world_ref and world_ref.get("character") and unit.get("assigned_general", false):
-					world_ref.character.unassign_unit(unit)
-				EconomyManager.remove_unit(unit)
-				_populate_army()
-			)
-			actions_vbox.add_child(delete_unit_btn)
-
-			hbox.add_child(actions_vbox)
-			
-			vbox.add_child(panel)
-
-func _assign_units_to_general(units: Array) -> void:
-	if not world_ref or not world_ref.get("character"): return
-	var gen = world_ref.character
-	if not gen: return
-	for u in units:
-		u["assigned_general"] = true
-	gen.assign_army(units)
-	_populate_army()
-
-func _unassign_units_from_general(units: Array) -> void:
-	if not world_ref or not world_ref.get("character"): return
-	var gen = world_ref.character
-	for u in units:
-		u["assigned_general"] = false
-		if gen: gen.unassign_unit(u)
-	_populate_army()
-
-func setup_help_window():
-	help_window = PanelContainer.new()
-	help_window.visible = false
-	help_window.custom_minimum_size = Vector2(760, 520)
-
-	var style_panel = StyleBoxFlat.new()
-	style_panel.bg_color = DF_BG
-	style_panel.set_corner_radius_all(10)
-	style_panel.set_border_width_all(2)
-	style_panel.border_color = DF_GOLD
-	style_panel.content_margin_left = 20
-	style_panel.content_margin_right = 20
-	style_panel.content_margin_top = 16
-	style_panel.content_margin_bottom = 16
-	style_panel.shadow_color = Color(0, 0, 0, 0.55)
-	style_panel.shadow_size = 6
-	help_window.add_theme_stylebox_override("panel", style_panel)
-
-	var main_vbox = VBoxContainer.new()
-	main_vbox.add_theme_constant_override("separation", 12)
-	help_window.add_child(main_vbox)
-
-	# HEADER
-	var header_hbox = HBoxContainer.new()
-	var title_label = Label.new()
-	title_label.text = "📖 Pomoc — Sterowanie i Instrukcje"
-	title_label.add_theme_font_size_override("font_size", 22)
-	title_label.add_theme_color_override("font_color", DF_GOLD_TEXT)
-	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var close_btn = Button.new()
-	close_btn.text = "X"
-	close_btn.custom_minimum_size = Vector2(30, 30)
-	close_btn.pressed.connect(func(): help_window.visible = false)
-	_style_df_button(close_btn)
-	header_hbox.add_child(title_label)
-	header_hbox.add_child(close_btn)
-	main_vbox.add_child(header_hbox)
-
-	# TABS
-	var tabs_hbox = HBoxContainer.new()
-	tabs_hbox.add_theme_constant_override("separation", 6)
-	var tab_defs = [
-		["sterowanie", "🖱️ Sterowanie"],
-		["budowanie", "🏗️ Budowanie"],
-		["miasto", "👑 Miasto i Pola"],
-		["wojsko", "⚔️ Wojsko"],
-		["rozwoj", "🔬 Rozwój"],
-	]
-	for tab_def in tab_defs:
-		var key = tab_def[0]
-		var btn = Button.new()
-		btn.text = tab_def[1]
-		btn.toggle_mode = true
-		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.pressed.connect(func(): _show_help_tab(key))
-		_style_df_button(btn)
-		var pressed_style = StyleBoxFlat.new()
-		pressed_style.bg_color = Color(0.3, 0.23, 0.1, 0.95)
-		pressed_style.set_corner_radius_all(6)
-		pressed_style.set_border_width_all(1)
-		pressed_style.border_color = DF_GOLD_BRIGHT
-		pressed_style.set_content_margin_all(8)
-		btn.add_theme_stylebox_override("pressed", pressed_style)
-		tabs_hbox.add_child(btn)
-		help_tab_buttons[key] = btn
-	main_vbox.add_child(tabs_hbox)
-
-	# CONTENT
-	var scroll = ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	main_vbox.add_child(scroll)
-
-	help_content_label = RichTextLabel.new()
-	help_content_label.bbcode_enabled = true
-	help_content_label.fit_content = true
-	help_content_label.scroll_active = false
-	help_content_label.custom_minimum_size = Vector2(700, 0)
-	help_content_label.add_theme_font_size_override("normal_font_size", 15)
-	scroll.add_child(help_content_label)
-
-	add_child(help_window)
-
-func _help_tab_text(key: String) -> String:
-	match key:
-		"sterowanie":
-			return "[b][color=#8fdc8f]Poruszanie się po mapie[/color][/b]\n" \
-				+ "• [b]Przeciągnij lewym przyciskiem myszy (LPM)[/b] po mapie, aby przesunąć kamerę.\n" \
-				+ "• [b]Kółko myszy[/b] — przybliżanie / oddalanie widoku mapy.\n\n" \
-				+ "[b][color=#8fdc8f]Postać / jednostka gracza[/color][/b]\n" \
-				+ "• Kliknij [b]LPM[/b] na swoją postać, aby ją [b]zaznaczyć[/b] (zaznaczenie można zdjąć ponownym kliknięciem).\n" \
-				+ "• Gdy postać jest zaznaczona, kliknij [b]LPM[/b] na docelowe pole w zasięgu ruchu — postać przemieści się tam najkrótszą dostępną ścieżką.\n\n" \
-				+ "[b][color=#8fdc8f]Pola mapy[/color][/b]\n" \
-				+ "• Kliknij [b]prawym przyciskiem myszy (PPM)[/b] na dowolne pole, aby otworzyć [b]menu kontekstowe[/b] — to stąd wykonuje się większość akcji (budowa, kupno pola, zakładanie miasta, ulepszanie, rekrutacja).\n" \
-				+ "• Kliknięcie poza otwartym menu lub na pustym obszarze zamyka aktualnie otwarte okno.\n\n" \
-				+ "[b][color=#8fdc8f]Tura[/color][/b]\n" \
-				+ "• Przycisk [b]„Następna tura”[/b] w lewym dolnym rogu ekranu kończy bieżącą turę i nalicza produkcję zasobów."
-		"budowanie":
-			return "[b][color=#8fdc8f]Jak wybudować budynek[/color][/b]\n" \
-				+ "1. Kliknij [b]PPM[/b] na pole, które [b]należy do Ciebie[/b] (posiadane pola).\n" \
-				+ "2. W otwartym „Menu Budowy” wybierz kategorię u góry: [b]Surowce[/b], [b]Kultura[/b], [b]Technologia[/b] lub [b]Wojskowe[/b].\n" \
-				+ "3. Kliknij przycisk wybranego budynku — jeśli masz wystarczająco surowców, budynek zostanie postawiony na tym polu.\n\n" \
-				+ "[b][color=#8fdc8f]Ulepszanie budynków[/color][/b]\n" \
-				+ "• Kliknij [b]PPM[/b] na pole z istniejącym budynkiem i wybierz [b]„⬆️ Ulepsz budynek”[/b], aby zwiększyć jego poziom (jeśli stać Cię na koszt ulepszenia).\n\n" \
-				+ "[color=#e0b060][b]Uwaga:[/b] postawienie budynku na polu ze złożem surowca (np. żelaza, węgla) bezpowrotnie zniszczy złoże i zamieni pole w zwykłą trawę — gra poprosi o potwierdzenie tej decyzji.[/color]"
-		"miasto":
-			return "[b][color=#8fdc8f]Zakładanie miasta[/color][/b]\n" \
-				+ "• Kliknij [b]PPM[/b] na odpowiednie pole i wybierz [b]„👑 Załóż Miasto tutaj”[/b], aby założyć nowe miasto na tym polu.\n\n" \
-				+ "[b][color=#8fdc8f]Kupowanie pól[/color][/b]\n" \
-				+ "• Aby powiększyć terytorium, kliknij [b]PPM[/b] na pole [b]sąsiadujące[/b] z polem, które już posiadasz.\n" \
-				+ "• Wybierz [b]„🪙 Kup to pole (50 złota)”[/b] — pole zostanie dołączone do Twojego terytorium, jeśli masz wystarczająco złota.\n\n" \
-				+ "[color=#a0a0a0]Tylko pola graniczące z posiadanym terenem mogą zostać zakupione lub zabudowane.[/color]"
-		"wojsko":
-			return "[b][color=#8fdc8f]Rekrutacja jednostek[/color][/b]\n" \
-				+ "• Zbuduj [b]Baraki[/b] (kategoria „Wojskowe” w menu budowy).\n" \
-				+ "• Kliknij [b]PPM[/b] na pole z barakami i wybierz [b]„⚔️ Rekrutuj”[/b], aby otworzyć listę dostępnych jednostek do zwerbowania.\n" \
-				+ "• Rekrutacja trwa określoną liczbę tur — postęp widać na ikonie jednostki w oknie „Moja Armia”.\n\n" \
-				+ "[b][color=#8fdc8f]Zarządzanie armią[/color][/b]\n" \
-				+ "• Otwórz [b]„🛡️ Moja Armia”[/b] z menu kontekstowego pola, aby zobaczyć wszystkie zwerbowane jednostki, ich statystyki oraz usunąć wybraną jednostkę lub całą armię.\n\n" \
-				+ "[b][color=#8fdc8f]Ruch jednostki[/color][/b]\n" \
-				+ "• Zaznacz swoją postać kliknięciem [b]LPM[/b], a następnie kliknij [b]LPM[/b] na pole docelowe w jej zasięgu ruchu."
-		"rozwoj":
-			return "[b][color=#8fdc8f]Drzewo Technologii[/color][/b]\n" \
-				+ "• Kliknij przycisk [b]„Drzewo Rozwoju”[/b] w panelu w prawym górnym rogu ekranu.\n" \
-				+ "• Kliknij dostępny (podświetlony) węzeł technologii, aby rozpocząć nad nim badanie — postęp naliczany jest automatycznie z każdą turą na podstawie generowanej Nauki.\n\n" \
-				+ "[b][color=#8fdc8f]Drzewo Kultury[/color][/b]\n" \
-				+ "• Kliknij przycisk [b]„Drzewo Kultury”[/b] w tym samym panelu, aby rozwijać ścieżkę kulturową w analogiczny sposób, korzystając z Punktów Kultury.\n\n" \
-				+ "[color=#a0a0a0]Węzły wymagają spełnienia wcześniejszych wymagań (odblokowanych technologii/kultur) zanim staną się dostępne do zbadania.[/color]"
-		_:
-			return ""
-
-func _show_help_tab(key: String):
-	help_current_tab = key
-	for tab_key in help_tab_buttons:
-		help_tab_buttons[tab_key].button_pressed = (tab_key == key)
-	if help_content_label:
-		help_content_label.text = _help_tab_text(key)
-
-func show_help_menu():
-	help_window.visible = true
-	var viewport_size = get_viewport_rect().size
-	help_window.position = (viewport_size - help_window.custom_minimum_size) / 2.0
-	_show_help_tab(help_current_tab)
-
-func setup_settings_window():
-	settings_window = PanelContainer.new()
-	settings_window.visible = false
-	settings_window.custom_minimum_size = Vector2(440, 0)
-
-	var style_panel = StyleBoxFlat.new()
-	style_panel.bg_color = DF_BG
-	style_panel.set_corner_radius_all(10)
-	style_panel.set_border_width_all(2)
-	style_panel.border_color = DF_GOLD
-	style_panel.content_margin_left = 24
-	style_panel.content_margin_right = 24
-	style_panel.content_margin_top = 18
-	style_panel.content_margin_bottom = 18
-	style_panel.shadow_color = Color(0, 0, 0, 0.6)
-	style_panel.shadow_size = 8
-	settings_window.add_theme_stylebox_override("panel", style_panel)
-
-	var main_vbox = VBoxContainer.new()
-	main_vbox.add_theme_constant_override("separation", 16)
-	settings_window.add_child(main_vbox)
-
-	# HEADER
-	var header_hbox = HBoxContainer.new()
-	var title_label = Label.new()
-	title_label.text = "⚙️ Ustawienia"
-	title_label.add_theme_font_size_override("font_size", 22)
-	title_label.add_theme_color_override("font_color", DF_GOLD_TEXT)
-	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var close_btn = Button.new()
-	close_btn.text = "X"
-	close_btn.custom_minimum_size = Vector2(30, 30)
-	close_btn.pressed.connect(func(): settings_window.visible = false)
-	_style_df_button(close_btn)
-	header_hbox.add_child(title_label)
-	header_hbox.add_child(close_btn)
-	main_vbox.add_child(header_hbox)
-
-	var sep1 = HSeparator.new()
-	sep1.add_theme_color_override("separator", DF_GOLD)
-	main_vbox.add_child(sep1)
-
-	# SEED SECTION
-	var seed_section = VBoxContainer.new()
-	seed_section.add_theme_constant_override("separation", 8)
-	var seed_title = Label.new()
-	seed_title.text = "Seed świata"
-	seed_title.add_theme_font_size_override("font_size", 16)
-	seed_title.add_theme_color_override("font_color", DF_GOLD_TEXT)
-	seed_section.add_child(seed_title)
-
-	var seed_row = HBoxContainer.new()
-	seed_row.add_theme_constant_override("separation", 10)
-	settings_seed_value_label = Label.new()
-	settings_seed_value_label.add_theme_font_size_override("font_size", 14)
-	settings_seed_value_label.add_theme_color_override("font_color", DF_TEXT)
-	settings_seed_value_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	settings_seed_value_label.clip_text = true
-
-	settings_copy_button = Button.new()
-	settings_copy_button.text = "📋 Kopiuj seed"
-	settings_copy_button.custom_minimum_size = Vector2(140, 36)
-	_style_df_button(settings_copy_button)
-	settings_copy_button.pressed.connect(_on_copy_seed_pressed)
-
-	seed_row.add_child(settings_seed_value_label)
-	seed_row.add_child(settings_copy_button)
-	seed_section.add_child(seed_row)
-	main_vbox.add_child(seed_section)
-
-	var sep2 = HSeparator.new()
-	sep2.add_theme_color_override("separator", DF_GOLD)
-	main_vbox.add_child(sep2)
-
-	# DŹWIĘK SECTION
-	var sound_section = VBoxContainer.new()
-	sound_section.add_theme_constant_override("separation", 8)
-	var sound_title = Label.new()
-	sound_title.text = "Głośność"
-	sound_title.add_theme_font_size_override("font_size", 16)
-	sound_title.add_theme_color_override("font_color", DF_GOLD_TEXT)
-	sound_section.add_child(sound_title)
-
-	settings_volume_slider = HSlider.new()
-	settings_volume_slider.min_value = 0
-	settings_volume_slider.max_value = 100
-	settings_volume_slider.step = 1
-	var master_idx = AudioServer.get_bus_index("Master")
-	if master_idx >= 0:
-		var current_db = AudioServer.get_bus_volume_db(master_idx)
-		settings_volume_slider.value = clamp(db_to_linear(current_db) * 100.0, 0, 100)
-	else:
-		settings_volume_slider.value = 100
-	settings_volume_slider.custom_minimum_size = Vector2(0, 24)
-	settings_volume_slider.value_changed.connect(_on_volume_changed)
-	sound_section.add_child(settings_volume_slider)
-	main_vbox.add_child(sound_section)
-
-	var sep3 = HSeparator.new()
-	sep3.add_theme_color_override("separator", DF_GOLD)
-	main_vbox.add_child(sep3)
-
-	# ACTION BUTTONS
-	var resume_btn = Button.new()
-	resume_btn.text = "▶️ Wróć do gry"
-	resume_btn.custom_minimum_size = Vector2(0, 42)
-	_style_df_button(resume_btn)
-	resume_btn.pressed.connect(func(): settings_window.visible = false)
-	main_vbox.add_child(resume_btn)
-
-	var menu_btn = Button.new()
-	menu_btn.text = "🏠 Wróć do menu głównego"
-	menu_btn.custom_minimum_size = Vector2(0, 42)
-	_style_df_button(menu_btn)
-	menu_btn.pressed.connect(func():
-		get_tree().change_scene_to_file("res://ui/main_menu.tscn")
-	)
-	main_vbox.add_child(menu_btn)
-
-	var quit_btn = Button.new()
-	quit_btn.text = "❌ Wyjdź z gry"
-	quit_btn.custom_minimum_size = Vector2(0, 42)
-	var quit_style = StyleBoxFlat.new()
-	quit_style.bg_color = DF_BLOOD
-	quit_style.set_corner_radius_all(6)
-	quit_style.set_border_width_all(1)
-	quit_style.border_color = DF_GOLD
-	quit_style.set_content_margin_all(8)
-	var quit_hover = quit_style.duplicate() as StyleBoxFlat
-	quit_hover.bg_color = DF_BLOOD_BRIGHT
-	quit_btn.add_theme_stylebox_override("normal", quit_style)
-	quit_btn.add_theme_stylebox_override("hover", quit_hover)
-	quit_btn.add_theme_color_override("font_color", DF_TEXT)
-	quit_btn.pressed.connect(func(): get_tree().quit())
-	main_vbox.add_child(quit_btn)
-
-	add_child(settings_window)
-
 func _style_df_button(btn: Button) -> void:
 	var normal = StyleBoxFlat.new()
 	normal.bg_color = DF_BG_LIGHT
@@ -2079,265 +1096,3 @@ func _style_df_button(btn: Button) -> void:
 	btn.add_theme_stylebox_override("normal", normal)
 	btn.add_theme_stylebox_override("hover", hover)
 	btn.add_theme_color_override("font_color", DF_TEXT)
-
-func _on_volume_changed(value: float) -> void:
-	var master_idx = AudioServer.get_bus_index("Master")
-	if master_idx >= 0:
-		if value <= 0.0:
-			AudioServer.set_bus_mute(master_idx, true)
-		else:
-			AudioServer.set_bus_mute(master_idx, false)
-			AudioServer.set_bus_volume_db(master_idx, linear_to_db(value / 100.0))
-
-func _on_copy_seed_pressed() -> void:
-	var seed_str = str(GameSettings.current_seed) if GameSettings.use_custom_seed else "Losowy"
-	DisplayServer.clipboard_set(seed_str)
-	settings_copy_button.text = "✅ Skopiowano!"
-	await get_tree().create_timer(1.2).timeout
-	if is_instance_valid(settings_copy_button):
-		settings_copy_button.text = "📋 Kopiuj seed"
-
-func show_settings_menu():
-	if settings_seed_value_label:
-		if GameSettings.use_custom_seed:
-			settings_seed_value_label.text = "Seed: " + str(GameSettings.current_seed)
-		else:
-			settings_seed_value_label.text = "Seed: Losowy"
-	settings_window.visible = true
-	var viewport_size = get_viewport_rect().size
-	settings_window.reset_size()
-	settings_window.position = ((viewport_size - settings_window.size) / 2.0).round()
-
-func upgrade_barracks_units() -> void:
-	if unit_data_json and unit_data_json.has("factions"):
-		for faction in unit_data_json["factions"]:
-			if faction.has("units"):
-				for unit in faction["units"]:
-					var hp_gain = max(1, int(unit.get("hp", 0) * 0.1))
-					unit["hp"] = unit.get("hp", 0) + hp_gain
-					var dmg_gain = max(1, int(unit.get("dmg", 0) * 0.1))
-					unit["dmg"] = unit.get("dmg", 0) + dmg_gain
-					var def_gain = max(1, int(unit.get("def", 0) * 0.1))
-					unit["def"] = unit.get("def", 0) + def_gain
-
-	for unit in EconomyManager.player_army:
-		var hp_gain = max(1, int(unit.get("hp", 0) * 0.1))
-		unit["hp"] = unit.get("hp", 0) + hp_gain
-		var dmg_gain = max(1, int(unit.get("dmg", 0) * 0.1))
-		unit["dmg"] = unit.get("dmg", 0) + dmg_gain
-		var def_gain = max(1, int(unit.get("def", 0) * 0.1))
-		unit["def"] = unit.get("def", 0) + def_gain
-
-	EconomyManager.notify_change()
-	
-	if barracks_window and barracks_window.visible:
-		barracks_window.visible = false
-	if army_window and army_window.visible:
-		_populate_army()
-
-func load_faction_lore():
-	var file = FileAccess.open("res://data/faction_lore.json", FileAccess.READ)
-	if file:
-		var json = JSON.new()
-		if json.parse(file.get_as_text()) == OK:
-			faction_lore = json.data
-
-func setup_camp_windows():
-	camp_details_window = PanelContainer.new()
-	camp_details_window.visible = false
-	camp_details_window.custom_minimum_size = Vector2(700, 450)
-	var style_panel = StyleBoxFlat.new()
-	style_panel.bg_color = Color(0.13, 0.07, 0.07, 0.96)
-	style_panel.set_corner_radius_all(10)
-	style_panel.set_border_width_all(2)
-	style_panel.border_color = DF_GOLD
-	style_panel.set_content_margin_all(20)
-	style_panel.shadow_color = Color(0, 0, 0, 0.55)
-	style_panel.shadow_size = 6
-	camp_details_window.add_theme_stylebox_override("panel", style_panel)
-	add_child(camp_details_window)
-
-	camp_army_window = PanelContainer.new()
-	camp_army_window.visible = false
-	camp_army_window.custom_minimum_size = Vector2(800, 500)
-	var style_army = style_panel.duplicate()
-	style_army.bg_color = Color(0.16, 0.08, 0.08, 0.96)
-	camp_army_window.add_theme_stylebox_override("panel", style_army)
-	add_child(camp_army_window)
-
-func show_camp_details_menu(pos: Vector2):
-	camp_details_window.visible = true
-	var viewport_size = get_viewport_rect().size
-	camp_details_window.position = (viewport_size - camp_details_window.custom_minimum_size) / 2.0
-	
-	for child in camp_details_window.get_children():
-		child.queue_free()
-		
-	var camp_data = world_ref.camps[pos] if world_ref and world_ref.get("camps") and world_ref.camps.has(pos) else {}
-	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 15)
-	camp_details_window.add_child(vbox)
-	
-	var header_hbox = HBoxContainer.new()
-	var title_lbl = Label.new()
-	title_lbl.text = "Obozowisko: " + camp_data.get("faction_name", "Nieznana") + " (Poziom " + str(camp_data.get("level", 1)) + ")"
-	title_lbl.add_theme_font_size_override("font_size", 24)
-	title_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var close_btn = Button.new()
-	close_btn.text = "Zamknij"
-	close_btn.custom_minimum_size = Vector2(80, 40)
-	close_btn.pressed.connect(func(): camp_details_window.visible = false)
-	header_hbox.add_child(title_lbl)
-	header_hbox.add_child(close_btn)
-	vbox.add_child(header_hbox)
-	
-	var lore_lbl = RichTextLabel.new()
-	var f_id = camp_data.get("faction", "")
-	lore_lbl.text = faction_lore.get(f_id, "Nieznana frakcja, ostrożnie!")
-	lore_lbl.fit_content = true
-	lore_lbl.add_theme_font_size_override("normal_font_size", 16)
-	lore_lbl.add_theme_color_override("default_color", Color(0.8, 0.8, 0.8))
-	vbox.add_child(lore_lbl)
-	
-	var res_hbox = HBoxContainer.new()
-	res_hbox.add_theme_constant_override("separation", 20)
-	var r = camp_data.get("resources", {})
-	var r_lbl = Label.new()
-	r_lbl.text = "Zgromadzone surowce:\n🪙 Złoto: %d\n🪵 Drewno: %d\n⛏️ Żelazo: %d" % [r.get("gold", 0), r.get("wood", 0), r.get("iron", 0)]
-	r_lbl.add_theme_color_override("font_color", Color(0.9, 0.85, 0.4))
-	res_hbox.add_child(r_lbl)
-	
-	var t_lbl = Label.new()
-	t_lbl.text = "Kontrolowane ziemie:\n"
-	
-	# Obliczanie zasobów kafelkowych
-	var tiles_owned = []
-	if world_ref and world_ref.get("camp_owned_tiles"):
-		for t in world_ref.camp_owned_tiles:
-			var center_dist = HexUtils.get_distance(t, pos)
-			# Uproszczone sprawdzanie czy należy do tego obozu. Wersja pelna moglaby zapisywac ID obozu do kafelek.
-			# Skoro obozowiska max maja promien 3, policzmy w tym promieniu:
-			if center_dist <= camp_data.get("level", 1) + 1:
-				if world_ref.map_data.has(t) and not tiles_owned.has(t):
-					tiles_owned.append(world_ref.map_data[t]["type"])
-	
-	var type_counts = {}
-	for type in tiles_owned:
-		if type == "Trawa": continue
-		if not type_counts.has(type): type_counts[type] = 0
-		type_counts[type] += 1
-		
-	if type_counts.is_empty():
-		t_lbl.text += "Brak specjalnych złóż"
-	else:
-		for type in type_counts:
-			t_lbl.text += "• %d x %s\n" % [type_counts[type], type]
-	
-	res_hbox.add_child(t_lbl)
-	vbox.add_child(res_hbox)
-	
-	var spacer = Control.new()
-	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(spacer)
-	
-	var army_btn = Button.new()
-	army_btn.text = "⚔️ Pokaż armię"
-	army_btn.custom_minimum_size = Vector2(200, 50)
-	army_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	var army_btn_style = StyleBoxFlat.new()
-	army_btn_style.bg_color = Color(0.6, 0.2, 0.2)
-	army_btn_style.set_corner_radius_all(8)
-	army_btn.add_theme_stylebox_override("normal", army_btn_style)
-	army_btn.pressed.connect(func(): show_camp_army_menu(camp_data))
-	vbox.add_child(army_btn)
-
-func show_camp_army_menu(camp_data: Dictionary):
-	camp_army_window.visible = true
-	var viewport_size = get_viewport_rect().size
-	camp_army_window.position = (viewport_size - camp_army_window.custom_minimum_size) / 2.0
-	
-	for child in camp_army_window.get_children():
-		child.queue_free()
-		
-	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 15)
-	camp_army_window.add_child(vbox)
-	
-	var header_hbox = HBoxContainer.new()
-	var title_lbl = Label.new()
-	title_lbl.text = "Armia wroga: " + camp_data.get("faction_name", "Nieznana")
-	title_lbl.add_theme_font_size_override("font_size", 24)
-	title_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var close_btn = Button.new()
-	close_btn.text = "Zamknij"
-	close_btn.custom_minimum_size = Vector2(80, 40)
-	close_btn.pressed.connect(func(): camp_army_window.visible = false)
-	header_hbox.add_child(title_lbl)
-	header_hbox.add_child(close_btn)
-	vbox.add_child(header_hbox)
-	
-	var scroll = ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	vbox.add_child(scroll)
-	
-	var list_vbox = VBoxContainer.new()
-	list_vbox.add_theme_constant_override("separation", 10)
-	list_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(list_vbox)
-	
-	var army_ids = camp_data.get("army", [])
-	if army_ids.is_empty():
-		var empty_lbl = Label.new()
-		empty_lbl.text = "Obóz nie posiada żadnych sił obronnych!"
-		list_vbox.add_child(empty_lbl)
-	else:
-		var counts = {}
-		for u_id in army_ids:
-			if not counts.has(u_id): counts[u_id] = 0
-			counts[u_id] += 1
-			
-		for u_id in counts:
-			var unit_dict = null
-			for f in unit_data_json.get("factions", []):
-				for u in f.get("units", []):
-					if u.get("id") == u_id:
-						unit_dict = u
-						break
-				if unit_dict: break
-				
-			if unit_dict:
-				var panel = PanelContainer.new()
-				var p_style = StyleBoxFlat.new()
-				p_style.bg_color = Color(0.2, 0.15, 0.15)
-				p_style.set_content_margin_all(10)
-				panel.add_theme_stylebox_override("panel", p_style)
-				
-				var row = HBoxContainer.new()
-				row.add_theme_constant_override("separation", 15)
-				panel.add_child(row)
-				
-				var img = TextureRect.new()
-				var tex = load(unit_dict.get("portrait", "")) if unit_dict.get("portrait", "") != "" else null
-				if tex: img.texture = tex
-				img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-				img.custom_minimum_size = Vector2(64, 64)
-				img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-				row.add_child(img)
-				
-				var info_vbox = VBoxContainer.new()
-				info_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-				row.add_child(info_vbox)
-				
-				var name_lbl = Label.new()
-				name_lbl.text = unit_dict.get("name", "Nieznana") + " x" + str(counts[u_id])
-				name_lbl.add_theme_font_size_override("font_size", 18)
-				name_lbl.add_theme_color_override("font_color", Color(1, 0.6, 0.6))
-				info_vbox.add_child(name_lbl)
-				
-				var stats_lbl = Label.new()
-				stats_lbl.text = "HP: %d | DMG: %d | DEF: %d | RUCH: %d" % [unit_dict.get("hp", 0), unit_dict.get("dmg", 0), unit_dict.get("def", 0), unit_dict.get("move_range", 0)]
-				stats_lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
-				info_vbox.add_child(stats_lbl)
-				
-				list_vbox.add_child(panel)

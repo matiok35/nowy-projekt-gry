@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://brkvg5whgb0os"]
 
-[ext_resource type="Script" uid="uid://cp7cansj8bkkl" path="res://game_world/game_world.gd" id="1_uufbk"]
-[ext_resource type="Script" uid="uid://yvk17nf33pr" path="res://camera/StrategyCamera.gd" id="2_uufbk"]
-[ext_resource type="Script" uid="uid://dq2wpiwha02k4" path="res://character/character.gd" id="3_fbx2b"]
+[ext_resource type="Script" uid="uid://cp7cansj8bkkl" path="res://scenes/game_world.gd" id="1_uufbk"]
+[ext_resource type="Script" uid="uid://yvk17nf33pr" path="res://scenes/camera/StrategyCamera.gd" id="2_uufbk"]
+[ext_resource type="Script" uid="uid://dq2wpiwha02k4" path="res://entities/character/character.gd" id="3_fbx2b"]
 [ext_resource type="Script" uid="uid://7wqo01mkx50r" path="res://ui/hud.gd" id="4_qeltc"]
 
 [node name="GameWorld" type="Node2D" unique_id=1651233416]
