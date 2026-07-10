@@ -17,7 +17,7 @@
 		"move_range": 3,
 		"attack_range": 1,
 		"resistance": "Brak",
-		"portrait": "res://assets/characters/humans/dwarfWarrior.png",
+		"portrait": "res://assets/characters/dwarves/dwarfWarrior.png",
 		"skill_ids": [
 		  "potezne_uderzenie",
 		  "zelazna_kurtyna",
@@ -38,7 +38,7 @@
 		"move_range": 2,
 		"attack_range": 1,
 		"resistance": "Brak",
-		"portrait": "res://assets/characters/humans/dwarfShield.png",
+		"portrait": "res://assets/characters/dwarves/dwarfShield.png",
 		"skill_ids": [
 		  "prowokacja",
 		  "tarcza",
@@ -59,7 +59,7 @@
 		"move_range": 3,
 		"attack_range": 1,
 		"resistance": "Brak",
-		"portrait": "res://assets/characters/humans/dwarfHammer.png",
+		"portrait": "res://assets/characters/dwarves/dwarfHammer.png",
 		"skill_ids": [
 		  "potezne_uderzenie",
 		  "skupiony_cios",
@@ -80,7 +80,7 @@
 		"move_range": 4,
 		"attack_range": 2,
 		"resistance": "Brak",
-		"portrait": "res://assets/characters/humans/dwarfDigger.png",
+		"portrait": "res://assets/characters/dwarves/dwarfDigger.png",
 		"skill_ids": [
 		  "strzal_w_kolano",
 		  "precyzyjny_strzal",

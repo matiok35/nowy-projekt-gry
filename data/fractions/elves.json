@@ -17,7 +17,7 @@
         "move_range": 5,
         "attack_range": 5,
         "resistance": "Brak",
-        "portrait": "res://assets/characters/humans/elfArcher.png",
+        "portrait": "res://assets/characters/elves/elfArcher.png",
         "skill_ids": [
           "strzal_w_kolano",
           "sokole_oko",
@@ -38,7 +38,7 @@
         "move_range": 5,
         "attack_range": 1,
         "resistance": "Brak",
-        "portrait": "res://assets/characters/humans/elfSwordsman.png",
+        "portrait": "res://assets/characters/elves/elfSwordsman.png",
         "skill_ids": [
           "potezne_uderzenie",
           "skupiony_cios",
@@ -59,7 +59,7 @@
         "move_range": 4,
         "attack_range": 3,
         "resistance": "Brak",
-        "portrait": "res://assets/characters/humans/elfMague.png",
+        "portrait": "res://assets/characters/elves/elfMague.png",
         "skill_ids": [
           "kula_ognia",
           "lodowe_podloze",
@@ -80,7 +80,7 @@
         "move_range": 4,
         "attack_range": 3,
         "resistance": "Brak",
-        "portrait": "res://assets/characters/humans/elfArcheMague.png",
+        "portrait": "res://assets/characters/elves/elfArcheMague.png",
         "skill_ids": [
           "sokole_oko",
           "runiczna_ochrona",

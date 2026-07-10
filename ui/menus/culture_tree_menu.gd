@@ -150,7 +150,7 @@ func refresh_culture_tree_view():
 			var current_culture = EconomyManager.resources["Kultura"]
 			var progress = tech["research_cost"] - EconomyManager.resources["Kultura"]
 			progress = clamp(progress, 0, tech["research_cost"])
-			lbl_title.text = "%s (%d tur)" % [tech_name, EconomyManager.culture_research_turns_left]
+			lbl_title.text = "%s (%d tur)" % [tech_name, EconomyManager.culture_turns_left]
 			invisible_button.disabled = true
 		elif not reqs_ok:
 			node_panel.modulate.a = 0.35 
