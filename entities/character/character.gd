@@ -38,6 +38,12 @@ func _ready() -> void:
 	_army_label.size = Vector2(80, 20)
 	_army_label.visible = false
 	add_child(_army_label)
+	_update_army_label()
+	if not EconomyManager.economy_updated.is_connected(_on_economy_updated):
+		EconomyManager.economy_updated.connect(_on_economy_updated)
+
+func _on_economy_updated(_balances: Dictionary, _turn: int, _b: String) -> void:
+	_update_army_label()
 
 # Przypisuje jednostki (dictionary z EconomyManager.player_army) do armii generała.
 func assign_army(units: Array) -> void:
@@ -56,21 +62,20 @@ func has_army() -> bool:
 	return army.size() > 0
 
 func get_army_size() -> int:
-	return army.size()
+	var count = 0
+	for u in EconomyManager.player_army:
+		if u.get("turns_in_recruitment", 0) >= u.get("turns_to_recruit", 0):
+			count += 1
+	return count
 
 func _update_army_label() -> void:
 	if not _army_label: return
-	if army.is_empty():
+	var size = get_army_size()
+	if size == 0:
 		_army_label.visible = false
 	else:
 		_army_label.visible = true
-		# Znacznik pod generałem pokazuje liczbę UNIKALNYCH typów jednostek,
-		# a nie sumę wszystkich sztuk (np. 3 łuczników liczy się jako 1 typ).
-		var unique_types: Dictionary = {}
-		for u in army:
-			var key = str(u.get("id", u.get("name", "")))
-			unique_types[key] = true
-		_army_label.text = "⚔️ %d" % unique_types.size()
+		_army_label.text = "⚔️ %d" % size
 
 func set_selected(value: bool) -> void:
 	selected = value

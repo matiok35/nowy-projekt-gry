@@ -1,7 +1,7 @@
 extends Node2D
 # game_world.gd (Podpięty pod główny węzeł sceny GameWorld)
 
-const MAP_SIZE = 25
+const MAP_SIZE = 50
 const HEX_RADIUS = 80.0
 
 var hex_width: float = sqrt(3) * HEX_RADIUS

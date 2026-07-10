@@ -921,24 +921,9 @@ func _on_turn_pressed():
 		return
 	hide_all_menus()
 
-	# Krótkie "ładowanie" tury - blokujemy przycisk i pokazujemy wskaźnik,
-	# żeby przejście między turami było wyraźnie odczuwalne dla gracza.
-	turn_button.disabled = true
-	var previous_text = turn_button.text
-	turn_button.text = "⏳ Przetwarzanie tury..."
-
-	await get_tree().create_timer(0.45).timeout
-
-	if not is_instance_valid(self):
-		return
-
 	if world_ref and world_ref.has_method("get_active_buildings_list"):
 		var buildings = world_ref.get_active_buildings_list()
 		EconomyManager.next_turn(buildings)
-	else:
-		turn_button.text = previous_text
-
-	turn_button.disabled = false
 
 func style_main_hud_elements():
 	var top_panel = $Panel

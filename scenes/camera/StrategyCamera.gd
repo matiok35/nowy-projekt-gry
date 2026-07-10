@@ -5,9 +5,9 @@ extends Camera2D
 
 # Ograniczenia poruszania się rozszerzone pod kątem kafelków o promieniu 80.0
 @export var LIMIT_LEFT: float = -200.0
-@export var LIMIT_RIGHT: float = 3600.0
+@export var LIMIT_RIGHT: float = 7200.0
 @export var LIMIT_TOP: float = -200.0
-@export var LIMIT_BOTTOM: float = 3000.0
+@export var LIMIT_BOTTOM: float = 6200.0
 
 # --- ZMIENNE DLA PRZYBLIŻANIA (ZOOM) ---
 @export var ZOOM_SPEED: float = 0.1
