@@ -55,6 +55,7 @@ func _ready() -> void:
 			character.global_position = cell_to_world[start_pos]
 		character.city_creation_requested.connect(_on_character_city_creation_requested)
 	EconomyManager.economy_updated.connect(_on_economy_turn_changed)
+	EconomyManager.unit_training_complete.connect(_on_unit_training_complete)
 
 func generate_map() -> void:
 	var sizes = ["Małe", "Średnie", "Duże"]
@@ -490,6 +491,12 @@ func buy_tile(pos: Vector2) -> void:
 	if EconomyManager.can_afford_tile_purchase():
 		EconomyManager.deduct_tile_purchase_costs()
 		claim_tile(pos)
+
+func _on_unit_training_complete(unit: Dictionary) -> void:
+	# Jednostka kończy rekrutację dopiero po wymaganej liczbie tur - dopiero
+	# wtedy przypisujemy ją automatycznie do generała.
+	if character:
+		character.assign_army([unit])
 
 func _on_economy_turn_changed(_balances: Dictionary, current_turn: int, _selected_build: String) -> void:
 	if current_turn >= last_expansion_turn + 5:

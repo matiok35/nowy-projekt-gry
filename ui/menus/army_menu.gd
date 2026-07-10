@@ -104,12 +104,37 @@ func _populate_army():
 		vbox.add_child(empty_lbl)
 		return
 		
-	var gen_army = []
-	if hud.world_ref and hud.world_ref.get("character") and hud.world_ref.character:
-		gen_army = hud.world_ref.character.army
-		
+	# --- GRUPOWANIE JEDNOSTEK (STACKOWANIE) -------------------------------
+	# Jednostki są grupowane wg typu (id/nazwa) ORAZ stanu rekrutacji, żeby
+	# np. "Łucznik x2" pokazywał się jako jeden wiersz, a jednostki wciąż
+	# w trakcie werbunku (z inną liczbą pozostałych tur) były widoczne osobno.
+	var groups: Array = []
+	var group_index_by_key: Dictionary = {}
+
 	for i in range(EconomyManager.player_army.size()):
 		var unit = EconomyManager.player_army[i]
+		var turns_to_recruit = unit.get("turns_to_recruit", 0)
+		var turns_in_recruitment = unit.get("turns_in_recruitment", 0)
+		var is_ready = turns_in_recruitment >= turns_to_recruit
+		var turns_left = max(0, turns_to_recruit - turns_in_recruitment)
+		var unit_type_key = str(unit.get("id", unit.get("name", "Unknown")))
+		var state_key = "ready" if is_ready else ("training_%d" % turns_left)
+		var key = unit_type_key + "_" + state_key
+
+		if group_index_by_key.has(key):
+			groups[group_index_by_key[key]]["indices"].append(i)
+		else:
+			group_index_by_key[key] = groups.size()
+			groups.append({
+				"unit": unit,
+				"indices": [i],
+				"is_ready": is_ready,
+				"turns_left": turns_left
+			})
+
+	for group in groups:
+		var unit = group["unit"]
+		var count = group["indices"].size()
 		var panel = PanelContainer.new()
 		var p_style = StyleBoxFlat.new()
 		p_style.bg_color = Color(0.2, 0.2, 0.25)
@@ -135,6 +160,8 @@ func _populate_army():
 		
 		var name_lbl = Label.new()
 		name_lbl.text = unit["name"] + " (" + unit.get("role", "") + ")"
+		if count > 1:
+			name_lbl.text += " x%d" % count
 		name_lbl.add_theme_font_size_override("font_size", 18)
 		info_vbox.add_child(name_lbl)
 		
@@ -142,35 +169,31 @@ func _populate_army():
 		stats_lbl.text = "HP: %d | DMG: %d | DEF: %d | RUCH: %d" % [unit.get("hp", 0), unit.get("dmg", 0), unit.get("def", 0), unit.get("move_range", 0)]
 		stats_lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 		info_vbox.add_child(stats_lbl)
-		
-		var assign_btn = Button.new()
-		assign_btn.custom_minimum_size = Vector2(150, 40)
-		assign_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		var is_assigned = unit in gen_army
-		assign_btn.text = "Usuń od generała" if is_assigned else "Przypisz do generała"
-		
-		assign_btn.pressed.connect(func(u=unit):
-			if is_assigned:
-				_unassign_units_from_general([u])
-			else:
-				_assign_units_to_general([u])
-		)
+
+		var status_lbl = Label.new()
+		if group["is_ready"]:
+			status_lbl.text = "✅ Gotowa — przypisana do generała"
+			status_lbl.add_theme_color_override("font_color", Color(0.55, 0.85, 0.55))
+		else:
+			status_lbl.text = "⏳ W trakcie rekrutacji (jeszcze %d tur)" % group["turns_left"]
+			status_lbl.add_theme_color_override("font_color", Color(0.85, 0.75, 0.4))
+		info_vbox.add_child(status_lbl)
 		
 		var dismiss_btn = Button.new()
-		dismiss_btn.text = "Zwolnij"
-		dismiss_btn.custom_minimum_size = Vector2(100, 40)
+		dismiss_btn.text = "Zwolnij" if count == 1 else "Zwolnij 1"
+		dismiss_btn.custom_minimum_size = Vector2(110, 40)
 		dismiss_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		var btn_style = StyleBoxFlat.new()
 		btn_style.bg_color = Color(0.6, 0.2, 0.2)
 		btn_style.set_corner_radius_all(4)
 		dismiss_btn.add_theme_stylebox_override("normal", btn_style)
-		dismiss_btn.pressed.connect(func(idx=i, u=unit):
+		dismiss_btn.pressed.connect(func(u=unit):
 			var dialog = ConfirmationDialog.new()
 			dialog.title = "Potwierdzenie"
 			dialog.dialog_text = "Czy zwolnić jednostkę " + unit["name"] + "?"
 			dialog.confirmed.connect(func():
 				_unassign_units_from_general([u])
-				EconomyManager.remove_unit(idx)
+				EconomyManager.remove_unit(u)
 				_populate_army()
 				dialog.queue_free()
 			)
@@ -179,17 +202,8 @@ func _populate_army():
 			dialog.popup_centered()
 		)
 		
-		hbox.add_child(assign_btn)
 		hbox.add_child(dismiss_btn)
 		vbox.add_child(panel)
-
-func _assign_units_to_general(units_to_assign: Array):
-	var gen = null
-	if hud.world_ref and hud.world_ref.get("character"):
-		gen = hud.world_ref.character
-	if gen:
-		gen.assign_army(units_to_assign)
-	_populate_army()
 
 func _unassign_units_from_general(units_to_remove: Array):
 	var gen = null

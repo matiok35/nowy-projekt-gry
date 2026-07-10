@@ -64,7 +64,13 @@ func _update_army_label() -> void:
 		_army_label.visible = false
 	else:
 		_army_label.visible = true
-		_army_label.text = "⚔️ %d" % army.size()
+		# Znacznik pod generałem pokazuje liczbę UNIKALNYCH typów jednostek,
+		# a nie sumę wszystkich sztuk (np. 3 łuczników liczy się jako 1 typ).
+		var unique_types: Dictionary = {}
+		for u in army:
+			var key = str(u.get("id", u.get("name", "")))
+			unique_types[key] = true
+		_army_label.text = "⚔️ %d" % unique_types.size()
 
 func set_selected(value: bool) -> void:
 	selected = value
