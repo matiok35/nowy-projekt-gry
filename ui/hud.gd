@@ -592,7 +592,6 @@ func setup_custom_popups():
 	build_farma = Button.new()
 	build_grid.add_child(build_farma)
 	build_farma.pressed.connect(func(): execute_build("Farma"))
-	style_single_button(build_farma, "🌾 Buduj Farmę", "Farma")
 	
 	build_pastwisko = Button.new()
 	build_grid.add_child(build_pastwisko)

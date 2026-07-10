@@ -74,10 +74,14 @@ func show_camp_details_menu(pos: Vector2):
 	var r_lbl = Label.new()
 	r_lbl.text = "Zgromadzone surowce:\n💰 Złoto: %d\n🪵 Drewno: %d\n⛏️ Żelazo: %d" % [r.get("gold", 0), r.get("wood", 0), r.get("iron", 0)]
 	r_lbl.add_theme_color_override("font_color", Color(0.9, 0.85, 0.4))
+	r_lbl.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	r_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	res_hbox.add_child(r_lbl)
 	
 	var t_lbl = Label.new()
 	t_lbl.text = "Kontrolowane ziemie:\n"
+	t_lbl.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	t_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	
 	var tiles_owned = []
 	if hud.world_ref and hud.world_ref.get("camp_owned_tiles"):
@@ -127,7 +131,25 @@ func show_camp_details_menu(pos: Vector2):
 	)
 	vbox.add_child(army_btn)
 
-func show_camp_army_menu(enemy_army: Array, win_callback: Callable, lose_callback: Callable):
+func show_camp_army_menu(enemy_army_raw: Array, win_callback: Callable, lose_callback: Callable):
+	var enemy_army = []
+	for u in enemy_army_raw:
+		if typeof(u) == TYPE_DICTIONARY:
+			enemy_army.append(u)
+		else:
+			var found = false
+			if hud.get("unit_data_json") and hud.unit_data_json.has("factions"):
+				for f in hud.unit_data_json["factions"]:
+					if f.has("units"):
+						for ud in f["units"]:
+							if ud.get("id") == u:
+								enemy_army.append(ud)
+								found = true
+								break
+					if found: break
+			if not found:
+				enemy_army.append({"name": str(u), "hp": 0, "dmg": 0})
+
 	camp_details_window.visible = false
 	camp_army_window.visible = true
 	var viewport_size = hud.get_viewport_rect().size
@@ -162,59 +184,74 @@ func show_camp_army_menu(enemy_army: Array, win_callback: Callable, lose_callbac
 	
 	var scroll = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	vbox.add_child(scroll)
 	
-	var grid = GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 15)
-	grid.add_theme_constant_override("v_separation", 15)
-	scroll.add_child(grid)
+	var list_vbox = VBoxContainer.new()
+	list_vbox.add_theme_constant_override("separation", 10)
+	list_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(list_vbox)
 	
 	if enemy_army.is_empty():
-		var no_lbl = Label.new()
-		no_lbl.text = "Brak jednostek (Obozowisko puste)"
-		grid.add_child(no_lbl)
+		var empty_lbl = Label.new()
+		empty_lbl.text = "Brak jednostek w armii."
+		empty_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		list_vbox.add_child(empty_lbl)
 	else:
+		var unique_units = []
+		var unit_counts = {}
+		
 		for unit in enemy_army:
-			var p = PanelContainer.new()
+			var u_id = unit.get("id", unit.get("name", "Unknown"))
+			if not unit_counts.has(u_id):
+				unit_counts[u_id] = 0
+				unique_units.append(unit)
+			unit_counts[u_id] += 1
+
+		for unit in unique_units:
+			var panel = PanelContainer.new()
 			var p_style = StyleBoxFlat.new()
-			p_style.bg_color = Color(0.2, 0.15, 0.15)
-			p_style.set_content_margin_all(8)
-			p.add_theme_stylebox_override("panel", p_style)
-			var h = HBoxContainer.new()
-			p.add_child(h)
+			p_style.bg_color = Color(0.2, 0.2, 0.25)
+			p_style.set_content_margin_all(10)
+			panel.add_theme_stylebox_override("panel", p_style)
 			
-			var img = TextureRect.new()
-			if unit.has("portrait"):
-				var tex = load(unit["portrait"])
-				if tex: img.texture = tex
-			img.custom_minimum_size = Vector2(50, 50)
-			img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			h.add_child(img)
+			var hbox = HBoxContainer.new()
+			hbox.add_theme_constant_override("separation", 15)
+			panel.add_child(hbox)
 			
-			var lbl = Label.new()
-			lbl.text = unit.get("name", "Nieznany") + "\nHP: %d | DMG: %d" % [unit.get("hp", 0), unit.get("dmg", 0)]
-			lbl.add_theme_font_size_override("font_size", 14)
-			h.add_child(lbl)
-			grid.add_child(p)
+			var img_rect = TextureRect.new()
+			var tex = load(unit["portrait"]) if unit.has("portrait") else null
+			if tex: img_rect.texture = tex
+			img_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			img_rect.custom_minimum_size = Vector2(64, 64)
+			img_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			hbox.add_child(img_rect)
 			
-	var attack_btn = Button.new()
-	attack_btn.text = "Rozpocznij Walkę!"
-	attack_btn.custom_minimum_size = Vector2(250, 60)
-	attack_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	var atk_style = StyleBoxFlat.new()
-	atk_style.bg_color = Color(0.8, 0.2, 0.2)
-	atk_style.set_corner_radius_all(8)
-	attack_btn.add_theme_stylebox_override("normal", atk_style)
-	attack_btn.pressed.connect(func():
-		camp_army_window.visible = false
-		hud.simulate_combat(enemy_army, win_callback, lose_callback)
-	)
-	vbox.add_child(attack_btn)
+			var info_vbox = VBoxContainer.new()
+			info_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			info_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+			hbox.add_child(info_vbox)
+			
+			var name_lbl = Label.new()
+			var u_id = unit.get("id", unit.get("name", "Unknown"))
+			var count = unit_counts[u_id]
+			name_lbl.text = unit.get("name", "Nieznany")
+			if count > 1:
+				name_lbl.text += " x" + str(count)
+			if unit.has("role") and unit["role"] != "":
+				name_lbl.text += " (" + unit["role"] + ")"
+			name_lbl.add_theme_font_size_override("font_size", 18)
+			info_vbox.add_child(name_lbl)
+			
+			var stats_lbl = Label.new()
+			stats_lbl.text = "HP: %d | DMG: %d | DEF: %d | RUCH: %d" % [unit.get("hp", 0), unit.get("dmg", 0), unit.get("def", 0), unit.get("move_range", 0)]
+			stats_lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+			info_vbox.add_child(stats_lbl)
+			
+			list_vbox.add_child(panel)
 
 func load_faction_lore() -> Dictionary:
-	var path = "res://data/fractions/lore.json"
+	var path = "res://data/faction_lore.json"
 	if not FileAccess.file_exists(path):
 		return {}
 	var file = FileAccess.open(path, FileAccess.READ)
@@ -225,8 +262,5 @@ func load_faction_lore() -> Dictionary:
 	if parser.parse(txt) == OK:
 		var parsed = parser.get_data()
 		if typeof(parsed) == TYPE_DICTIONARY:
-			var result = {}
-			for f in parsed.get("factions", []):
-				result[f["id"]] = f["lore"]
-			return result
+			return parsed
 	return {}
