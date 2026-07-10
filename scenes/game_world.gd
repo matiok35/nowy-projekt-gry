@@ -108,14 +108,28 @@ func _load_fractions() -> void:
 func generate_camps(count: int) -> void:
 	if fraction_data.is_empty(): return
 	var available_positions = []
+	var start_pos = Vector2(MAP_SIZE / 2, MAP_SIZE / 2)
 	for pos in map_data.keys():
-		if map_data[pos]["building"] == "Brak":
-			available_positions.append(pos)
+		if map_data[pos]["building"] == "Brak" and HexUtils.get_distance(pos, start_pos) >= 5:
+			if pos.x >= 2 and pos.x < MAP_SIZE - 2 and pos.y >= 2 and pos.y < MAP_SIZE - 2:
+				available_positions.append(pos)
 	available_positions.shuffle()
 	var faction_keys = fraction_data.keys()
 	
-	for i in range(min(count, available_positions.size())):
-		var pos = available_positions[i]
+	var spawned_count = 0
+	for pos in available_positions:
+		if spawned_count >= count:
+			break
+			
+		var too_close = false
+		for existing_camp_pos in camps.keys():
+			if HexUtils.get_distance(pos, existing_camp_pos) < 3:
+				too_close = true
+				break
+				
+		if too_close:
+			continue
+			
 		var faction_id = faction_keys[randi() % faction_keys.size()]
 		var faction_info = fraction_data[faction_id]
 		
@@ -123,8 +137,8 @@ func generate_camps(count: int) -> void:
 		var army = []
 		if faction_info.has("units") and faction_info["units"].size() > 0:
 			var units = faction_info["units"]
-			var min_units = camp_level * 2 - 1 # Lvl 1: 1, Lvl 2: 3, Lvl 3: 5
-			var max_units = camp_level * 3     # Lvl 1: 3, Lvl 2: 6, Lvl 3: 9
+			var min_units = camp_level * 2 - 1
+			var max_units = camp_level * 3
 			for u in range(randi_range(min_units, max_units)):
 				var random_unit = units[randi() % units.size()]
 				army.append(random_unit["id"])
@@ -148,6 +162,8 @@ func generate_camps(count: int) -> void:
 		
 		# Claim territory for camp
 		_claim_camp_territory(pos, camp_level)
+		
+		spawned_count += 1
 
 func _claim_camp_territory(center_pos: Vector2, level: int) -> void:
 	var to_claim = [center_pos]
