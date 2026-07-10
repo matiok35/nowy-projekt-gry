@@ -18,6 +18,8 @@ var camp_owned_tiles: Dictionary = {}
 var camp_territory_overlays: Dictionary = {}
 var fraction_data: Dictionary = {}
 var territory_overlays: Dictionary = {}
+var fog_overlays: Dictionary = {}
+var explored_tiles: Dictionary = {}
 var last_expansion_turn: int = 1
 
 var map_container: Node2D
@@ -54,8 +56,12 @@ func _ready() -> void:
 		if cell_to_world.has(start_pos):
 			character.global_position = cell_to_world[start_pos]
 		character.city_creation_requested.connect(_on_character_city_creation_requested)
+		var cam = get_node_or_null("StrategyCamera")
+		if cam:
+			cam.global_position = character.global_position
 	EconomyManager.economy_updated.connect(_on_economy_turn_changed)
 	EconomyManager.unit_training_complete.connect(_on_unit_training_complete)
+	update_fog_of_war()
 
 func generate_map() -> void:
 	var sizes = ["Małe", "Średnie", "Duże"]
@@ -262,6 +268,13 @@ func create_procedural_hex(pos: Vector2, type: String, deposit_size: String) -> 
 	var collision = CollisionPolygon2D.new()
 	collision.polygon = points
 	area.add_child(collision)
+
+	var fog_poly = Polygon2D.new()
+	fog_poly.polygon = points
+	fog_poly.color = Color(0.5, 0.5, 0.5, 0.85) # Szary overlay, 85% opacity
+	fog_poly.z_index = 4 # Poniżej badge (z_index=5), ale nad płytką
+	area.add_child(fog_poly)
+	fog_overlays[pos] = fog_poly
 
 	var label = _create_building_badge(area)
 	label_nodes[pos] = label
@@ -732,6 +745,8 @@ func _handle_left_click_on_tile(pos: Vector2, global_mouse_pos: Vector2) -> void
 	if character and character.selected and cell_to_id.has(pos):
 		var world_path = get_world_path_to(pos)
 		if not world_path.is_empty():
+			var steps = world_path.size() - 1
+			character.moves_left -= steps
 			character.follow_path(world_path)
 
 func build_astar_graph() -> void:
@@ -765,7 +780,7 @@ func get_world_path_to(target_pos: Vector2) -> Array[Vector2]:
 	if not cell_to_id.has(start_pos) or not cell_to_id.has(target_pos): return []
 	var id_path: PackedInt64Array = astar.get_id_path(cell_to_id[start_pos], cell_to_id[target_pos])
 	if id_path.is_empty(): return []
-	var max_steps: int = mini(id_path.size(), character.move_range + 1)
+	var max_steps: int = mini(id_path.size(), character.moves_left + 1)
 	var world_path: Array[Vector2] = []
 	for i in range(max_steps): world_path.append(astar.get_point_position(id_path[i]))
 	return world_path
@@ -792,3 +807,25 @@ func _process(_delta: float) -> void:
 		draw_path_line(get_world_path_to(hovered_pos))
 	else:
 		path_line.clear_points()
+
+func update_fog_of_war() -> void:
+	if not character: return
+	var char_cell = world_to_nearest_cell(character.global_position)
+	for pos in tile_nodes:
+		var dist = HexUtils.get_distance(pos, char_cell)
+		var tile_area = tile_nodes[pos]
+		tile_area.modulate = Color(1.0, 1.0, 1.0, 1.0) # Resetujemy modulate
+		
+		var fog = fog_overlays.get(pos)
+		if not fog: continue
+		
+		if dist <= 4:
+			explored_tiles[pos] = true
+			fog.visible = false
+		elif explored_tiles.has(pos):
+			fog.visible = true
+			fog.color = Color(0.5, 0.5, 0.5, 0.45) # Częściowo przezroczysty szary
+		else:
+			fog.visible = true
+			fog.color = Color(0.5, 0.5, 0.5, 0.85) # Mocno nieprzezroczysty szary
+

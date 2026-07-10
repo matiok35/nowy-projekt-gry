@@ -7,7 +7,8 @@ signal city_creation_requested(global_pos: Vector2)
 const MOVE_SPEED: float = 200.0
 const ARRIVAL_THRESHOLD: float = 4.0
 
-@export var move_range: int = 4
+@export var move_range: int = 5
+var moves_left: int = 5
 
 var selected: bool = false  
 var _sprite: Sprite2D  
@@ -44,6 +45,9 @@ func _ready() -> void:
 
 func _on_economy_updated(_balances: Dictionary, _turn: int, _b: String) -> void:
 	_update_army_label()
+	moves_left = move_range
+	if get_parent() and get_parent().has_method("update_fog_of_war"):
+		get_parent().update_fog_of_war()
 
 # Przypisuje jednostki (dictionary z EconomyManager.player_army) do armii generała.
 func assign_army(units: Array) -> void:
@@ -98,6 +102,8 @@ func _physics_process(_delta: float) -> void:
 	
 	if to_target.length() < ARRIVAL_THRESHOLD:
 		path.pop_front()
+		if get_parent() and get_parent().has_method("update_fog_of_war"):
+			get_parent().update_fog_of_war()
 		if path.is_empty():
 			set_selected(false) 
 	else:
