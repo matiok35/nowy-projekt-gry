@@ -828,4 +828,3 @@ func update_fog_of_war() -> void:
 		else:
 			fog.visible = true
 			fog.color = Color(0.5, 0.5, 0.5, 0.85) # Mocno nieprzezroczysty szary
-
