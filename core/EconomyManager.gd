@@ -2,6 +2,7 @@ extends Node
 # economy_manager.gd (Autoload / Singleton)
 
 signal economy_updated(balances: Dictionary, current_turn: int, selected_build: String)
+signal unit_training_complete(unit: Dictionary)
 
 var current_turn: int = 1
 var player_army: Array = []
@@ -358,7 +359,12 @@ func next_turn(active_buildings_data: Array) -> void:
 		var turns_to_recruit = unit.get("turns_to_recruit", 0)
 		var turns_in_recruitment = unit.get("turns_in_recruitment", 0)
 		if turns_in_recruitment < turns_to_recruit:
-			unit["turns_in_recruitment"] = turns_in_recruitment + 1
+			turns_in_recruitment += 1
+			unit["turns_in_recruitment"] = turns_in_recruitment
+			# Jednostka właśnie zakończyła rekrutację - dopiero teraz jest gotowa do walki
+			# i może zostać automatycznie przypisana do generała.
+			if turns_in_recruitment >= turns_to_recruit:
+				unit_training_complete.emit(unit)
 
 	notify_change()
 

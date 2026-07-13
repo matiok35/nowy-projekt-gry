@@ -17,7 +17,7 @@
         "move_range": 4,
         "attack_range": 1,
         "resistance": "Brak",
-        "portrait": "res://assets/characters/humans/orcWarrior.png",
+        "portrait": "res://assets/characters/orcs/orcWarrior.png",
         "skill_ids": [
           "potezne_uderzenie",
           "skupiony_cios",
@@ -38,7 +38,7 @@
         "move_range": 5,
         "attack_range": 1,
         "resistance": "Brak",
-        "portrait": "res://assets/characters/humans/orcBerserker.png",
+        "portrait": "res://assets/characters/orcs/orcBerserker.png",
         "skill_ids": [
           "prowokacja",
           "berserk",
@@ -59,7 +59,7 @@
         "move_range": 4,
         "attack_range": 2,
         "resistance": "Brak",
-        "portrait": "res://assets/characters/humans/orcShaman.png",
+        "portrait": "res://assets/characters/orcs/orcShaman.png",
         "skill_ids": [
           "sokole_oko",
           "medytacja",
@@ -80,7 +80,7 @@
         "move_range": 3,
         "attack_range": 1,
         "resistance": "Brak",
-        "portrait": "res://assets/characters/humans/OrcShieldman.png",
+        "portrait": "res://assets/characters/orcs/OrcShieldman.png",
         "skill_ids": [
           "prowokacja",
           "tarcza",

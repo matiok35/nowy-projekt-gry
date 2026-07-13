@@ -1,7 +1,7 @@
 extends Node2D
 # game_world.gd (Podpięty pod główny węzeł sceny GameWorld)
 
-const MAP_SIZE = 25
+const MAP_SIZE = 50
 const HEX_RADIUS = 80.0
 
 var hex_width: float = sqrt(3) * HEX_RADIUS
@@ -18,6 +18,8 @@ var camp_owned_tiles: Dictionary = {}
 var camp_territory_overlays: Dictionary = {}
 var fraction_data: Dictionary = {}
 var territory_overlays: Dictionary = {}
+var fog_overlays: Dictionary = {}
+var explored_tiles: Dictionary = {}
 var last_expansion_turn: int = 1
 
 var map_container: Node2D
@@ -54,7 +56,12 @@ func _ready() -> void:
 		if cell_to_world.has(start_pos):
 			character.global_position = cell_to_world[start_pos]
 		character.city_creation_requested.connect(_on_character_city_creation_requested)
+		var cam = get_node_or_null("StrategyCamera")
+		if cam:
+			cam.global_position = character.global_position
 	EconomyManager.economy_updated.connect(_on_economy_turn_changed)
+	EconomyManager.unit_training_complete.connect(_on_unit_training_complete)
+	update_fog_of_war()
 
 func generate_map() -> void:
 	var sizes = ["Małe", "Średnie", "Duże"]
@@ -108,14 +115,28 @@ func _load_fractions() -> void:
 func generate_camps(count: int) -> void:
 	if fraction_data.is_empty(): return
 	var available_positions = []
+	var start_pos = Vector2(MAP_SIZE / 2, MAP_SIZE / 2)
 	for pos in map_data.keys():
-		if map_data[pos]["building"] == "Brak":
-			available_positions.append(pos)
+		if map_data[pos]["building"] == "Brak" and HexUtils.get_distance(pos, start_pos) >= 5:
+			if pos.x >= 2 and pos.x < MAP_SIZE - 2 and pos.y >= 2 and pos.y < MAP_SIZE - 2:
+				available_positions.append(pos)
 	available_positions.shuffle()
 	var faction_keys = fraction_data.keys()
 	
-	for i in range(min(count, available_positions.size())):
-		var pos = available_positions[i]
+	var spawned_count = 0
+	for pos in available_positions:
+		if spawned_count >= count:
+			break
+			
+		var too_close = false
+		for existing_camp_pos in camps.keys():
+			if HexUtils.get_distance(pos, existing_camp_pos) < 3:
+				too_close = true
+				break
+				
+		if too_close:
+			continue
+			
 		var faction_id = faction_keys[randi() % faction_keys.size()]
 		var faction_info = fraction_data[faction_id]
 		
@@ -123,8 +144,8 @@ func generate_camps(count: int) -> void:
 		var army = []
 		if faction_info.has("units") and faction_info["units"].size() > 0:
 			var units = faction_info["units"]
-			var min_units = camp_level * 2 - 1 # Lvl 1: 1, Lvl 2: 3, Lvl 3: 5
-			var max_units = camp_level * 3     # Lvl 1: 3, Lvl 2: 6, Lvl 3: 9
+			var min_units = camp_level * 2 - 1
+			var max_units = camp_level * 3
 			for u in range(randi_range(min_units, max_units)):
 				var random_unit = units[randi() % units.size()]
 				army.append(random_unit["id"])
@@ -148,6 +169,8 @@ func generate_camps(count: int) -> void:
 		
 		# Claim territory for camp
 		_claim_camp_territory(pos, camp_level)
+		
+		spawned_count += 1
 
 func _claim_camp_territory(center_pos: Vector2, level: int) -> void:
 	var to_claim = [center_pos]
@@ -245,6 +268,13 @@ func create_procedural_hex(pos: Vector2, type: String, deposit_size: String) -> 
 	var collision = CollisionPolygon2D.new()
 	collision.polygon = points
 	area.add_child(collision)
+
+	var fog_poly = Polygon2D.new()
+	fog_poly.polygon = points
+	fog_poly.color = Color(0.5, 0.5, 0.5, 0.85) # Szary overlay, 85% opacity
+	fog_poly.z_index = 4 # Poniżej badge (z_index=5), ale nad płytką
+	area.add_child(fog_poly)
+	fog_overlays[pos] = fog_poly
 
 	var label = _create_building_badge(area)
 	label_nodes[pos] = label
@@ -474,6 +504,12 @@ func buy_tile(pos: Vector2) -> void:
 	if EconomyManager.can_afford_tile_purchase():
 		EconomyManager.deduct_tile_purchase_costs()
 		claim_tile(pos)
+
+func _on_unit_training_complete(unit: Dictionary) -> void:
+	# Jednostka kończy rekrutację dopiero po wymaganej liczbie tur - dopiero
+	# wtedy przypisujemy ją automatycznie do generała.
+	if character:
+		character.assign_army([unit])
 
 func _on_economy_turn_changed(_balances: Dictionary, current_turn: int, _selected_build: String) -> void:
 	if current_turn >= last_expansion_turn + 5:
@@ -709,6 +745,8 @@ func _handle_left_click_on_tile(pos: Vector2, global_mouse_pos: Vector2) -> void
 	if character and character.selected and cell_to_id.has(pos):
 		var world_path = get_world_path_to(pos)
 		if not world_path.is_empty():
+			var steps = world_path.size() - 1
+			character.moves_left -= steps
 			character.follow_path(world_path)
 
 func build_astar_graph() -> void:
@@ -742,7 +780,7 @@ func get_world_path_to(target_pos: Vector2) -> Array[Vector2]:
 	if not cell_to_id.has(start_pos) or not cell_to_id.has(target_pos): return []
 	var id_path: PackedInt64Array = astar.get_id_path(cell_to_id[start_pos], cell_to_id[target_pos])
 	if id_path.is_empty(): return []
-	var max_steps: int = mini(id_path.size(), character.move_range + 1)
+	var max_steps: int = mini(id_path.size(), character.moves_left + 1)
 	var world_path: Array[Vector2] = []
 	for i in range(max_steps): world_path.append(astar.get_point_position(id_path[i]))
 	return world_path
@@ -769,3 +807,24 @@ func _process(_delta: float) -> void:
 		draw_path_line(get_world_path_to(hovered_pos))
 	else:
 		path_line.clear_points()
+
+func update_fog_of_war() -> void:
+	if not character: return
+	var char_cell = world_to_nearest_cell(character.global_position)
+	for pos in tile_nodes:
+		var dist = HexUtils.get_distance(pos, char_cell)
+		var tile_area = tile_nodes[pos]
+		tile_area.modulate = Color(1.0, 1.0, 1.0, 1.0) # Resetujemy modulate
+		
+		var fog = fog_overlays.get(pos)
+		if not fog: continue
+		
+		if dist <= 4:
+			explored_tiles[pos] = true
+			fog.visible = false
+		elif explored_tiles.has(pos):
+			fog.visible = true
+			fog.color = Color(0.5, 0.5, 0.5, 0.45) # Częściowo przezroczysty szary
+		else:
+			fog.visible = true
+			fog.color = Color(0.5, 0.5, 0.5, 0.85) # Mocno nieprzezroczysty szary
