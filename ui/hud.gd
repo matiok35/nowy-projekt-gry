@@ -887,7 +887,7 @@ func any_menu_visible() -> bool:
 	return menu_budowania.visible or (tile_info_menu and tile_info_menu.visible) or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) or (tech_tree_menu and tech_tree_menu.tech_tree_window and tech_tree_menu.tech_tree_window.visible) or (culture_tree_menu and culture_tree_menu.culture_tree_window and culture_tree_menu.culture_tree_window.visible) or (barracks_menu and barracks_menu.barracks_window and barracks_menu.barracks_window.visible) or (army_menu and army_menu.army_window and army_menu.army_window.visible) or (help_menu and help_menu.help_window and help_menu.help_window.visible) or (camp_menu and camp_menu.camp_details_window and camp_menu.camp_details_window.visible) or (camp_menu and camp_menu.camp_army_window and camp_menu.camp_army_window.visible) or (settings_menu and settings_menu.settings_window and settings_menu.settings_window.visible) or (tutorial_menu and tutorial_menu.tutorial_window and tutorial_menu.tutorial_window.visible)
 
 func _reposition_menu(menu: Control, base_pos: Vector2):
-	var vbox = menu.get_node("VBoxContainer") as VBoxContainer
+	var vbox = menu.get_node_or_null("VBoxContainer") as VBoxContainer
 	if vbox:
 		vbox.queue_sort()
 		menu.size = vbox.get_combined_minimum_size() + Vector2(24, 24)

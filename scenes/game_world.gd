@@ -401,7 +401,10 @@ func _update_building_label(pos: Vector2, building_name: String, level: int) -> 
 				star.add_theme_color_override("font_color", Color(0.4, 0.4, 0.45, 0.5))
 			level_row.add_child(star)
 
-	badge.visible = true
+	if explored_tiles.has(pos):
+		badge.visible = true
+	else:
+		badge.visible = false
 
 func _get_building_icon(building_name: String) -> String:
 	if building_name.begins_with("Obóz"): return "⛺"
@@ -688,7 +691,7 @@ func _update_tile_texture_for_building(pos: Vector2, building_name: String) -> v
 			texture_path = "res://assets/tiles/hex_temple.png"
 			zoom_factor = 1.20
 		"Baraki": 
-			texture_path = "res://assets/tiles/barracks_tile.png"
+			texture_path = "res://assets/tiles/hex_barracks.png"
 			zoom_factor = 1.20
 	
 	if texture_path != "":
@@ -868,12 +871,21 @@ func update_fog_of_war() -> void:
 		var fog = fog_overlays.get(pos)
 		if not fog: continue
 		
+		var is_explored = false
 		if dist <= 4:
 			explored_tiles[pos] = true
 			fog.visible = false
+			is_explored = true
 		elif explored_tiles.has(pos):
 			fog.visible = true
 			fog.color = Color(0.5, 0.5, 0.5, 0.45) # Częściowo przezroczysty szary
+			is_explored = true
 		else:
 			fog.visible = true
 			fog.color = Color(0.5, 0.5, 0.5, 0.85) # Mocno nieprzezroczysty szary
+			
+		if label_nodes.has(pos) and map_data.has(pos) and map_data[pos].get("building", "Brak") != "Brak":
+			label_nodes[pos].visible = is_explored
+			
+		if camp_territory_overlays.has(pos):
+			camp_territory_overlays[pos].visible = is_explored

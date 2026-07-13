@@ -7,6 +7,10 @@ signal unit_training_complete(unit: Dictionary)
 var current_turn: int = 1
 var player_army: Array = []
 
+var army_bonus_hp: int = 0
+var army_bonus_dmg: int = 0
+var army_bonus_def: int = 0
+
 var resources: Dictionary = {
 	"Złoto": 150,
 	"Drewno": 40,
@@ -420,21 +424,35 @@ func recruit_unit(unit: Dictionary) -> void:
 		new_unit["turns_to_recruit"] = calculate_recruitment_turns(new_unit)
 		new_unit["turns_in_recruitment"] = 0
 		
+		if army_bonus_hp > 0: new_unit["hp"] += army_bonus_hp
+		if army_bonus_dmg > 0: new_unit["dmg"] += army_bonus_dmg
+		if army_bonus_def > 0: new_unit["def"] += army_bonus_def
+		
 		player_army.append(new_unit)
 		notify_change()
 
 func remove_unit(unit: Dictionary) -> void:
 	if unit in player_army:
 		player_army.erase(unit)
+		var cost = calculate_unit_cost(unit)
+		if cost.has("Populacja"):
+			resources["Populacja"] += cost["Populacja"]
 		notify_change()
 
 func clear_army() -> void:
+	for unit in player_army:
+		var cost = calculate_unit_cost(unit)
+		if cost.has("Populacja"):
+			resources["Populacja"] += cost["Populacja"]
 	player_army.clear()
 	notify_change()
 
 func reset() -> void:
 	current_turn = 1
 	player_army = []
+	army_bonus_hp = 0
+	army_bonus_dmg = 0
+	army_bonus_def = 0
 	
 	resources = {
 		"Złoto": 150,
