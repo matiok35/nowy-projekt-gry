@@ -223,10 +223,11 @@ func create_procedural_hex(pos: Vector2, type: String, deposit_size: String) -> 
 		var stretch_y = 1.0
 		if type == "Trawa":
 			sprite_bg.texture = load("res://assets/tiles/hex_grass.png")
-			zoom_factor = 1.25
+			zoom_factor = 1.0
+			stretch_y = 1.05
 		elif type == "Drewno":
-			sprite_bg.texture = load("res://assets/tiles/hex_forest.png")
-			zoom_factor = 1.10
+			sprite_bg.texture = load("res://assets/tiles/forest.png")
+			zoom_factor = 0.85
 		elif type == "Pszenica":
 			sprite_bg.texture = load("res://assets/tiles/hex_wheat.png")
 			zoom_factor = 1.15
@@ -247,6 +248,14 @@ func create_procedural_hex(pos: Vector2, type: String, deposit_size: String) -> 
 		# Skalujemy Sprite proporcjonalnie i dopasowujemy powiększenie do konkretnej tekstury
 		var s = max(hex_width / tex_size.x, hex_height / tex_size.y) * zoom_factor
 		sprite_bg.scale = Vector2(s, s * stretch_y)
+		
+		if type == "Drewno":
+			var grass_bg = Sprite2D.new()
+			grass_bg.texture = load("res://assets/tiles/hex_grass.png")
+			var grass_s = max(hex_width / grass_bg.texture.get_size().x, hex_height / grass_bg.texture.get_size().y) * 1.0
+			grass_bg.scale = Vector2(grass_s, grass_s * 1.05)
+			polygon.add_child(grass_bg)
+			
 		polygon.add_child(sprite_bg)
 	else:
 		polygon.color = _get_tile_color(type)
@@ -258,13 +267,7 @@ func create_procedural_hex(pos: Vector2, type: String, deposit_size: String) -> 
 	area.add_child(sprite)
 	tile_sprites[pos] = sprite
 
-	var line = Line2D.new()
-	var line_points = points.duplicate()
-	line_points.append(points[0])
-	line.points = line_points
-	line.width = 2.0
-	line.default_color = Color(0.05, 0.25, 0.05)
-	area.add_child(line)
+	# Usunięto Line2D odpowiedzialne za rysowanie zielonych ramek między heksami
 
 	var collision = CollisionPolygon2D.new()
 	collision.polygon = points
