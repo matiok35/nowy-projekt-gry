@@ -494,6 +494,55 @@ func claim_tile(pos: Vector2) -> void:
 		tile_area.add_child(overlay)
 		territory_overlays[pos] = overlay
 
+func destroy_camp(pos: Vector2) -> void:
+	if not camps.has(pos):
+		return
+	var camp_data = camps[pos]
+	var level = camp_data.get("level", 1)
+
+	# Zwalniamy dokładnie ten sam zestaw pól, który obóz zajął w
+	# _claim_camp_territory przy swoim powstaniu.
+	var to_release = [pos]
+	if level >= 2:
+		for n in HexUtils.get_neighbors(pos):
+			to_release.append(n)
+	if level >= 3:
+		for n in HexUtils.get_neighbors(pos):
+			for nn in HexUtils.get_neighbors(n):
+				if not to_release.has(nn):
+					to_release.append(nn)
+
+	for tile in to_release:
+		if camp_owned_tiles.has(tile):
+			camp_owned_tiles.erase(tile)
+		if camp_territory_overlays.has(tile):
+			var overlay = camp_territory_overlays[tile]
+			if is_instance_valid(overlay):
+				overlay.queue_free()
+			camp_territory_overlays.erase(tile)
+
+	camps.erase(pos)
+
+	if map_data.has(pos):
+		map_data[pos]["building"] = "Brak"
+		map_data[pos]["level"] = 1
+		map_data[pos]["type"] = "Trawa"
+		map_data[pos]["deposit_size"] = ""
+		if map_data[pos]["fertility"] == 0.0:
+			map_data[pos]["fertility"] = 1.0
+
+	_update_building_label(pos, "Brak", 1)
+
+	# Przywracamy wygląd zwykłej trawy (bez tekstury/sprite'u budynku obozowiska).
+	if tile_nodes.has(pos):
+		var poly = tile_nodes[pos].get_child(0) as Polygon2D
+		if poly:
+			poly.clip_children = CanvasItem.CLIP_CHILDREN_DISABLED
+			for child in poly.get_children():
+				if child is Sprite2D:
+					child.queue_free()
+			poly.color = _get_tile_color("Trawa")
+
 func buy_tile(pos: Vector2) -> void:
 	if owned_tiles.has(pos): return
 	# Nie pozwalamy kupić pola obozowiska wroga ani pola należącego do jego terytorium

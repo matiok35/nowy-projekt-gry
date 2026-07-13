@@ -20,7 +20,8 @@ var resources: Dictionary = {
 	"Nauka": 2, 
 	"Kultura": 1,
 	"Populacja": 1,
-	"Maks_Populacja": 5
+	"Maks_Populacja": 5,
+	"Głoduje": false
 }
 
 var max_tech_points: float = 100.0
@@ -264,10 +265,6 @@ func next_turn(active_buildings_data: Array) -> void:
 	var food_consumption = resources["Populacja"] * 1
 	resources["Jedzenie"] -= food_consumption
 	
-	if current_turn % 3 == 0:
-		if resources["Jedzenie"] > 0 and resources["Populacja"] < resources["Maks_Populacja"]:
-			resources["Populacja"] += 1
-	
 	var turn_science = 0
 	var turn_culture = 0
 	
@@ -332,11 +329,24 @@ func next_turn(active_buildings_data: Array) -> void:
 		resources["Kultura"] + turn_culture
 	)
 
+	# --- GŁÓD / NADWYŻKA JEDZENIA -------------------------------------------
+	# "Głoduje" ustawiamy PO naliczeniu produkcji budynków tej tury (żeby np.
+	# świeżo wybudowana farma mogła jeszcze uratować sytuację w tej samej turze).
+	resources["Głoduje"] = resources["Jedzenie"] <= 0
+
 	if resources["Jedzenie"] < 0:
 		resources["Jedzenie"] = 0
 		resources["Złoto"] = max(0, resources["Złoto"] - 5)
 		if resources["Populacja"] > 1 and randf() < 0.25:
 			resources["Populacja"] -= 1
+	elif current_turn % 3 == 0:
+		# Populacja rośnie WYŁĄCZNIE gdy jest wyraźna nadwyżka jedzenia
+		# (więcej niż 2x bieżące zapotrzebowanie), a nie przy byle dodatnim
+		# stanie magazynu — inaczej populacja zawsze przegania produkcję
+		# i głód jest nieunikniony.
+		var surplus_needed = resources["Populacja"] * 2
+		if resources["Jedzenie"] > surplus_needed and resources["Populacja"] < resources["Maks_Populacja"]:
+			resources["Populacja"] += 1
 
 	if current_research != "":
 		research_turns_left -= 1
