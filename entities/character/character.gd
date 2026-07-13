@@ -9,12 +9,12 @@ const ARRIVAL_THRESHOLD: float = 4.0
 
 @export var move_range: int = 5
 var moves_left: int = 5
+var _last_turn: int = 1 # POPRAWKA: Śledzenie ostatniej tury zapobiegające exploitowi ruchu
 
 var selected: bool = false  
 var _sprite: Sprite2D  
 var path: Array[Vector2] = []
 
-# Armia przypisana do generała (lista referencji do jednostek z EconomyManager.player_army)
 var army: Array = []
 var _army_label: Label
 
@@ -43,20 +43,23 @@ func _ready() -> void:
 	if not EconomyManager.economy_updated.is_connected(_on_economy_updated):
 		EconomyManager.economy_updated.connect(_on_economy_updated)
 
-func _on_economy_updated(_balances: Dictionary, _turn: int, _b: String) -> void:
+func _on_economy_updated(_balances: Dictionary, current_turn: int, _b: String) -> void:
 	_update_army_label()
-	moves_left = move_range
+	
+	# POPRAWKA: moves_left odnawia się tylko wtedy, gdy faktycznie nastąpiła nowa tura
+	if current_turn > _last_turn:
+		_last_turn = current_turn
+		moves_left = move_range
+		
 	if get_parent() and get_parent().has_method("update_fog_of_war"):
 		get_parent().update_fog_of_war()
 
-# Przypisuje jednostki (dictionary z EconomyManager.player_army) do armii generała.
 func assign_army(units: Array) -> void:
 	for u in units:
 		if not army.has(u):
 			army.append(u)
 	_update_army_label()
 
-# Usuwa pojedynczą jednostkę z armii generała.
 func unassign_unit(unit) -> void:
 	if army.has(unit):
 		army.erase(unit)
@@ -84,7 +87,6 @@ func _update_army_label() -> void:
 func set_selected(value: bool) -> void:
 	selected = value
 	if _sprite:
-		# Highlight character when selected by brightening the sprite
 		_sprite.modulate = Color(1.5, 1.5, 1.0) if selected else Color(1.0, 1.0, 1.0)
 
 func is_selected() -> bool:
@@ -112,7 +114,6 @@ func _physics_process(_delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		if event.double_click:
-			# Zwiększono dystans kliknięcia do 35 pikseli, dopasowując do większych kafelków
 			if get_global_mouse_position().distance_to(global_position) < 35.0:
 				city_creation_requested.emit(global_position)
 				get_viewport().set_input_as_handled()

@@ -1,10 +1,7 @@
 class_name HexUtils
 extends RefCounted
 # hex_utils.gd
-# Statyczne funkcje matematyki heksagonalnej, wydzielone z game_world.gd,
-# żeby logika siatki nie mieszała się z logiką sceny/gry.
-# Konwencja współrzędnych: "offset coordinates" (pos.x, pos.y), rząd nieparzysty przesunięty.
- 
+
 static func get_neighbors(pos: Vector2) -> Array[Vector2]:
 	var x: int = int(pos.x)
 	var y: int = int(pos.y)

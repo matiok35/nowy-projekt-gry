@@ -52,7 +52,6 @@ func _ready() -> void:
 		path_line.default_color = Color(1.0, 0.85, 0.0, 0.85)
 	if character:
 		var start_pos = Vector2(MAP_SIZE / 2, MAP_SIZE / 2)
-		if map_data.has(start_pos): map_data[start_pos]["type"] = "Trawa"
 		if cell_to_world.has(start_pos):
 			character.global_position = cell_to_world[start_pos]
 		character.city_creation_requested.connect(_on_character_city_creation_requested)
@@ -65,16 +64,23 @@ func _ready() -> void:
 
 func generate_map() -> void:
 	var sizes = ["Małe", "Średnie", "Duże"]
+	var start_pos = Vector2(MAP_SIZE / 2, MAP_SIZE / 2)
+	
 	for x in range(MAP_SIZE):
 		for y in range(MAP_SIZE):
 			var pos = Vector2(x, y)
 			var type = "Trawa"
-			var rand = randf()
-			if rand < 0.04: type = "Drewno"
-			elif rand < 0.07: type = "Żelazo"
-			elif rand < 0.09: type = "Węgiel"
-			elif rand < 0.14: type = "Pszenica"
-			elif rand < 0.19: type = "Bydło"
+			
+			# POPRAWKA: Enforce Trawa na polu startowym ZANIM wygenerujemy heksa proceduralnego
+			if pos == start_pos:
+				type = "Trawa"
+			else:
+				var rand = randf()
+				if rand < 0.04: type = "Drewno"
+				elif rand < 0.07: type = "Żelazo"
+				elif rand < 0.09: type = "Węgiel"
+				elif rand < 0.14: type = "Pszenica"
+				elif rand < 0.19: type = "Bydło"
 
 			var deposit_size = ""
 			var fertility = 0.0

@@ -25,7 +25,7 @@ var resources: Dictionary = {
 }
 
 var max_tech_points: float = 100.0
-var max_culture_points: float = 100.0
+var max_culture_points: float = 150.0 # POPRAWKA: Zwiększono limit, aby Renesans (koszt 110) był osiągalny
 
 var building_costs: Dictionary = {
 	"Chata Drwala": {"Złoto": 30, "Drewno": 10},
@@ -105,7 +105,6 @@ var culture_tree: Dictionary = {
 		"grid_coords": Vector2(0,1),
 		"icon": "🏛️"
 	},
-
 	"Sztuka": {
 		"research_cost": 35,
 		"research_time": 4,
@@ -115,7 +114,6 @@ var culture_tree: Dictionary = {
 		"grid_coords": Vector2(1,0),
 		"icon": "🎨"
 	},
-
 	"Filozofia": {
 		"research_cost": 40,
 		"research_time": 4,
@@ -125,7 +123,6 @@ var culture_tree: Dictionary = {
 		"grid_coords": Vector2(1,2),
 		"icon": "🧠"
 	},
-
 	"Teatr": {
 		"research_cost": 55,
 		"research_time": 6,
@@ -135,7 +132,6 @@ var culture_tree: Dictionary = {
 		"grid_coords": Vector2(2,0),
 		"icon": "🎭"
 	},
-
 	"Edukacja": {
 		"research_cost": 70,
 		"research_time": 6,
@@ -145,7 +141,6 @@ var culture_tree: Dictionary = {
 		"grid_coords": Vector2(2,2),
 		"icon": "📚"
 	},
-
 	"Renesans": {
 		"research_cost": 110,
 		"research_time": 10,
@@ -169,7 +164,7 @@ func get_building_tooltip(building_name: String) -> String:
 		"Farma": text += "• Wymaga: Pszenica\n"
 		"Pastwisko": text += "• Wymaga: Bydło\n"
 		"Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia", "Baraki":
-			text += "• Wymaga: Trawa\n"
+			text += "• Wymaga: Trawa (lub nadpisanie dowolnego złoża)\n"
 
 	text += "\nKoszt poziomu 1\n"
 	for resource in building_costs[building_name]:
@@ -184,8 +179,9 @@ func can_afford_and_place(building_name: String, tile_type: String) -> bool:
 	if building_name == "Kopalnia Węgla" and tile_type != "Węgiel": return false
 	if building_name == "Farma" and tile_type != "Pszenica": return false
 	if building_name == "Pastwisko" and tile_type != "Bydło": return false
-	if building_name in ["Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia", "Baraki"] and tile_type != "Trawa": return false
-
+	
+	# POPRAWKA: Usunięto sztywne blokowanie typów innych niż Trawa dla budynków miejskich,
+	# aby kod niszczenia złóż w game_world.gd stał się osiągalny.
 	var costs = building_costs[building_name]
 	for res in costs:
 		if resources.get(res, 0) < costs[res]:
@@ -231,7 +227,6 @@ func start_research(tech_name:String):
 		return
 
 	var tech = technology_tree[tech_name]
-
 	if resources["Nauka"] < tech["research_cost"]:
 		return
 
@@ -245,7 +240,6 @@ func start_culture_research(tech_name:String):
 		return
 
 	var tech = culture_tree[tech_name]
-
 	if resources["Kultura"] < tech["research_cost"]:
 		return
 
@@ -315,7 +309,7 @@ func next_turn(active_buildings_data: Array) -> void:
 			"Świątynia":
 				turn_culture += 3 * b_level
 			"Baraki":
-				pass # Na razie brak logiki
+				pass
 
 	var total_science = 1 + turn_science
 	
@@ -329,9 +323,6 @@ func next_turn(active_buildings_data: Array) -> void:
 		resources["Kultura"] + turn_culture
 	)
 
-	# --- GŁÓD / NADWYŻKA JEDZENIA -------------------------------------------
-	# "Głoduje" ustawiamy PO naliczeniu produkcji budynków tej tury (żeby np.
-	# świeżo wybudowana farma mogła jeszcze uratować sytuację w tej samej turze).
 	resources["Głoduje"] = resources["Jedzenie"] <= 0
 
 	if resources["Jedzenie"] < 0:
@@ -340,10 +331,6 @@ func next_turn(active_buildings_data: Array) -> void:
 		if resources["Populacja"] > 1 and randf() < 0.25:
 			resources["Populacja"] -= 1
 	elif current_turn % 3 == 0:
-		# Populacja rośnie WYŁĄCZNIE gdy jest wyraźna nadwyżka jedzenia
-		# (więcej niż 2x bieżące zapotrzebowanie), a nie przy byle dodatnim
-		# stanie magazynu — inaczej populacja zawsze przegania produkcję
-		# i głód jest nieunikniony.
 		var surplus_needed = resources["Populacja"] * 2
 		if resources["Jedzenie"] > surplus_needed and resources["Populacja"] < resources["Maks_Populacja"]:
 			resources["Populacja"] += 1
@@ -352,22 +339,18 @@ func next_turn(active_buildings_data: Array) -> void:
 		research_turns_left -= 1
 		if research_turns_left <= 0:
 			technology_tree[current_research]["unlocked"] = true
-			
 			match current_research:
 				"Industrializacja":
 					max_tech_points += 25
-			
 			current_research = ""
 			
 	if current_culture_research != "":
 		culture_turns_left -= 1
 		if culture_turns_left <= 0:
 			culture_tree[current_culture_research]["unlocked"] = true
-			
 			match current_culture_research:
 				"Renesans":
 					max_culture_points += 25
-					
 			current_culture_research = ""
 
 	for unit in player_army:
@@ -376,8 +359,6 @@ func next_turn(active_buildings_data: Array) -> void:
 		if turns_in_recruitment < turns_to_recruit:
 			turns_in_recruitment += 1
 			unit["turns_in_recruitment"] = turns_in_recruitment
-			# Jednostka właśnie zakończyła rekrutację - dopiero teraz jest gotowa do walki
-			# i może zostać automatycznie przypisana do generała.
 			if turns_in_recruitment >= turns_to_recruit:
 				unit_training_complete.emit(unit)
 
@@ -396,7 +377,6 @@ func calculate_unit_cost(unit: Dictionary) -> Dictionary:
 	var hp = unit.get("hp", 0)
 	var dmg = unit.get("dmg", 0)
 	var def = unit.get("def", 0)
-	
 	return {
 		"Złoto": int((hp + dmg + def) * 1.5),
 		"Żelazo": int((dmg * 2.0) + (def * 1.0)),
@@ -406,7 +386,6 @@ func calculate_unit_cost(unit: Dictionary) -> Dictionary:
 
 func can_recruit_unit(unit: Dictionary) -> bool:
 	var cost = calculate_unit_cost(unit)
-	# Rezerwujemy minimum 1 mieszkańca w mieście - werbunek nie może wyludnić miasta do zera.
 	if resources.get("Populacja", 0) - cost.get("Populacja", 0) < 1:
 		return false
 	for res in cost:
@@ -467,7 +446,7 @@ func reset() -> void:
 	}
 	
 	max_tech_points = 100.0
-	max_culture_points = 100.0
+	max_culture_points = 150.0
 	
 	current_research = ""
 	research_turns_left = 0
