@@ -285,6 +285,7 @@ func next_turn(active_buildings_data: Array) -> void:
 					gold_bonus += 10 * b_level
 				resources["Złoto"] += gold_bonus
 				resources["Jedzenie"] += 2 * b_level
+				resources["Drewno"] += 2 * b_level
 			"Chata Drwala":
 				resources["Drewno"] += int(8 * size_modifier * b_level)
 			"Kopalnia Żelaza":
@@ -420,3 +421,34 @@ func remove_unit(unit: Dictionary) -> void:
 func clear_army() -> void:
 	player_army.clear()
 	notify_change()
+
+func reset() -> void:
+	current_turn = 1
+	player_army = []
+	
+	resources = {
+		"Złoto": 150,
+		"Drewno": 40,
+		"Żelazo": 0,
+		"Węgiel": 0,
+		"Jedzenie": 10,
+		"Nauka": 2, 
+		"Kultura": 1,
+		"Populacja": 1,
+		"Maks_Populacja": 5
+	}
+	
+	max_tech_points = 100.0
+	max_culture_points = 100.0
+	
+	current_research = ""
+	research_turns_left = 0
+	
+	current_culture_research = ""
+	culture_turns_left = 0
+	
+	for tech in technology_tree.values():
+		tech["unlocked"] = false
+		
+	for tech in culture_tree.values():
+		tech["unlocked"] = false

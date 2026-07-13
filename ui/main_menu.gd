@@ -84,6 +84,7 @@ func _on_random_button_pressed() -> void:
 	randomize()
 	GameSettings.current_seed = randi()
 	GameSettings.use_custom_seed = true
+	EconomyManager.reset()
 	get_tree().change_scene_to_file("res://scenes/game_world.tscn")
 
 func _on_seed_button_pressed() -> void:
@@ -97,4 +98,5 @@ func _on_seed_button_pressed() -> void:
 		randomize()
 		GameSettings.current_seed = randi()
 	GameSettings.use_custom_seed = true
+	EconomyManager.reset()
 	get_tree().change_scene_to_file("res://scenes/game_world.tscn")

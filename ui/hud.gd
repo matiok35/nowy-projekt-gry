@@ -40,6 +40,7 @@ var active_tile_pos: Vector2 = Vector2.ZERO
 var active_tile_type: String = ""
 var last_mouse_pos: Vector2 = Vector2.ZERO
 var confirm_dialog: ConfirmationDialog
+var wood_warning_dialog: ConfirmationDialog
 var pending_building: String = ""
 
 var barracks_menu: BarracksMenu
@@ -662,6 +663,12 @@ func setup_custom_popups():
 	confirm_dialog.dialog_text = "Czy na pewno chcesz postawić ten budynek na tym polu?\nPostawienie go tutaj bezpowrotnie zniszczy obecne złoże i zamieni pole w trawę."
 	confirm_dialog.confirmed.connect(_on_confirm_build_on_resource)
 	add_child(confirm_dialog)
+	
+	wood_warning_dialog = ConfirmationDialog.new()
+	wood_warning_dialog.title = "Uwaga: Mało drewna!"
+	wood_warning_dialog.dialog_text = "Wybudowanie tego budynku obniży Twój zapas drewna poniżej 10.\nBędziesz polegał tylko na powolnym, pasywnym przychodzie z Centrum Miasta.\nCzy na pewno chcesz kontynuować?"
+	wood_warning_dialog.confirmed.connect(_on_confirm_wood_warning)
+	add_child(wood_warning_dialog)
 func _format_cost_dict(cost: Dictionary) -> String:
 	var parts: Array = []
 	for res in cost:
@@ -871,12 +878,30 @@ func update_button_state(btn: Button, b_name: String, tile_type: String):
 	btn.modulate.a = 1.0 if can_place else 0.35
 
 func execute_build(building_name: String) -> void:
+	var costs = EconomyManager.building_costs.get(building_name, {})
+	var wood_cost = costs.get("Drewno", 0)
+	var remaining_wood = EconomyManager.resources.get("Drewno", 0) - wood_cost
+	
+	if wood_cost > 0 and remaining_wood < 10 and building_name != "Chata Drwala":
+		pending_building = building_name
+		wood_warning_dialog.popup_centered()
+		hide_all_menus()
+		return
+
 	if active_tile_type != "Trawa" and building_name in ["Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia", "Baraki"]:
 		pending_building = building_name
 		confirm_dialog.popup_centered()
 		hide_all_menus()
 	else:
 		_do_execute_build(building_name)
+
+func _on_confirm_wood_warning() -> void:
+	if pending_building != "":
+		if active_tile_type != "Trawa" and pending_building in ["Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia", "Baraki"]:
+			confirm_dialog.popup_centered()
+		else:
+			_do_execute_build(pending_building)
+			pending_building = ""
 
 func _on_confirm_build_on_resource() -> void:
 	if pending_building != "":
