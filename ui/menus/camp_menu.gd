@@ -123,10 +123,12 @@ func show_camp_details_menu(pos: Vector2):
 			if hud.world_ref and hud.world_ref.has_method("destroy_camp"):
 				hud.world_ref.destroy_camp(pos)
 			camp_details_window.visible = false
-			hud.execute_battle_rewards(camp_data)
+			if hud.has_method("execute_battle_rewards"):
+				hud.execute_battle_rewards(camp_data)
 		, func():
 			camp_details_window.visible = false
-			hud.handle_battle_loss()
+			if hud.has_method("handle_battle_loss"):
+				hud.handle_battle_loss()
 		)
 	)
 	vbox.add_child(army_btn)

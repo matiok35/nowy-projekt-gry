@@ -61,6 +61,8 @@ var culture_bar: ProgressBar
 var tech_label: Label
 var tech_bar: ProgressBar
 
+var hunger_label: Label
+
 var help_menu: HelpMenu
 
 var settings_menu: SettingsMenu
@@ -96,6 +98,7 @@ func _ready():
 	
 	setup_points_panel()
 	setup_resources_header()
+	setup_hunger_label()
 	setup_custom_popups()
 	tech_tree_menu = TechTreeMenu.new(self)
 	tech_tree_menu.setup_tech_tree_ui()
@@ -217,6 +220,28 @@ func _on_battle_button_pressed() -> void:
 	# TODO: Tutaj zostanie podpięta logika rozpoczynania walki z obozowiskiem.
 	# Na razie przycisk celowo nic nie robi.
 	pass
+
+# --- PROWIZORYCZNA OBSŁUGA WYNIKU WALKI ------------------------------------
+# Te dwie funkcje istnieją po to, żeby callbacki zwycięstwa/porażki w
+# camp_menu.gd (show_camp_army_menu) miały co wywołać zamiast wołać
+# nieistniejące metody i crashować grę. To NIE jest docelowy system walki —
+# gdy powstanie prawdziwe rozstrzyganie starć, te funkcje należy zastąpić.
+func execute_battle_rewards(camp_data: Dictionary) -> void:
+	var loot = camp_data.get("resources", {})
+	EconomyManager.resources["Złoto"] += loot.get("gold", 0)
+	EconomyManager.resources["Drewno"] += loot.get("wood", 0)
+	EconomyManager.resources["Żelazo"] += loot.get("iron", 0)
+	EconomyManager.notify_change()
+
+func handle_battle_loss() -> void:
+	if world_ref and world_ref.get("character") and world_ref.character:
+		var gen = world_ref.character
+		var losses = int(ceil(gen.army.size() / 2.0))
+		for i in range(losses):
+			if gen.army.is_empty(): break
+			var lost_unit = gen.army[0]
+			gen.unassign_unit(lost_unit)
+			EconomyManager.remove_unit(lost_unit)
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_TAB:
@@ -410,6 +435,30 @@ func setup_resources_header():
 		
 		resources_container.add_child(hbox)
 		resource_labels[res_name] = lbl
+
+# Ostrzeżenie o głodzie — pokazywane pod górnym paskiem zasobów, gdy
+# EconomyManager zgłosi w balances["Głoduje"] == true (jedzenie spadło do 0).
+func setup_hunger_label():
+	hunger_label = Label.new()
+	hunger_label.name = "HungerWarningLabel"
+	hunger_label.visible = false
+	hunger_label.text = "⚠️ Głód! Jedzenie się skończyło — populacja może zacząć wymierać, a Złoto topnieje (-5/turę)."
+	hunger_label.add_theme_font_size_override("font_size", 14)
+	hunger_label.add_theme_color_override("font_color", Color(1.0, 0.35, 0.3, 1.0))
+	hunger_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
+	hunger_label.add_theme_constant_override("shadow_offset_x", 1)
+	hunger_label.add_theme_constant_override("shadow_offset_y", 1)
+	hunger_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hunger_label.anchor_left = 0.0
+	hunger_label.anchor_right = 1.0
+	hunger_label.anchor_top = 0.0
+	hunger_label.anchor_bottom = 0.0
+	hunger_label.offset_left = 10
+	hunger_label.offset_right = -10
+	hunger_label.offset_top = 58
+	hunger_label.offset_bottom = 82
+	hunger_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	add_child(hunger_label)
 
 var build_grid: GridContainer
 
@@ -926,6 +975,9 @@ func _on_economy_updated(balances: Dictionary, turn: int, _selected_build: Strin
 			balances["Drewno"], balances["Żelazo"], balances["Węgiel"], balances["Jedzenie"], balances["Złoto"], balances.get("Populacja", 1), balances.get("Maks_Populacja", 5)
 		]
 	turn_button.text = "Następna tura (%d)" % turn
+
+	if hunger_label:
+		hunger_label.visible = balances.get("Głoduje", false)
 	
 	if culture_label and tech_label:
 		var c_val = balances.get("Kultura", 0)
