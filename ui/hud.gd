@@ -710,12 +710,16 @@ func setup_custom_popups():
 	confirm_dialog = ConfirmationDialog.new()
 	confirm_dialog.title = "Uwaga: Zniszczenie Złoża!"
 	confirm_dialog.dialog_text = "Czy na pewno chcesz postawić ten budynek na tym polu?\nPostawienie go tutaj bezpowrotnie zniszczy obecne złoże i zamieni pole w trawę."
+	confirm_dialog.ok_button_text = "Tak"
+	confirm_dialog.cancel_button_text = "Anuluj"
 	confirm_dialog.confirmed.connect(_on_confirm_build_on_resource)
 	add_child(confirm_dialog)
 	
 	wood_warning_dialog = ConfirmationDialog.new()
 	wood_warning_dialog.title = "Uwaga: Mało drewna!"
 	wood_warning_dialog.dialog_text = "Wybudowanie tego budynku obniży Twój zapas drewna poniżej 10.\nBędziesz polegał tylko na powolnym, pasywnym przychodzie z Centrum Miasta.\nCzy na pewno chcesz kontynuować?"
+	wood_warning_dialog.ok_button_text = "Tak"
+	wood_warning_dialog.cancel_button_text = "Anuluj"
 	wood_warning_dialog.confirmed.connect(_on_confirm_wood_warning)
 	add_child(wood_warning_dialog)
 func _format_cost_dict(cost: Dictionary) -> String:
@@ -724,7 +728,7 @@ func _format_cost_dict(cost: Dictionary) -> String:
 		parts.append("%d %s" % [cost[res], res])
 	return ", ".join(parts)
 
-func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String, building_name: String, building_level: int, is_owned: bool, borders_owned: bool, deposit_size: String = "", fertility: float = 0.0) -> void:
+func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String, building_name: String, building_level: int, is_owned: bool, borders_owned: bool, deposit_size: String = "") -> void:
 	hide_all_menus()
 	active_tile_pos = tile_pos
 	active_tile_type = tile_type
@@ -760,7 +764,7 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 				var preview_cost = EconomyManager.get_upgrade_cost(building_name, building_level)
 				info_label.text += "\n⬆️ Koszt ulepszenia: %s" % _format_cost_dict(preview_cost)
 	elif tile_type == "Trawa":
-		info_label.text = "🌱 Typ: %s\n✨ Żyzność pola: %d%%" % [tile_type, int(fertility * 100)]
+		info_label.text = "🌱 Typ: %s" % [tile_type]
 	else:
 		info_label.text = "⛰️ Typ: Złoże %s\n📦 Wielkość: %s" % [tile_type, deposit_size]
 
@@ -1076,7 +1080,7 @@ func style_context_popup():
 		tab_btn.add_theme_color_override("font_color", DF_GOLD_TEXT)
 
 func style_individual_buttons():
-	style_single_button(build_chata, "Tartak", "Chata Drwala")
+	style_single_button(build_chata, "Chata Drwala", "Chata Drwala")
 	style_single_button(build_iron, "Kopalnia Żelaza", "Kopalnia Żelaza")
 	style_single_button(build_coal, "Kopalnia Węgla", "Kopalnia Węgla")
 	style_single_button(build_farma, "Farma", "Farma")

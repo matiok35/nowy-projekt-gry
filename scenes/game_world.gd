@@ -83,19 +83,14 @@ func generate_map() -> void:
 				elif rand < 0.19: type = "Bydło"
 
 			var deposit_size = ""
-			var fertility = 0.0
-
-			if type == "Trawa":
-				fertility = snapped(randf_range(0.5, 1.5), 0.1)
-			else:
+			if type != "Trawa":
 				deposit_size = sizes[randi() % sizes.size()]
 
 			map_data[pos] = {
 				"type": type,
 				"building": "Brak",
 				"level": 1,
-				"deposit_size": deposit_size,
-				"fertility": fertility
+				"deposit_size": deposit_size
 			}
 			create_procedural_hex(pos, type, deposit_size)
 
@@ -534,8 +529,6 @@ func destroy_camp(pos: Vector2) -> void:
 		map_data[pos]["level"] = 1
 		map_data[pos]["type"] = "Trawa"
 		map_data[pos]["deposit_size"] = ""
-		if map_data[pos]["fertility"] == 0.0:
-			map_data[pos]["fertility"] = 1.0
 
 	_update_building_label(pos, "Brak", 1)
 
@@ -620,7 +613,6 @@ func build_on_tile(pos: Vector2, building_name: String) -> void:
 	if building_name in BUILDINGS_RESET_TILE_TO_GRASS and tile["type"] != "Trawa":
 		tile["type"] = "Trawa"
 		tile["deposit_size"] = ""
-		tile["fertility"] = 1.0
 
 	tile["building"] = building_name
 	tile["level"] = 1
@@ -735,8 +727,7 @@ func get_active_buildings_list() -> Array:
 			list.append({
 				"name": tile["building"],
 				"level": tile["level"],
-				"deposit_size": tile["deposit_size"],
-				"fertility": tile["fertility"]
+				"deposit_size": tile["deposit_size"]
 			})
 	return list
 
@@ -792,7 +783,7 @@ func _show_context_menu_for(pos: Vector2) -> void:
 	if hud_node and hud_node.has_method("show_context_menu"):
 		hud_node.show_context_menu(
 			screen_mouse_pos, pos, tile["type"], tile["building"], tile.get("level", 1),
-			is_owned, borders_owned, tile["deposit_size"], tile["fertility"]
+			is_owned, borders_owned, tile["deposit_size"]
 		)
 
 func _handle_left_click_on_tile(pos: Vector2, global_mouse_pos: Vector2) -> void:
