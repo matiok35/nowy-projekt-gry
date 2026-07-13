@@ -114,7 +114,18 @@ func _populate_barracks_units(faction: Dictionary):
 			info_vbox.add_child(name_lbl)
 			
 			var stats_lbl = Label.new()
-			stats_lbl.text = "HP: %d | DMG: %d | DEF: %d | RUCH: %d" % [unit.get("hp", 0), unit.get("dmg", 0), unit.get("def", 0), unit.get("move_range", 0)]
+			var base_hp = unit.get("hp", 0)
+			var base_dmg = unit.get("dmg", 0)
+			var base_def = unit.get("def", 0)
+			var b_hp = EconomyManager.army_bonus_hp
+			var b_dmg = EconomyManager.army_bonus_dmg
+			var b_def = EconomyManager.army_bonus_def
+			
+			var hp_text = str(base_hp) if b_hp == 0 else "%d(+%d)" % [base_hp + b_hp, b_hp]
+			var dmg_text = str(base_dmg) if b_dmg == 0 else "%d(+%d)" % [base_dmg + b_dmg, b_dmg]
+			var def_text = str(base_def) if b_def == 0 else "%d(+%d)" % [base_def + b_def, b_def]
+			
+			stats_lbl.text = "HP: %s | DMG: %s | DEF: %s | RUCH: %d" % [hp_text, dmg_text, def_text, unit.get("move_range", 0)]
 			stats_lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 			info_vbox.add_child(stats_lbl)
 			
@@ -141,10 +152,11 @@ func _populate_barracks_units(faction: Dictionary):
 			vbox.add_child(panel)
 
 func upgrade_barracks_units() -> void:
-	if hud.unit_data_json and hud.unit_data_json.has("factions"):
-		for faction in hud.unit_data_json["factions"]:
-			if faction.has("units"):
-				for unit in faction["units"]:
-					if unit.has("hp"): unit["hp"] += 5
-					if unit.has("dmg"): unit["dmg"] += 2
-					if unit.has("def"): unit["def"] += 1
+	EconomyManager.army_bonus_hp += 5
+	EconomyManager.army_bonus_dmg += 2
+	EconomyManager.army_bonus_def += 1
+	
+	for unit in EconomyManager.player_army:
+		if unit.has("hp"): unit["hp"] += 5
+		if unit.has("dmg"): unit["dmg"] += 2
+		if unit.has("def"): unit["def"] += 1
