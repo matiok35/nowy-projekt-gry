@@ -489,8 +489,9 @@ func setup_custom_popups():
 	close_btn.pressed.connect(func(): hide_all_menus())
 	_style_df_button(close_btn)
 	
-	header_hbox.add_child(Control.new()) # Spacer
-	header_hbox.get_child(0).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var spacer = Control.new()
+	spacer.custom_minimum_size = Vector2(30, 30)
+	header_hbox.add_child(spacer)
 	header_hbox.add_child(title_label)
 	header_hbox.add_child(close_btn)
 	vbox.add_child(header_hbox)
@@ -1101,9 +1102,8 @@ func style_single_button(btn: Button, display_name: String, building_name := "")
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn.add_child(vbox)
 	
-	var default_icon = null
 	var icon = TextureRect.new()
-	icon.texture = default_icon
+	icon.texture = _get_icon_for_building(building_name)
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.custom_minimum_size = Vector2(40, 40)
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -1148,6 +1148,24 @@ func style_single_button(btn: Button, display_name: String, building_name := "")
 	
 	if building_name != "":
 		btn.tooltip_text = EconomyManager.get_building_tooltip(building_name)
+
+func _get_icon_for_building(b_name: String) -> Texture2D:
+	var path = ""
+	match b_name:
+		"Centrum Miasta": path = "res://assets/tiles/city_center.png"
+		"Dom mieszkalny": path = "res://assets/tiles/residential_house.png"
+		"Chata Drwala": path = "res://assets/tiles/sawmill.png"
+		"Kopalnia Żelaza": path = "res://assets/tiles/iron_mine.png"
+		"Kopalnia Węgla": path = "res://assets/tiles/coal_mine.png"
+		"Farma": path = "res://assets/tiles/farm.png"
+		"Pastwisko": path = "res://assets/tiles/pasture.png"
+		"Laboratorium": path = "res://assets/tiles/lab.png"
+		"Warsztat": path = "res://assets/tiles/workshop.png"
+		"Biblioteka": path = "res://assets/tiles/library.png"
+		"Świątynia": path = "res://assets/tiles/temple.png"
+		"Baraki": path = "res://assets/tiles/barracks.png"
+	if path != "": return load(path)
+	return null
 
 func load_unit_data():
 	unit_data_json = {"factions": []}
