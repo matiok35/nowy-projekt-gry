@@ -229,27 +229,24 @@ func create_procedural_hex(pos: Vector2, type: String, deposit_size: String) -> 
 			sprite_bg.texture = load("res://assets/tiles/forest.png")
 			zoom_factor = 0.85
 		elif type == "Pszenica":
-			sprite_bg.texture = load("res://assets/tiles/hex_wheat.png")
-			zoom_factor = 1.15
-			stretch_y = 1.20
+			sprite_bg.texture = load("res://assets/tiles/wheat.png")
+			zoom_factor = 0.85
 		elif type == "Żelazo":
-			sprite_bg.texture = load("res://assets/tiles/hex_iron.png")
-			zoom_factor = 1.15
-			stretch_y = 1.15
+			sprite_bg.texture = load("res://assets/tiles/iron.png")
+			zoom_factor = 0.85
 		elif type == "Bydło":
-			sprite_bg.texture = load("res://assets/tiles/hex_cows.png")
-			zoom_factor = 1.15
-			stretch_y = 1.50
+			sprite_bg.texture = load("res://assets/tiles/cows.png")
+			zoom_factor = 0.85
 		elif type == "Węgiel":
-			sprite_bg.texture = load("res://assets/tiles/hex_coal.png")
-			zoom_factor = 1.15
+			sprite_bg.texture = load("res://assets/tiles/coal.png")
+			zoom_factor = 0.85
 			
 		var tex_size = sprite_bg.texture.get_size()
 		# Skalujemy Sprite proporcjonalnie i dopasowujemy powiększenie do konkretnej tekstury
 		var s = max(hex_width / tex_size.x, hex_height / tex_size.y) * zoom_factor
 		sprite_bg.scale = Vector2(s, s * stretch_y)
 		
-		if type == "Drewno":
+		if type in ["Drewno", "Pszenica", "Żelazo", "Bydło", "Węgiel"]:
 			var grass_bg = Sprite2D.new()
 			grass_bg.texture = load("res://assets/tiles/hex_grass.png")
 			var grass_s = max(hex_width / grass_bg.texture.get_size().x, hex_height / grass_bg.texture.get_size().y) * 1.0
@@ -657,57 +654,60 @@ func _update_tile_texture_for_building(pos: Vector2, building_name: String) -> v
 	
 	match building_name:
 		"Centrum Miasta":
-			texture_path = "res://assets/tiles/hex_town_center.png"
-			zoom_factor = 1.20
+			texture_path = "res://assets/tiles/city_center.png"
+			zoom_factor = 0.85
 		"Dom mieszkalny":
-			texture_path = "res://assets/tiles/hex_residential_house.png"
-			zoom_factor = 1.20
+			texture_path = "res://assets/tiles/residential_house.png"
+			zoom_factor = 0.85
 		"Chata Drwala": 
-			texture_path = "res://assets/tiles/hex_sawmill.png"
-			zoom_factor = 1.25
+			texture_path = "res://assets/tiles/sawmill.png"
+			zoom_factor = 0.85
 		"Kopalnia Żelaza": 
-			texture_path = "res://assets/tiles/hex_iron_mine.png"
-			zoom_factor = 1.15
+			texture_path = "res://assets/tiles/iron_mine.png"
+			zoom_factor = 0.85
 		"Kopalnia Węgla": 
-			texture_path = "res://assets/tiles/hex_coal_mine.png"
-			zoom_factor = 1.15
+			texture_path = "res://assets/tiles/coal_mine.png"
+			zoom_factor = 0.85
 		"Farma": 
-			texture_path = "res://assets/tiles/hex_farm.png"
-			zoom_factor = 1.15
-			stretch_y = 1.20
+			texture_path = "res://assets/tiles/farm.png"
+			zoom_factor = 0.85
 		"Pastwisko": 
-			texture_path = "res://assets/tiles/hex_pasture.png"
-			zoom_factor = 1.20
-			stretch_y = 1.35
+			texture_path = "res://assets/tiles/pasture.png"
+			zoom_factor = 0.85
 		"Laboratorium": 
-			texture_path = "res://assets/tiles/hex_lab.png"
-			zoom_factor = 1.20
+			texture_path = "res://assets/tiles/lab.png"
+			zoom_factor = 0.85
 		"Warsztat": 
-			texture_path = "res://assets/tiles/hex_workshop.png"
-			zoom_factor = 1.20
+			texture_path = "res://assets/tiles/workshop.png"
+			zoom_factor = 0.85
 		"Biblioteka": 
-			texture_path = "res://assets/tiles/hex_library.png"
-			zoom_factor = 1.20
+			texture_path = "res://assets/tiles/library.png"
+			zoom_factor = 0.85
 		"Świątynia": 
-			texture_path = "res://assets/tiles/hex_temple.png"
-			zoom_factor = 1.20
+			texture_path = "res://assets/tiles/temple.png"
+			zoom_factor = 0.85
 		"Baraki": 
-			texture_path = "res://assets/tiles/hex_barracks.png"
-			zoom_factor = 1.20
+			texture_path = "res://assets/tiles/barracks.png"
+			zoom_factor = 0.85
 	
 	if texture_path != "":
 		poly.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
 		poly.color = Color(1, 1, 1, 1)
 		
-		var sprite_bg = null
 		for child in poly.get_children():
 			if child is Sprite2D:
-				sprite_bg = child
-				break
+				child.queue_free()
 				
-		if not sprite_bg:
-			sprite_bg = Sprite2D.new()
-			poly.add_child(sprite_bg)
+		var overlay_buildings = ["Chata Drwala", "Kopalnia Węgla", "Kopalnia Żelaza", "Świątynia", "Baraki", "Centrum Miasta", "Farma", "Pastwisko", "Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka"]
+		if building_name in overlay_buildings:
+			var grass_bg = Sprite2D.new()
+			grass_bg.texture = load("res://assets/tiles/hex_grass.png")
+			var grass_s = max(hex_width / grass_bg.texture.get_size().x, hex_height / grass_bg.texture.get_size().y) * 1.0
+			grass_bg.scale = Vector2(grass_s, grass_s * 1.05)
+			poly.add_child(grass_bg)
+			
+		var sprite_bg = Sprite2D.new()
+		poly.add_child(sprite_bg)
 			
 		var tex = load(texture_path)
 		if tex:
