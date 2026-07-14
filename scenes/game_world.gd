@@ -490,7 +490,7 @@ func claim_tile(pos: Vector2) -> void:
 	if base_poly:
 		var overlay = Polygon2D.new()
 		overlay.polygon = base_poly.polygon
-		overlay.color = Color(1.0, 0.85, 0.0, 0.3)
+		overlay.color = Color(1.0, 0.85, 0.0, 0.10)
 		overlay.z_index = 1
 		tile_area.add_child(overlay)
 		territory_overlays[pos] = overlay
