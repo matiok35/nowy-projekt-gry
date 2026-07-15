@@ -156,6 +156,18 @@ func setup_seed_label():
 
 func _process(_delta: float) -> void:
 	_update_battle_button()
+	
+	var menu_open = any_menu_visible()
+	if tech_tree_menu and tech_tree_menu.tech_tree_button:
+		tech_tree_menu.tech_tree_button.disabled = menu_open
+	if culture_tree_button:
+		culture_tree_button.disabled = menu_open
+	if turn_button:
+		turn_button.disabled = menu_open
+	if cat_zasobowe: cat_zasobowe.disabled = menu_open
+	if cat_naukowe: cat_naukowe.disabled = menu_open
+	if cat_tech: cat_tech.disabled = menu_open
+	if cat_wojskowe: cat_wojskowe.disabled = menu_open
 
 # Sprawdza, czy generał (Character) stoi z przypisaną armią na polu wrogiego
 # obozowiska i w razie potrzeby pokazuje/ukrywa oraz pozycjonuje przycisk walki.
@@ -246,6 +258,12 @@ func handle_battle_loss() -> void:
 			var lost_unit = gen.army[0]
 			gen.unassign_unit(lost_unit)
 			EconomyManager.remove_unit(lost_unit)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if any_menu_visible():
+			hide_all_menus()
+			get_viewport().set_input_as_handled()
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_TAB:
@@ -957,7 +975,7 @@ func execute_build(building_name: String) -> void:
 		hide_all_menus()
 		return
 
-	var costs = EconomyManager.building_costs.get(building_name, {})
+	var costs = EconomyManager.get_modified_building_costs(building_name)
 	var wood_cost = costs.get("Drewno", 0)
 	var remaining_wood = EconomyManager.resources.get("Drewno", 0) - wood_cost
 	

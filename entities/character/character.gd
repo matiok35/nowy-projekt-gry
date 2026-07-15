@@ -49,7 +49,11 @@ func _on_economy_updated(_balances: Dictionary, current_turn: int, _b: String) -
 	# POPRAWKA: moves_left odnawia się tylko wtedy, gdy faktycznie nastąpiła nowa tura
 	if current_turn > _last_turn:
 		_last_turn = current_turn
-		moves_left = move_range
+		var current_max = move_range
+		if EconomyManager.culture_tree["Ruch generała I"]["unlocked"]: current_max += 1
+		if EconomyManager.culture_tree["Ruch generała II"]["unlocked"]: current_max += 1
+		if EconomyManager.culture_tree["Ruch generała III"]["unlocked"]: current_max += 1
+		moves_left = current_max
 		
 	if get_parent() and get_parent().has_method("update_fog_of_war"):
 		get_parent().update_fog_of_war()

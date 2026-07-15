@@ -25,7 +25,7 @@ var resources: Dictionary = {
 }
 
 var max_tech_points: float = 350.0
-var max_culture_points: float = 150.0 # POPRAWKA: Zwiększono limit, aby Renesans (koszt 110) był osiągalny
+var max_culture_points: float = 350.0 # POPRAWKA: Zwiększono limit, aby nowe węzły były osiągalne
 
 var building_costs: Dictionary = {
 	"Chata Drwala": {"Złoto": 30, "Drewno": 10},
@@ -161,59 +161,80 @@ var technology_tree: Dictionary = {
 }
 
 var culture_tree: Dictionary = {
-	"Tradycje": {
-		"research_cost": 15,
-		"research_time": 2,
-		"req": [],
-		"unlocked": false,
-		"desc": "Podstawy kultury.",
-		"grid_coords": Vector2(0,1),
-		"icon": "🏛️"
+	"Kultura +2/tura": {
+		"research_cost": 10, "research_time": 1, "req": [], "unlocked": false, "desc": "Kultura +2 kultury/turę", "grid_coords": Vector2(0, 3), "icon": "🏛️"
 	},
-	"Sztuka": {
-		"research_cost": 35,
-		"research_time": 4,
-		"req": ["Tradycje"],
-		"unlocked": false,
-		"desc": "Rozwój sztuki.",
-		"grid_coords": Vector2(1,0),
-		"icon": "🎨"
+	"Jedzenie +10%": {
+		"research_cost": 30, "research_time": 3, "req": ["Kultura +2/tura"], "unlocked": false, "desc": "+10% jedzenia z farm i hodowli", "grid_coords": Vector2(1, 1), "icon": "🌾"
 	},
-	"Filozofia": {
-		"research_cost": 40,
-		"research_time": 4,
-		"req": ["Tradycje"],
-		"unlocked": false,
-		"desc": "Rozwój myśli.",
-		"grid_coords": Vector2(1,2),
-		"icon": "🧠"
+	"Żelazo i węgiel +5%": {
+		"research_cost": 30, "research_time": 3, "req": ["Kultura +2/tura"], "unlocked": false, "desc": "+5% żelaza i węgla z kopalń", "grid_coords": Vector2(1, 5), "icon": "⛏️"
 	},
-	"Teatr": {
-		"research_cost": 55,
-		"research_time": 6,
-		"req": ["Sztuka"],
-		"unlocked": false,
-		"desc": "+2 Kultury.",
-		"grid_coords": Vector2(2,0),
-		"icon": "🎭"
+	"Złoto z domów": {
+		"research_cost": 40, "research_time": 4, "req": ["Jedzenie +10%"], "unlocked": false, "desc": "+2 złota z budynku mieszkalnego", "grid_coords": Vector2(2, 1), "icon": "💰"
 	},
-	"Edukacja": {
-		"research_cost": 70,
-		"research_time": 6,
-		"req": ["Filozofia"],
-		"unlocked": false,
-		"desc": "+1 Nauki.",
-		"grid_coords": Vector2(2,2),
-		"icon": "📚"
+	"Ruch generała I": {
+		"research_cost": 40, "research_time": 4, "req": ["Żelazo i węgiel +5%"], "unlocked": false, "desc": "+1 ruchu generała", "grid_coords": Vector2(2, 5), "icon": "🏇"
 	},
-	"Renesans": {
-		"research_cost": 110,
-		"research_time": 10,
-		"req": ["Teatr","Edukacja"],
-		"unlocked": false,
-		"desc": "Złoty wiek kultury.",
-		"grid_coords": Vector2(3,1),
-		"icon": "🌟"
+	"Złoto za mieszkańca": {
+		"research_cost": 60, "research_time": 6, "req": ["Złoto z domów"], "unlocked": false, "desc": "+1 złota za każdego mieszkańca", "grid_coords": Vector2(3, 1), "icon": "🪙"
+	},
+	"Drewno +5%": {
+		"research_cost": 60, "research_time": 6, "req": ["Ruch generała I"], "unlocked": false, "desc": "+5% drewna z tartaku", "grid_coords": Vector2(3, 5), "icon": "🪵"
+	},
+	"Złoto za świątynie": {
+		"research_cost": 80, "research_time": 8, "req": ["Złoto za mieszkańca", "Drewno +5%"], "unlocked": false, "desc": "+2 złota za świątynię", "grid_coords": Vector2(4, 3), "icon": "🕍"
+	},
+	"Szybsze badania": {
+		"research_cost": 100, "research_time": 10, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "-1 tura do badań", "grid_coords": Vector2(5, 1), "icon": "⏳"
+	},
+	"Nauka z warsztatu": {
+		"research_cost": 100, "research_time": 10, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "+1 pkt nauki za warsztat", "grid_coords": Vector2(5, 3), "icon": "🧪"
+	},
+	"Szybsza rekrutacja": {
+		"research_cost": 100, "research_time": 10, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "-1 tura do rekrutacji", "grid_coords": Vector2(5, 5), "icon": "⚔️"
+	},
+	"Tańsze domy": {
+		"research_cost": 120, "research_time": 12, "req": ["Szybsze badania", "Nauka z warsztatu"], "unlocked": false, "desc": "-10% ceny domów", "grid_coords": Vector2(6, 2), "icon": "🏠"
+	},
+	"Tańsze farmy": {
+		"research_cost": 120, "research_time": 12, "req": ["Nauka z warsztatu", "Szybsza rekrutacja"], "unlocked": false, "desc": "-10% ceny farm", "grid_coords": Vector2(6, 4), "icon": "🚜"
+	},
+	"Tańsze bud. naukowe": {
+		"research_cost": 150, "research_time": 15, "req": ["Tańsze domy"], "unlocked": false, "desc": "-10% ceny budynków naukowych", "grid_coords": Vector2(7, 1), "icon": "🔬"
+	},
+	"Ruch generała II": {
+		"research_cost": 150, "research_time": 15, "req": ["Tańsze domy", "Tańsze farmy"], "unlocked": false, "desc": "+1 ruchu generała", "grid_coords": Vector2(7, 3), "icon": "🐎"
+	},
+	"Tańsze bud. kulturowe": {
+		"research_cost": 150, "research_time": 15, "req": ["Tańsze farmy"], "unlocked": false, "desc": "-10% ceny budynków kulturowych", "grid_coords": Vector2(7, 5), "icon": "🎭"
+	},
+	"Tańsza rekrutacja": {
+		"research_cost": 180, "research_time": 18, "req": ["Tańsze bud. naukowe"], "unlocked": false, "desc": "-10% koszt rekrutacji", "grid_coords": Vector2(8, 1), "icon": "🛡️"
+	},
+	"Kultura z domów": {
+		"research_cost": 180, "research_time": 18, "req": ["Tańsze bud. kulturowe"], "unlocked": false, "desc": "+1 pkt kultury za dom na turę", "grid_coords": Vector2(8, 5), "icon": "🏘️"
+	},
+	"Złoto co turę": {
+		"research_cost": 220, "research_time": 22, "req": ["Tańsza rekrutacja"], "unlocked": false, "desc": "+1 złoto na turę", "grid_coords": Vector2(9, 1), "icon": "💸"
+	},
+	"Tech z baraków": {
+		"research_cost": 220, "research_time": 22, "req": ["Kultura z domów"], "unlocked": false, "desc": "+1 pkt technologii za każdy barak", "grid_coords": Vector2(9, 5), "icon": "⚙️"
+	},
+	"Złoto z drwala": {
+		"research_cost": 260, "research_time": 26, "req": ["Złoto co turę", "Tech z baraków"], "unlocked": false, "desc": "+1 złoto/tura za dom drwala", "grid_coords": Vector2(10, 3), "icon": "🪓"
+	},
+	"Tańsza chata drwala": {
+		"research_cost": 300, "research_time": 30, "req": ["Złoto z drwala"], "unlocked": false, "desc": "-10% koszt chaty drwala", "grid_coords": Vector2(11, 1), "icon": "📉"
+	},
+	"Tańsze baraki": {
+		"research_cost": 300, "research_time": 30, "req": ["Złoto z drwala"], "unlocked": false, "desc": "-10% koszt budowy baraków", "grid_coords": Vector2(11, 3), "icon": "🏯"
+	},
+	"Ruch generała III": {
+		"research_cost": 300, "research_time": 30, "req": ["Złoto z drwala"], "unlocked": false, "desc": "+1 ruch generała na turę", "grid_coords": Vector2(11, 5), "icon": "🏇"
+	},
+	"Złoto z baraków": {
+		"research_cost": 350, "research_time": 35, "req": ["Tańsza chata drwala", "Tańsze baraki", "Ruch generała III"], "unlocked": false, "desc": "+1 złota/tura za każdy barak", "grid_coords": Vector2(12, 3), "icon": "🤑"
 	}
 }
 
@@ -231,10 +252,34 @@ func get_building_tooltip(building_name: String) -> String:
 		"Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia", "Baraki":
 			text += "• Wymaga: Trawa (lub nadpisanie dowolnego złoża)\n"
 
+	var mod_costs = get_modified_building_costs(building_name)
 	text += "\nKoszt poziomu 1\n"
-	for resource in building_costs[building_name]:
-		text += "• %s: %d\n" % [resource, building_costs[building_name][resource]]
+	for resource in mod_costs:
+		text += "• %s: %d\n" % [resource, mod_costs[resource]]
 	return text
+
+func get_modified_building_costs(building_name: String) -> Dictionary:
+	if not building_costs.has(building_name): return {}
+	var costs = building_costs[building_name].duplicate()
+	var modifier = 1.0
+	
+	if building_name == "Dom mieszkalny" and culture_tree["Tańsze domy"]["unlocked"]:
+		modifier -= 0.1
+	if building_name == "Farma" and culture_tree["Tańsze farmy"]["unlocked"]:
+		modifier -= 0.1
+	if building_name in ["Laboratorium", "Warsztat"] and culture_tree["Tańsze bud. naukowe"]["unlocked"]:
+		modifier -= 0.1
+	if building_name in ["Biblioteka", "Świątynia"] and culture_tree["Tańsze bud. kulturowe"]["unlocked"]:
+		modifier -= 0.1
+	if building_name == "Chata Drwala" and culture_tree["Tańsza chata drwala"]["unlocked"]:
+		modifier -= 0.1
+	if building_name == "Baraki" and culture_tree["Tańsze baraki"]["unlocked"]:
+		modifier -= 0.1
+		
+	if modifier != 1.0:
+		for res in costs:
+			costs[res] = int(ceil(costs[res] * modifier))
+	return costs
 
 func can_afford_and_place(building_name: String, tile_type: String) -> bool:
 	if not building_costs.has(building_name): return false
@@ -247,7 +292,7 @@ func can_afford_and_place(building_name: String, tile_type: String) -> bool:
 	
 	# POPRAWKA: Usunięto sztywne blokowanie typów innych niż Trawa dla budynków miejskich,
 	# aby kod niszczenia złóż w game_world.gd stał się osiągalny.
-	var costs = building_costs[building_name]
+	var costs = get_modified_building_costs(building_name)
 	for res in costs:
 		if resources.get(res, 0) < costs[res]:
 			return false
@@ -256,8 +301,9 @@ func can_afford_and_place(building_name: String, tile_type: String) -> bool:
 func get_upgrade_cost(b_name: String, current_level: int) -> Dictionary:
 	var cost = {}
 	if building_costs.has(b_name):
-		for res in building_costs[b_name]:
-			cost[res] = building_costs[b_name][res] * (current_level + 1)
+		var mod_costs = get_modified_building_costs(b_name)
+		for res in mod_costs:
+			cost[res] = mod_costs[res] * (current_level + 1)
 	return cost
 
 func can_afford_upgrade(b_name: String, current_level: int) -> bool:
@@ -282,7 +328,7 @@ func deduct_tile_purchase_costs() -> void:
 
 func deduct_costs(building_name: String) -> void:
 	if building_costs.has(building_name):
-		var costs = building_costs[building_name]
+		var costs = get_modified_building_costs(building_name)
 		for res in costs:
 			resources[res] -= costs[res]
 		notify_change()
@@ -295,9 +341,13 @@ func start_research(tech_name:String):
 	if resources["Nauka"] < tech["research_cost"]:
 		return
 
+	var time = tech["research_time"]
+	if culture_tree["Szybsze badania"]["unlocked"]:
+		time = max(1, time - 1)
+
 	resources["Nauka"] -= tech["research_cost"]
 	current_research = tech_name
-	research_turns_left = tech["research_time"]
+	research_turns_left = time
 	notify_change()
 
 func start_culture_research(tech_name:String):
@@ -308,9 +358,13 @@ func start_culture_research(tech_name:String):
 	if resources["Kultura"] < tech["research_cost"]:
 		return
 
+	var time = tech["research_time"]
+	if culture_tree["Szybsze badania"]["unlocked"]:
+		time = max(1, time - 1)
+
 	resources["Kultura"] -= tech["research_cost"]
 	current_culture_research = tech_name
-	culture_turns_left = tech["research_time"]
+	culture_turns_left = time
 	notify_change()
 
 func get_missing_tech_for_building(building_name: String) -> String:
@@ -341,6 +395,15 @@ func next_turn(active_buildings_data: Array) -> void:
 	var turn_science = 0
 	var turn_culture = 0
 	
+	var food_multiplier = 1.0
+	if culture_tree["Jedzenie +10%"]["unlocked"]: food_multiplier = 1.1
+
+	var iron_coal_multiplier = 1.0
+	if culture_tree["Żelazo i węgiel +5%"]["unlocked"]: iron_coal_multiplier = 1.05
+
+	var wood_multiplier = 1.0
+	if culture_tree["Drewno +5%"]["unlocked"]: wood_multiplier = 1.05
+
 	for b_data in active_buildings_data:
 		var b_name = b_data["name"]
 		var b_level = b_data.get("level", 1)
@@ -351,39 +414,60 @@ func next_turn(active_buildings_data: Array) -> void:
 				"Małe": size_modifier = 0.5
 				"Średnie": size_modifier = 1.0
 				"Duże": size_modifier = 2.0
-
+				
 		match b_name:
+			"Dom mieszkalny":
+				if culture_tree["Złoto z domów"]["unlocked"]:
+					resources["Złoto"] += 2 * b_level
+				if culture_tree["Kultura z domów"]["unlocked"]:
+					turn_culture += 1 * b_level
 			"Centrum Miasta":
 				var gold_bonus = 10 * b_level
 				resources["Złoto"] += gold_bonus
 				resources["Jedzenie"] += 2 * b_level
 				resources["Drewno"] += 2 * b_level
 			"Chata Drwala":
-				resources["Drewno"] += int(8 * size_modifier * b_level)
+				resources["Drewno"] += int(8 * size_modifier * b_level * wood_multiplier)
+				if culture_tree["Złoto z drwala"]["unlocked"]:
+					resources["Złoto"] += 1 * b_level
 			"Kopalnia Żelaza":
 				var iron_yield = 5
-				resources["Żelazo"] += int(iron_yield * size_modifier * b_level)
+				resources["Żelazo"] += int(iron_yield * size_modifier * b_level * iron_coal_multiplier)
 				resources["Złoto"] -= 2 * b_level
 			"Kopalnia Węgla":
 				var coal_yield = 4
-				resources["Węgiel"] += int(coal_yield * size_modifier * b_level)
+				resources["Węgiel"] += int(coal_yield * size_modifier * b_level * iron_coal_multiplier)
 				resources["Złoto"] -= 2 * b_level
 			"Farma":
 				var farm_yield = 6
-				resources["Jedzenie"] += int(farm_yield * size_modifier * b_level)
+				resources["Jedzenie"] += int(farm_yield * size_modifier * b_level * food_multiplier)
 			"Pastwisko":
-				resources["Jedzenie"] += int(8 * size_modifier * b_level)
+				resources["Jedzenie"] += int(8 * size_modifier * b_level * food_multiplier)
 			"Laboratorium":
 				turn_science += 3 * b_level
 			"Warsztat":
 				turn_science += 1 * b_level
+				if culture_tree["Nauka z warsztatu"]["unlocked"]:
+					turn_science += 1 * b_level
 			"Biblioteka":
 				turn_science += 2 * b_level
 				turn_culture += 1 * b_level
 			"Świątynia":
 				turn_culture += 3 * b_level
+				if culture_tree["Złoto za świątynie"]["unlocked"]:
+					resources["Złoto"] += 2 * b_level
 			"Baraki":
-				pass
+				if culture_tree["Tech z baraków"]["unlocked"]:
+					turn_science += 1 * b_level
+				if culture_tree["Złoto z baraków"]["unlocked"]:
+					resources["Złoto"] += 1 * b_level
+
+	if culture_tree["Kultura +2/tura"]["unlocked"]:
+		turn_culture += 2
+	if culture_tree["Złoto za mieszkańca"]["unlocked"]:
+		resources["Złoto"] += resources["Populacja"] * 1
+	if culture_tree["Złoto co turę"]["unlocked"]:
+		resources["Złoto"] += 1
 
 	var total_science = 1 + turn_science
 	
@@ -442,18 +526,28 @@ func calculate_recruitment_turns(unit: Dictionary) -> int:
 	var hp = unit.get("hp", 0)
 	var dmg = unit.get("dmg", 0)
 	var def = unit.get("def", 0)
-	return max(1, int((hp + dmg + def) / 10))
+	var time = max(1, int((hp + dmg + def) / 10))
+	if culture_tree["Szybsza rekrutacja"]["unlocked"]:
+		time = max(1, time - 1)
+	return time
 
 func calculate_unit_cost(unit: Dictionary) -> Dictionary:
 	var hp = unit.get("hp", 0)
 	var dmg = unit.get("dmg", 0)
 	var def = unit.get("def", 0)
-	return {
+	var cost = {
 		"Złoto": int((hp + dmg + def) * 1.5),
 		"Żelazo": int((dmg * 2.0) + (def * 1.0)),
 		"Jedzenie": int(hp * 1.5),
 		"Populacja": 1
 	}
+	
+	if culture_tree["Tańsza rekrutacja"]["unlocked"]:
+		cost["Złoto"] = int(ceil(cost["Złoto"] * 0.9))
+		cost["Żelazo"] = int(ceil(cost["Żelazo"] * 0.9))
+		cost["Jedzenie"] = int(ceil(cost["Jedzenie"] * 0.9))
+		
+	return cost
 
 func can_recruit_unit(unit: Dictionary) -> bool:
 	var cost = calculate_unit_cost(unit)
@@ -517,7 +611,7 @@ func reset() -> void:
 	}
 	
 	max_tech_points = 350.0
-	max_culture_points = 150.0
+	max_culture_points = 350.0
 	
 	current_research = ""
 	research_turns_left = 0

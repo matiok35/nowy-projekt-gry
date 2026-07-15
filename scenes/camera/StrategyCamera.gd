@@ -26,6 +26,10 @@ func _process(delta: float):
 	_clamp_position()
 
 func _unhandled_input(event: InputEvent):
+	var hud = get_node_or_null("../CanvasLayer/UI")
+	if hud and hud.has_method("any_menu_visible") and hud.any_menu_visible():
+		return
+
 	if event is InputEventMouseButton:
 		# ZOOM (rolka myszy)
 		if event.pressed:
