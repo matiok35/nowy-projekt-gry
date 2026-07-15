@@ -7,8 +7,8 @@ var tech_tree_window: Panel
 var tech_tree_map: Control
 
 const X_SPACING: float = 280.0
-const Y_SPACING: float = 90.0
-const OFFSET_POS: Vector2 = Vector2(80, 50)
+const Y_SPACING: float = 95.0
+const OFFSET_POS: Vector2 = Vector2(80, -20)
 
 func _init(_hud: Control):
 	hud = _hud
@@ -44,11 +44,24 @@ func setup_tech_tree_ui():
 		style_tree.set_corner_radius_all(4)
 		tech_tree_window.add_theme_stylebox_override("panel", style_tree)
 		var close_btn = tech_tree_window.get_node_or_null("CloseButton")
-		if close_btn: close_btn.pressed.connect(func(): tech_tree_window.visible = false)
+		if close_btn: 
+			close_btn.pressed.connect(func(): tech_tree_window.visible = false)
+			close_btn.text = "X"
+			close_btn.custom_minimum_size = Vector2(35, 35)
+			close_btn.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+			close_btn.offset_left = -45
+			close_btn.offset_top = 10
+			close_btn.offset_right = -10
+			close_btn.offset_bottom = 45
+			if hud.has_method("_style_df_button"):
+				hud._style_df_button(close_btn)
+			
+			# Przesunięcie na koniec drzewa, by ScrollContainer nie blokował kliknięć
+			close_btn.get_parent().move_child(close_btn, -1)
 		var scroll = tech_tree_window.get_node_or_null("ScrollContainer")
 		if scroll:
 			scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-			scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+			scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	if tech_tree_map: tech_tree_map.draw.connect(_draw_tech_connections)
 	
 	tech_tree_button.pressed.connect(func():

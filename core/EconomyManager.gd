@@ -24,7 +24,7 @@ var resources: Dictionary = {
 	"Głoduje": false
 }
 
-var max_tech_points: float = 100.0
+var max_tech_points: float = 350.0
 var max_culture_points: float = 150.0 # POPRAWKA: Zwiększono limit, aby Renesans (koszt 110) był osiągalny
 
 var building_costs: Dictionary = {
@@ -47,51 +47,116 @@ var research_turns_left := 0
 var current_culture_research := ""
 var culture_turns_left := 0
 
+var building_tech_requirements: Dictionary = {
+	"Chata Drwala": "Chata drwala",
+	"Pastwisko": "Hodowla bydła",
+	"Kopalnia Żelaza": "Górnictwo",
+	"Kopalnia Węgla": "Górnictwo",
+	"Warsztat": "Warsztat",
+	"Świątynia": "Świątynia",
+	"Baraki": "Baraki",
+	"Laboratorium": "Laboratorium",
+	"Biblioteka": "Biblioteka"
+}
+
+var upgrade_tech_requirements: Dictionary = {
+	"Chata Drwala": {2: "2lvl Chata drwala", 3: "3lvl Chata drwala"},
+	"Farma": {2: "Hodowla + farma 2lvl", 3: "3lvl Hodowla + farma"},
+	"Pastwisko": {2: "Hodowla + farma 2lvl", 3: "3lvl Hodowla + farma"},
+	"Kopalnia Żelaza": {2: "2lvl Górnictwo", 3: "3lvl Górnictwo"},
+	"Kopalnia Węgla": {2: "2lvl Górnictwo", 3: "3lvl Górnictwo"},
+	"Warsztat": {2: "2lvl Warsztat", 3: "Warsztat 3 lvl"},
+	"Świątynia": {2: "Świątynia 2lvl", 3: "Świątynia 3lvl"},
+	"Baraki": {2: "Baraki 2lvl", 3: "Baraki 3lvl"},
+	"Laboratorium": {2: "Laboratorium 2lvl", 3: "Laboratorium 3lvl"},
+	"Biblioteka": {2: "Biblioteka 2lvl", 3: "Biblioteka 3lvl"},
+	"Dom mieszkalny": {2: "Dom mieszkalny 2lvl", 3: "Dom mieszkalny 3lvl"}
+}
+
 var technology_tree: Dictionary = {
+	"Chata drwala": {
+		"research_cost": 10, "research_time": 1, "req": [], "unlocked": false, "desc": "Podstawa.", "grid_coords": Vector2(0, 3), "icon": "🪓"
+	},
+	"2lvl Chata drwala": {
+		"research_cost": 30, "research_time": 3, "req": ["Chata drwala"], "unlocked": false, "desc": "Większy drwal.", "grid_coords": Vector2(1, 2), "icon": "🪓"
+	},
+	"3lvl Chata drwala": {
+		"research_cost": 50, "research_time": 5, "req": ["2lvl Chata drwala"], "unlocked": false, "desc": "Wielki drwal.", "grid_coords": Vector2(2, 1), "icon": "🪓"
+	},
+	"Hodowla bydła": {
+		"research_cost": 20, "research_time": 2, "req": ["Chata drwala"], "unlocked": false, "desc": "Zwierzęta.", "grid_coords": Vector2(1, 4), "icon": "🐄"
+	},
+	"Hodowla + farma 2lvl": {
+		"research_cost": 40, "research_time": 4, "req": ["Hodowla bydła", "2lvl Chata drwala"], "unlocked": false, "desc": "Rozwój rolnictwa.", "grid_coords": Vector2(2, 3), "icon": "🌾"
+	},
 	"Górnictwo": {
-		"research_cost": 15,
-		"research_time": 2,
-		"req": [],
-		"unlocked": false,
-		"desc": "Podstawy wydobycia.",
-		"grid_coords": Vector2(0, 1),
-		"icon": "⛏️"
+		"research_cost": 40, "research_time": 4, "req": ["Hodowla bydła"], "unlocked": false, "desc": "Wydobycie surowców.", "grid_coords": Vector2(2, 5), "icon": "⛏️"
 	},
-	"Wydajne Maszyny": {
-		"research_cost": 45,
-		"research_time": 4,
-		"req": ["Górnictwo"],
-		"unlocked": false,
-		"desc": "+3 Żelaza, +2 Węgla.",
-		"grid_coords": Vector2(1, 0),
-		"icon": "⚙️"
+	"3lvl Hodowla + farma": {
+		"research_cost": 60, "research_time": 6, "req": ["Hodowla + farma 2lvl", "3lvl Chata drwala"], "unlocked": false, "desc": "Zaawansowane rolnictwo.", "grid_coords": Vector2(3, 1), "icon": "🚜"
 	},
-	"Melioracja": {
-		"research_cost": 30,
-		"research_time": 3,
-		"req": [],
-		"unlocked": false,
-		"desc": "Nawadnianie pól.",
-		"grid_coords": Vector2(0, 2),
-		"icon": "💧"
+	"Warsztat": {
+		"research_cost": 60, "research_time": 6, "req": ["Hodowla + farma 2lvl", "Górnictwo"], "unlocked": false, "desc": "Produkcja rzemieślnicza.", "grid_coords": Vector2(3, 3), "icon": "⚒️"
 	},
-	"Płodozmian": {
-		"research_cost": 50,
-		"research_time": 5,
-		"req": ["Melioracja"],
-		"unlocked": false,
-		"desc": "+3 Jedzenia dla Farm.",
-		"grid_coords": Vector2(1, 3),
-		"icon": "🌾"
+	"2lvl Górnictwo": {
+		"research_cost": 60, "research_time": 6, "req": ["Górnictwo"], "unlocked": false, "desc": "Głębsze szyby.", "grid_coords": Vector2(3, 5), "icon": "🗻"
 	},
-	"Industrializacja": {
-		"research_cost": 100,
-		"research_time": 8,
-		"req": ["Wydajne Maszyny", "Płodozmian"],
-		"unlocked": false,
-		"desc": "+10 Złota z Centrum Miasta.",
-		"grid_coords": Vector2(2, 1.5),
-		"icon": "🏭"
+	"2lvl Warsztat": {
+		"research_cost": 80, "research_time": 8, "req": ["3lvl Hodowla + farma", "Warsztat"], "unlocked": false, "desc": "Złożone narzędzia.", "grid_coords": Vector2(4, 2), "icon": "⚙️"
+	},
+	"Świątynia": {
+		"research_cost": 80, "research_time": 8, "req": ["Warsztat", "2lvl Górnictwo"], "unlocked": false, "desc": "Miejsce kultu.", "grid_coords": Vector2(4, 4), "icon": "🕍"
+	},
+	"Warsztat 3 lvl": {
+		"research_cost": 100, "research_time": 10, "req": ["2lvl Warsztat"], "unlocked": false, "desc": "Wielka produkcja.", "grid_coords": Vector2(5, 2), "icon": "🏭"
+	},
+	"Świątynia 2lvl": {
+		"research_cost": 100, "research_time": 10, "req": ["Świątynia"], "unlocked": false, "desc": "Rozwój religii.", "grid_coords": Vector2(5, 4), "icon": "🛕"
+	},
+	"Baraki": {
+		"research_cost": 120, "research_time": 12, "req": ["Warsztat 3 lvl", "Świątynia 2lvl"], "unlocked": false, "desc": "Wojsko stacjonarne.", "grid_coords": Vector2(6, 3), "icon": "⚔️"
+	},
+	"Świątynia 3lvl": {
+		"research_cost": 150, "research_time": 15, "req": ["Baraki"], "unlocked": false, "desc": "Cuda wiary.", "grid_coords": Vector2(7, 1), "icon": "⛪"
+	},
+	"Baraki 2lvl": {
+		"research_cost": 150, "research_time": 15, "req": ["Baraki"], "unlocked": false, "desc": "Szkolenie taktyczne.", "grid_coords": Vector2(7, 3), "icon": "🛡️"
+	},
+	"3lvl Górnictwo": {
+		"research_cost": 150, "research_time": 15, "req": ["Baraki"], "unlocked": false, "desc": "Zaawansowane wydobycie.", "grid_coords": Vector2(7, 5), "icon": "🌋"
+	},
+	"Laboratorium": {
+		"research_cost": 180, "research_time": 18, "req": ["Świątynia 3lvl", "Baraki 2lvl"], "unlocked": false, "desc": "Eksperymenty naukowe.", "grid_coords": Vector2(8, 2), "icon": "🧪"
+	},
+	"Konnica": {
+		"research_cost": 180, "research_time": 18, "req": ["Baraki 2lvl", "3lvl Górnictwo"], "unlocked": false, "desc": "Szybki zwiad i szturm.", "grid_coords": Vector2(8, 4), "icon": "🐎"
+	},
+	"Biblioteka": {
+		"research_cost": 220, "research_time": 22, "req": ["Laboratorium", "Konnica"], "unlocked": false, "desc": "Centrum wiedzy.", "grid_coords": Vector2(9, 3), "icon": "📚"
+	},
+	"Laboratorium 2lvl": {
+		"research_cost": 260, "research_time": 26, "req": ["Biblioteka"], "unlocked": false, "desc": "Zaawansowane badania.", "grid_coords": Vector2(10, 1), "icon": "🔬"
+	},
+	"Biblioteka 2lvl": {
+		"research_cost": 260, "research_time": 26, "req": ["Biblioteka"], "unlocked": false, "desc": "Zbiory specjalne.", "grid_coords": Vector2(10, 3), "icon": "📖"
+	},
+	"Dom mieszkalny 2lvl": {
+		"research_cost": 260, "research_time": 26, "req": ["Biblioteka"], "unlocked": false, "desc": "Rozwój urbanizacji.", "grid_coords": Vector2(10, 5), "icon": "🏘️"
+	},
+	"Laboratorium 3lvl": {
+		"research_cost": 300, "research_time": 30, "req": ["Laboratorium 2lvl"], "unlocked": false, "desc": "Akademia Nauk.", "grid_coords": Vector2(11, 1), "icon": "🌌"
+	},
+	"Biblioteka 3lvl": {
+		"research_cost": 300, "research_time": 30, "req": ["Biblioteka 2lvl"], "unlocked": false, "desc": "Wielkie Archiwum.", "grid_coords": Vector2(11, 3), "icon": "🏛️"
+	},
+	"Baraki 3lvl": {
+		"research_cost": 300, "research_time": 30, "req": ["Dom mieszkalny 2lvl"], "unlocked": false, "desc": "Forteca szkoleniowa.", "grid_coords": Vector2(11, 5), "icon": "🏰"
+	},
+	"Mag": {
+		"research_cost": 350, "research_time": 35, "req": ["Laboratorium 3lvl", "Biblioteka 3lvl"], "unlocked": false, "desc": "Sztuki magiczne.", "grid_coords": Vector2(12, 2), "icon": "🧙"
+	},
+	"Dom mieszkalny 3lvl": {
+		"research_cost": 350, "research_time": 35, "req": ["Biblioteka 3lvl", "Baraki 3lvl"], "unlocked": false, "desc": "Metropolia.", "grid_coords": Vector2(12, 4), "icon": "🏙️"
 	}
 }
 
@@ -248,6 +313,20 @@ func start_culture_research(tech_name:String):
 	culture_turns_left = tech["research_time"]
 	notify_change()
 
+func get_missing_tech_for_building(building_name: String) -> String:
+	if building_tech_requirements.has(building_name):
+		var req_tech = building_tech_requirements[building_name]
+		if technology_tree.has(req_tech) and not technology_tree[req_tech]["unlocked"]:
+			return req_tech
+	return ""
+
+func get_missing_tech_for_upgrade(building_name: String, target_level: int) -> String:
+	if upgrade_tech_requirements.has(building_name) and upgrade_tech_requirements[building_name].has(target_level):
+		var req_tech = upgrade_tech_requirements[building_name][target_level]
+		if technology_tree.has(req_tech) and not technology_tree[req_tech]["unlocked"]:
+			return req_tech
+	return ""
+
 func next_turn(active_buildings_data: Array) -> void:
 	current_turn += 1
 	var max_pop = 5
@@ -276,8 +355,6 @@ func next_turn(active_buildings_data: Array) -> void:
 		match b_name:
 			"Centrum Miasta":
 				var gold_bonus = 10 * b_level
-				if technology_tree["Industrializacja"]["unlocked"]:
-					gold_bonus += 10 * b_level
 				resources["Złoto"] += gold_bonus
 				resources["Jedzenie"] += 2 * b_level
 				resources["Drewno"] += 2 * b_level
@@ -285,17 +362,14 @@ func next_turn(active_buildings_data: Array) -> void:
 				resources["Drewno"] += int(8 * size_modifier * b_level)
 			"Kopalnia Żelaza":
 				var iron_yield = 5
-				if technology_tree["Wydajne Maszyny"]["unlocked"]: iron_yield += 3
 				resources["Żelazo"] += int(iron_yield * size_modifier * b_level)
 				resources["Złoto"] -= 2 * b_level
 			"Kopalnia Węgla":
 				var coal_yield = 4
-				if technology_tree["Wydajne Maszyny"]["unlocked"]: coal_yield += 2
 				resources["Węgiel"] += int(coal_yield * size_modifier * b_level)
 				resources["Złoto"] -= 2 * b_level
 			"Farma":
 				var farm_yield = 6
-				if technology_tree["Płodozmian"]["unlocked"]: farm_yield += 3
 				resources["Jedzenie"] += int(farm_yield * size_modifier * b_level)
 			"Pastwisko":
 				resources["Jedzenie"] += int(8 * size_modifier * b_level)
@@ -339,9 +413,6 @@ func next_turn(active_buildings_data: Array) -> void:
 		research_turns_left -= 1
 		if research_turns_left <= 0:
 			technology_tree[current_research]["unlocked"] = true
-			match current_research:
-				"Industrializacja":
-					max_tech_points += 25
 			current_research = ""
 			
 	if current_culture_research != "":
@@ -445,7 +516,7 @@ func reset() -> void:
 		"Maks_Populacja": 5
 	}
 	
-	max_tech_points = 100.0
+	max_tech_points = 350.0
 	max_culture_points = 150.0
 	
 	current_research = ""

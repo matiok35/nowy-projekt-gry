@@ -41,7 +41,11 @@ var active_tile_type: String = ""
 var last_mouse_pos: Vector2 = Vector2.ZERO
 var confirm_dialog: ConfirmationDialog
 var wood_warning_dialog: ConfirmationDialog
+var tech_warning_dialog: AcceptDialog
 var pending_building: String = ""
+
+var active_building_name: String = ""
+var active_building_level: int = 0
 
 var barracks_menu: BarracksMenu
 var army_menu: ArmyMenu
@@ -547,6 +551,12 @@ func setup_custom_popups():
 	upgrade_button = Button.new()
 	upgrade_button.text = "⬆️ Ulepsz budynek"
 	upgrade_button.pressed.connect(func(): 
+		var missing_tech = EconomyManager.get_missing_tech_for_upgrade(active_building_name, active_building_level + 1)
+		if missing_tech != "":
+			tech_warning_dialog.dialog_text = "Aby ulepszyć ten budynek, musisz najpierw odkryć technologię:\n" + missing_tech
+			tech_warning_dialog.popup_centered()
+			return
+
 		if world_ref and world_ref.has_method("upgrade_building"):
 			world_ref.upgrade_building(active_tile_pos)
 		hide_all_menus()
@@ -723,6 +733,12 @@ func setup_custom_popups():
 	wood_warning_dialog.cancel_button_text = "Anuluj"
 	wood_warning_dialog.confirmed.connect(_on_confirm_wood_warning)
 	add_child(wood_warning_dialog)
+	
+	tech_warning_dialog = AcceptDialog.new()
+	tech_warning_dialog.title = "Brak technologii"
+	tech_warning_dialog.dialog_text = ""
+	tech_warning_dialog.ok_button_text = "Zrozumiałem"
+	add_child(tech_warning_dialog)
 func _format_cost_dict(cost: Dictionary) -> String:
 	var parts: Array = []
 	for res in cost:
@@ -733,6 +749,8 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 	hide_all_menus()
 	active_tile_pos = tile_pos
 	active_tile_type = tile_type
+	active_building_name = building_name
+	active_building_level = building_level
 	last_mouse_pos = mouse_pos
 	
 	var has_building = building_name != "Brak"
@@ -932,6 +950,13 @@ func update_button_state(btn: Button, b_name: String, tile_type: String):
 	btn.modulate.a = 1.0 if can_place else 0.35
 
 func execute_build(building_name: String) -> void:
+	var missing_tech = EconomyManager.get_missing_tech_for_building(building_name)
+	if missing_tech != "":
+		tech_warning_dialog.dialog_text = "Aby postawić ten budynek, musisz najpierw odkryć technologię:\n" + missing_tech
+		tech_warning_dialog.popup_centered()
+		hide_all_menus()
+		return
+
 	var costs = EconomyManager.building_costs.get(building_name, {})
 	var wood_cost = costs.get("Drewno", 0)
 	var remaining_wood = EconomyManager.resources.get("Drewno", 0) - wood_cost
