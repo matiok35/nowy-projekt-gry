@@ -164,13 +164,15 @@ func _process(_delta: float) -> void:
 		culture_tree_button.disabled = menu_open
 	if turn_button:
 		turn_button.disabled = menu_open
-	if cat_zasobowe: cat_zasobowe.disabled = menu_open
-	if cat_naukowe: cat_naukowe.disabled = menu_open
-	if cat_tech: cat_tech.disabled = menu_open
-	if cat_wojskowe: cat_wojskowe.disabled = menu_open
+	# POPRAWKA: Przyciski kategorii (Surowce/Kultura/Technologia/Wojskowe) są
+	# dziećmi menu_budowania, więc nie wolno ich blokować na podstawie
+	# any_menu_visible() — menu_budowania samo w sobie powoduje, że ta
+	# funkcja zwraca true, co blokowało zakładki w momencie, gdy menu
+	# budowania było otwarte (czyli dokładnie wtedy, gdy miały być klikalne).
+	# Skoro te przyciski są widoczne wyłącznie wtedy, gdy widoczny jest ich
+	# panel nadrzędny (a on chowa się razem z resztą menu w hide_all_menus),
+	# dodatkowe blokowanie tutaj jest zbędne i błędne.
 
-# Sprawdza, czy generał (Character) stoi z przypisaną armią na polu wrogiego
-# obozowiska i w razie potrzeby pokazuje/ukrywa oraz pozycjonuje przycisk walki.
 func _update_battle_button() -> void:
 	if not battle_button: return
 

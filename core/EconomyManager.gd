@@ -25,7 +25,7 @@ var resources: Dictionary = {
 }
 
 var max_tech_points: float = 350.0
-var max_culture_points: float = 350.0 # POPRAWKA: Zwiększono limit, aby nowe węzły były osiągalne
+var max_culture_points: float = 350.0
 
 var building_costs: Dictionary = {
 	"Chata Drwala": {"Złoto": 30, "Drewno": 10},
@@ -60,181 +60,182 @@ var building_tech_requirements: Dictionary = {
 }
 
 var upgrade_tech_requirements: Dictionary = {
-	"Chata Drwala": {2: "2lvl Chata drwala", 3: "3lvl Chata drwala"},
-	"Farma": {2: "Hodowla + farma 2lvl", 3: "3lvl Hodowla + farma"},
-	"Pastwisko": {2: "Hodowla + farma 2lvl", 3: "3lvl Hodowla + farma"},
-	"Kopalnia Żelaza": {2: "2lvl Górnictwo", 3: "3lvl Górnictwo"},
-	"Kopalnia Węgla": {2: "2lvl Górnictwo", 3: "3lvl Górnictwo"},
-	"Warsztat": {2: "2lvl Warsztat", 3: "Warsztat 3 lvl"},
-	"Świątynia": {2: "Świątynia 2lvl", 3: "Świątynia 3lvl"},
-	"Baraki": {2: "Baraki 2lvl", 3: "Baraki 3lvl"},
-	"Laboratorium": {2: "Laboratorium 2lvl", 3: "Laboratorium 3lvl"},
-	"Biblioteka": {2: "Biblioteka 2lvl", 3: "Biblioteka 3lvl"},
-	"Dom mieszkalny": {2: "Dom mieszkalny 2lvl", 3: "Dom mieszkalny 3lvl"}
+	"Chata Drwala": {2: "Piła Dwuręczna", 3: "Tartak Mechaniczny"},
+	"Farma": {2: "Płodozmian", 3: "Agronomia"},
+	"Pastwisko": {2: "Płodozmian", 3: "Agronomia"},
+	"Kopalnia Żelaza": {2: "Głębokie Szyby", 3: "Metalurgia"},
+	"Kopalnia Węgla": {2: "Głębokie Szyby", 3: "Metalurgia"},
+	"Warsztat": {2: "Precyzyjne Narzędzia", 3: "Manufaktura"},
+	"Świątynia": {2: "Odnowa Wiary", 3: "Sanktuarium"},
+	"Baraki": {2: "Musztra", 3: "Twierdza"},
+	"Laboratorium": {2: "Alchemia", 3: "Akademia Nauk"},
+	"Biblioteka": {2: "Archiwa", 3: "Wielkie Archiwum"},
+	"Dom mieszkalny": {2: "Urbanizacja", 3: "Metropolia"}
 }
 
+# SKRÓCONE OPISY ("desc") DLA ZAPEWNIENIA MAŁYCH KAFELKÓW
 var technology_tree: Dictionary = {
 	"Chata drwala": {
-		"research_cost": 10, "research_time": 1, "req": [], "unlocked": false, "desc": "Podstawa.", "grid_coords": Vector2(0, 3), "icon": "🪓"
+		"research_cost": 10, "research_time": 1, "req": [], "unlocked": false, "desc": "Budowa Chaty Drwala.", "grid_coords": Vector2(0, 3), "icon": "🪓"
 	},
-	"2lvl Chata drwala": {
-		"research_cost": 30, "research_time": 3, "req": ["Chata drwala"], "unlocked": false, "desc": "Większy drwal.", "grid_coords": Vector2(1, 2), "icon": "🪓"
+	"Piła Dwuręczna": {
+		"research_cost": 30, "research_time": 3, "req": ["Chata drwala"], "unlocked": false, "desc": "Chata Drwala Lvl 2.", "grid_coords": Vector2(1, 2), "icon": "🪚"
 	},
-	"3lvl Chata drwala": {
-		"research_cost": 50, "research_time": 5, "req": ["2lvl Chata drwala"], "unlocked": false, "desc": "Wielki drwal.", "grid_coords": Vector2(2, 1), "icon": "🪓"
+	"Tartak Mechaniczny": {
+		"research_cost": 50, "research_time": 5, "req": ["Piła Dwuręczna"], "unlocked": false, "desc": "Chata Drwala Lvl 3.", "grid_coords": Vector2(2, 1), "icon": "🪵"
 	},
 	"Hodowla bydła": {
-		"research_cost": 20, "research_time": 2, "req": ["Chata drwala"], "unlocked": false, "desc": "Zwierzęta.", "grid_coords": Vector2(1, 4), "icon": "🐄"
+		"research_cost": 20, "research_time": 2, "req": ["Chata drwala"], "unlocked": false, "desc": "Budowa Pastwiska.", "grid_coords": Vector2(1, 4), "icon": "🐄"
 	},
-	"Hodowla + farma 2lvl": {
-		"research_cost": 40, "research_time": 4, "req": ["Hodowla bydła", "2lvl Chata drwala"], "unlocked": false, "desc": "Rozwój rolnictwa.", "grid_coords": Vector2(2, 3), "icon": "🌾"
+	"Płodozmian": {
+		"research_cost": 40, "research_time": 4, "req": ["Hodowla bydła", "Piła Dwuręczna"], "unlocked": false, "desc": "Farma/Pastwisko Lvl 2.", "grid_coords": Vector2(2, 3), "icon": "🌾"
 	},
 	"Górnictwo": {
-		"research_cost": 40, "research_time": 4, "req": ["Hodowla bydła"], "unlocked": false, "desc": "Wydobycie surowców.", "grid_coords": Vector2(2, 5), "icon": "⛏️"
+		"research_cost": 40, "research_time": 4, "req": ["Hodowla bydła"], "unlocked": false, "desc": "Kopalnie Żelaza i Węgla.", "grid_coords": Vector2(2, 5), "icon": "⛏️"
 	},
-	"3lvl Hodowla + farma": {
-		"research_cost": 60, "research_time": 6, "req": ["Hodowla + farma 2lvl", "3lvl Chata drwala"], "unlocked": false, "desc": "Zaawansowane rolnictwo.", "grid_coords": Vector2(3, 1), "icon": "🚜"
+	"Agronomia": {
+		"research_cost": 60, "research_time": 6, "req": ["Płodozmian", "Tartak Mechaniczny"], "unlocked": false, "desc": "Farma/Pastwisko Lvl 3.", "grid_coords": Vector2(3, 1), "icon": "🚜"
 	},
 	"Warsztat": {
-		"research_cost": 60, "research_time": 6, "req": ["Hodowla + farma 2lvl", "Górnictwo"], "unlocked": false, "desc": "Produkcja rzemieślnicza.", "grid_coords": Vector2(3, 3), "icon": "⚒️"
+		"research_cost": 60, "research_time": 6, "req": ["Płodozmian", "Górnictwo"], "unlocked": false, "desc": "Budowa Warsztatu.", "grid_coords": Vector2(3, 3), "icon": "⚒️"
 	},
-	"2lvl Górnictwo": {
-		"research_cost": 60, "research_time": 6, "req": ["Górnictwo"], "unlocked": false, "desc": "Głębsze szyby.", "grid_coords": Vector2(3, 5), "icon": "🗻"
+	"Głębokie Szyby": {
+		"research_cost": 60, "research_time": 6, "req": ["Górnictwo"], "unlocked": false, "desc": "Kopalnie Lvl 2.", "grid_coords": Vector2(3, 5), "icon": "🗻"
 	},
-	"2lvl Warsztat": {
-		"research_cost": 80, "research_time": 8, "req": ["3lvl Hodowla + farma", "Warsztat"], "unlocked": false, "desc": "Złożone narzędzia.", "grid_coords": Vector2(4, 2), "icon": "⚙️"
+	"Precyzyjne Narzędzia": {
+		"research_cost": 80, "research_time": 8, "req": ["Agronomia", "Warsztat"], "unlocked": false, "desc": "Warsztat Lvl 2.", "grid_coords": Vector2(4, 2), "icon": "⚙️"
 	},
 	"Świątynia": {
-		"research_cost": 80, "research_time": 8, "req": ["Warsztat", "2lvl Górnictwo"], "unlocked": false, "desc": "Miejsce kultu.", "grid_coords": Vector2(4, 4), "icon": "🕍"
+		"research_cost": 80, "research_time": 8, "req": ["Warsztat", "Głębokie Szyby"], "unlocked": false, "desc": "Budowa Świątyni.", "grid_coords": Vector2(4, 4), "icon": "🕍"
 	},
-	"Warsztat 3 lvl": {
-		"research_cost": 100, "research_time": 10, "req": ["2lvl Warsztat"], "unlocked": false, "desc": "Wielka produkcja.", "grid_coords": Vector2(5, 2), "icon": "🏭"
+	"Manufaktura": {
+		"research_cost": 100, "research_time": 10, "req": ["Precyzyjne Narzędzia"], "unlocked": false, "desc": "Warsztat Lvl 3.", "grid_coords": Vector2(5, 2), "icon": "🏭"
 	},
-	"Świątynia 2lvl": {
-		"research_cost": 100, "research_time": 10, "req": ["Świątynia"], "unlocked": false, "desc": "Rozwój religii.", "grid_coords": Vector2(5, 4), "icon": "🛕"
+	"Odnowa Wiary": {
+		"research_cost": 100, "research_time": 10, "req": ["Świątynia"], "unlocked": false, "desc": "Świątynia Lvl 2.", "grid_coords": Vector2(5, 4), "icon": "🛕"
 	},
 	"Baraki": {
-		"research_cost": 120, "research_time": 12, "req": ["Warsztat 3 lvl", "Świątynia 2lvl"], "unlocked": false, "desc": "Wojsko stacjonarne.", "grid_coords": Vector2(6, 3), "icon": "⚔️"
+		"research_cost": 120, "research_time": 12, "req": ["Manufaktura", "Odnowa Wiary"], "unlocked": false, "desc": "Budowa Baraków.", "grid_coords": Vector2(6, 3), "icon": "⚔️"
 	},
-	"Świątynia 3lvl": {
-		"research_cost": 150, "research_time": 15, "req": ["Baraki"], "unlocked": false, "desc": "Cuda wiary.", "grid_coords": Vector2(7, 1), "icon": "⛪"
+	"Sanktuarium": {
+		"research_cost": 150, "research_time": 15, "req": ["Baraki"], "unlocked": false, "desc": "Świątynia Lvl 3.", "grid_coords": Vector2(7, 1), "icon": "⛪"
 	},
-	"Baraki 2lvl": {
-		"research_cost": 150, "research_time": 15, "req": ["Baraki"], "unlocked": false, "desc": "Szkolenie taktyczne.", "grid_coords": Vector2(7, 3), "icon": "🛡️"
+	"Musztra": {
+		"research_cost": 150, "research_time": 15, "req": ["Baraki"], "unlocked": false, "desc": "Baraki Lvl 2.", "grid_coords": Vector2(7, 3), "icon": "🛡️"
 	},
-	"3lvl Górnictwo": {
-		"research_cost": 150, "research_time": 15, "req": ["Baraki"], "unlocked": false, "desc": "Zaawansowane wydobycie.", "grid_coords": Vector2(7, 5), "icon": "🌋"
+	"Metalurgia": {
+		"research_cost": 150, "research_time": 15, "req": ["Baraki"], "unlocked": false, "desc": "Kopalnie Lvl 3.", "grid_coords": Vector2(7, 5), "icon": "🌋"
 	},
 	"Laboratorium": {
-		"research_cost": 180, "research_time": 18, "req": ["Świątynia 3lvl", "Baraki 2lvl"], "unlocked": false, "desc": "Eksperymenty naukowe.", "grid_coords": Vector2(8, 2), "icon": "🧪"
+		"research_cost": 180, "research_time": 18, "req": ["Sanktuarium", "Musztra"], "unlocked": false, "desc": "Budowa Laboratorium.", "grid_coords": Vector2(8, 2), "icon": "🧪"
 	},
 	"Konnica": {
-		"research_cost": 180, "research_time": 18, "req": ["Baraki 2lvl", "3lvl Górnictwo"], "unlocked": false, "desc": "Szybki zwiad i szturm.", "grid_coords": Vector2(8, 4), "icon": "🐎"
+		"research_cost": 180, "research_time": 18, "req": ["Musztra", "Metalurgia"], "unlocked": false, "desc": "Jednostki konne.", "grid_coords": Vector2(8, 4), "icon": "🐎"
 	},
 	"Biblioteka": {
-		"research_cost": 220, "research_time": 22, "req": ["Laboratorium", "Konnica"], "unlocked": false, "desc": "Centrum wiedzy.", "grid_coords": Vector2(9, 3), "icon": "📚"
+		"research_cost": 220, "research_time": 22, "req": ["Laboratorium", "Konnica"], "unlocked": false, "desc": "Budowa Biblioteki.", "grid_coords": Vector2(9, 3), "icon": "📚"
 	},
-	"Laboratorium 2lvl": {
-		"research_cost": 260, "research_time": 26, "req": ["Biblioteka"], "unlocked": false, "desc": "Zaawansowane badania.", "grid_coords": Vector2(10, 1), "icon": "🔬"
+	"Alchemia": {
+		"research_cost": 260, "research_time": 26, "req": ["Biblioteka"], "unlocked": false, "desc": "Laboratorium Lvl 2.", "grid_coords": Vector2(10, 1), "icon": "🔬"
 	},
-	"Biblioteka 2lvl": {
-		"research_cost": 260, "research_time": 26, "req": ["Biblioteka"], "unlocked": false, "desc": "Zbiory specjalne.", "grid_coords": Vector2(10, 3), "icon": "📖"
+	"Archiwa": {
+		"research_cost": 260, "research_time": 26, "req": ["Biblioteka"], "unlocked": false, "desc": "Biblioteka Lvl 2.", "grid_coords": Vector2(10, 3), "icon": "📖"
 	},
-	"Dom mieszkalny 2lvl": {
-		"research_cost": 260, "research_time": 26, "req": ["Biblioteka"], "unlocked": false, "desc": "Rozwój urbanizacji.", "grid_coords": Vector2(10, 5), "icon": "🏘️"
+	"Urbanizacja": {
+		"research_cost": 260, "research_time": 26, "req": ["Biblioteka"], "unlocked": false, "desc": "Domy Lvl 2.", "grid_coords": Vector2(10, 5), "icon": "🏘️"
 	},
-	"Laboratorium 3lvl": {
-		"research_cost": 300, "research_time": 30, "req": ["Laboratorium 2lvl"], "unlocked": false, "desc": "Akademia Nauk.", "grid_coords": Vector2(11, 1), "icon": "🌌"
+	"Akademia Nauk": {
+		"research_cost": 300, "research_time": 30, "req": ["Alchemia"], "unlocked": false, "desc": "Laboratorium Lvl 3.", "grid_coords": Vector2(11, 1), "icon": "🌌"
 	},
-	"Biblioteka 3lvl": {
-		"research_cost": 300, "research_time": 30, "req": ["Biblioteka 2lvl"], "unlocked": false, "desc": "Wielkie Archiwum.", "grid_coords": Vector2(11, 3), "icon": "🏛️"
+	"Wielkie Archiwum": {
+		"research_cost": 300, "research_time": 30, "req": ["Archiwa"], "unlocked": false, "desc": "Biblioteka Lvl 3.", "grid_coords": Vector2(11, 3), "icon": "🏛️"
 	},
-	"Baraki 3lvl": {
-		"research_cost": 300, "research_time": 30, "req": ["Dom mieszkalny 2lvl"], "unlocked": false, "desc": "Forteca szkoleniowa.", "grid_coords": Vector2(11, 5), "icon": "🏰"
+	"Twierdza": {
+		"research_cost": 300, "research_time": 30, "req": ["Urbanizacja"], "unlocked": false, "desc": "Baraki Lvl 3.", "grid_coords": Vector2(11, 5), "icon": "🏰"
 	},
 	"Mag": {
-		"research_cost": 350, "research_time": 35, "req": ["Laboratorium 3lvl", "Biblioteka 3lvl"], "unlocked": false, "desc": "Sztuki magiczne.", "grid_coords": Vector2(12, 2), "icon": "🧙"
+		"research_cost": 350, "research_time": 35, "req": ["Akademia Nauk", "Wielkie Archiwum"], "unlocked": false, "desc": "Rekrutacja Magów.", "grid_coords": Vector2(12, 2), "icon": "🧙"
 	},
-	"Dom mieszkalny 3lvl": {
-		"research_cost": 350, "research_time": 35, "req": ["Biblioteka 3lvl", "Baraki 3lvl"], "unlocked": false, "desc": "Metropolia.", "grid_coords": Vector2(12, 4), "icon": "🏙️"
+	"Metropolia": {
+		"research_cost": 350, "research_time": 35, "req": ["Wielkie Archiwum", "Twierdza"], "unlocked": false, "desc": "Domy Lvl 3.", "grid_coords": Vector2(12, 4), "icon": "🏙️"
 	}
 }
 
 var culture_tree: Dictionary = {
 	"Kultura +2/tura": {
-		"research_cost": 10, "research_time": 1, "req": [], "unlocked": false, "desc": "Kultura +2 kultury/turę", "grid_coords": Vector2(0, 3), "icon": "🏛️"
+		"research_cost": 10, "research_time": 1, "req": [], "unlocked": false, "desc": "+2 Kultury/turę.", "grid_coords": Vector2(0, 3), "icon": "🏛️"
 	},
 	"Jedzenie +10%": {
-		"research_cost": 30, "research_time": 3, "req": ["Kultura +2/tura"], "unlocked": false, "desc": "+10% jedzenia z farm i hodowli", "grid_coords": Vector2(1, 1), "icon": "🌾"
+		"research_cost": 30, "research_time": 3, "req": ["Kultura +2/tura"], "unlocked": false, "desc": "+10% Jedzenia.", "grid_coords": Vector2(1, 1), "icon": "🌾"
 	},
 	"Żelazo i węgiel +5%": {
-		"research_cost": 30, "research_time": 3, "req": ["Kultura +2/tura"], "unlocked": false, "desc": "+5% żelaza i węgla z kopalń", "grid_coords": Vector2(1, 5), "icon": "⛏️"
+		"research_cost": 30, "research_time": 3, "req": ["Kultura +2/tura"], "unlocked": false, "desc": "+5% Żelaza/Węgla.", "grid_coords": Vector2(1, 5), "icon": "⛏️"
 	},
 	"Złoto z domów": {
-		"research_cost": 40, "research_time": 4, "req": ["Jedzenie +10%"], "unlocked": false, "desc": "+2 złota z budynku mieszkalnego", "grid_coords": Vector2(2, 1), "icon": "💰"
+		"research_cost": 40, "research_time": 4, "req": ["Jedzenie +10%"], "unlocked": false, "desc": "+2 Złota z domów.", "grid_coords": Vector2(2, 1), "icon": "💰"
 	},
 	"Ruch generała I": {
-		"research_cost": 40, "research_time": 4, "req": ["Żelazo i węgiel +5%"], "unlocked": false, "desc": "+1 ruchu generała", "grid_coords": Vector2(2, 5), "icon": "🏇"
+		"research_cost": 40, "research_time": 4, "req": ["Żelazo i węgiel +5%"], "unlocked": false, "desc": "+1 Ruch generała.", "grid_coords": Vector2(2, 5), "icon": "🏇"
 	},
 	"Złoto za mieszkańca": {
-		"research_cost": 60, "research_time": 6, "req": ["Złoto z domów"], "unlocked": false, "desc": "+1 złota za każdego mieszkańca", "grid_coords": Vector2(3, 1), "icon": "🪙"
+		"research_cost": 60, "research_time": 6, "req": ["Złoto z domów"], "unlocked": false, "desc": "+1 Złota/mieszkańca.", "grid_coords": Vector2(3, 1), "icon": "🪙"
 	},
 	"Drewno +5%": {
-		"research_cost": 60, "research_time": 6, "req": ["Ruch generała I"], "unlocked": false, "desc": "+5% drewna z tartaku", "grid_coords": Vector2(3, 5), "icon": "🪵"
+		"research_cost": 60, "research_time": 6, "req": ["Ruch generała I"], "unlocked": false, "desc": "+5% Drewna.", "grid_coords": Vector2(3, 5), "icon": "🪵"
 	},
 	"Złoto za świątynie": {
-		"research_cost": 80, "research_time": 8, "req": ["Złoto za mieszkańca", "Drewno +5%"], "unlocked": false, "desc": "+2 złota za świątynię", "grid_coords": Vector2(4, 3), "icon": "🕍"
+		"research_cost": 80, "research_time": 8, "req": ["Złoto za mieszkańca", "Drewno +5%"], "unlocked": false, "desc": "+2 Złota/świątynię.", "grid_coords": Vector2(4, 3), "icon": "🕍"
 	},
 	"Szybsze badania": {
-		"research_cost": 100, "research_time": 10, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "-1 tura do badań", "grid_coords": Vector2(5, 1), "icon": "⏳"
+		"research_cost": 100, "research_time": 10, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "-1 Tura badań.", "grid_coords": Vector2(5, 1), "icon": "⏳"
 	},
 	"Nauka z warsztatu": {
-		"research_cost": 100, "research_time": 10, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "+1 pkt nauki za warsztat", "grid_coords": Vector2(5, 3), "icon": "🧪"
+		"research_cost": 100, "research_time": 10, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "+1 Nauki/warsztat.", "grid_coords": Vector2(5, 3), "icon": "🧪"
 	},
 	"Szybsza rekrutacja": {
-		"research_cost": 100, "research_time": 10, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "-1 tura do rekrutacji", "grid_coords": Vector2(5, 5), "icon": "⚔️"
+		"research_cost": 100, "research_time": 10, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "-1 Tura rekrutacji.", "grid_coords": Vector2(5, 5), "icon": "⚔️"
 	},
 	"Tańsze domy": {
-		"research_cost": 120, "research_time": 12, "req": ["Szybsze badania", "Nauka z warsztatu"], "unlocked": false, "desc": "-10% ceny domów", "grid_coords": Vector2(6, 2), "icon": "🏠"
+		"research_cost": 120, "research_time": 12, "req": ["Szybsze badania", "Nauka z warsztatu"], "unlocked": false, "desc": "-10% Ceny domów.", "grid_coords": Vector2(6, 2), "icon": "🏠"
 	},
 	"Tańsze farmy": {
-		"research_cost": 120, "research_time": 12, "req": ["Nauka z warsztatu", "Szybsza rekrutacja"], "unlocked": false, "desc": "-10% ceny farm", "grid_coords": Vector2(6, 4), "icon": "🚜"
+		"research_cost": 120, "research_time": 12, "req": ["Nauka z warsztatu", "Szybsza rekrutacja"], "unlocked": false, "desc": "-10% Ceny farm.", "grid_coords": Vector2(6, 4), "icon": "🚜"
 	},
 	"Tańsze bud. naukowe": {
-		"research_cost": 150, "research_time": 15, "req": ["Tańsze domy"], "unlocked": false, "desc": "-10% ceny budynków naukowych", "grid_coords": Vector2(7, 1), "icon": "🔬"
+		"research_cost": 150, "research_time": 15, "req": ["Tańsze domy"], "unlocked": false, "desc": "-10% Ceny b. nauk.", "grid_coords": Vector2(7, 1), "icon": "🔬"
 	},
 	"Ruch generała II": {
-		"research_cost": 150, "research_time": 15, "req": ["Tańsze domy", "Tańsze farmy"], "unlocked": false, "desc": "+1 ruchu generała", "grid_coords": Vector2(7, 3), "icon": "🐎"
+		"research_cost": 150, "research_time": 15, "req": ["Tańsze domy", "Tańsze farmy"], "unlocked": false, "desc": "+1 Ruch generała.", "grid_coords": Vector2(7, 3), "icon": "🐎"
 	},
 	"Tańsze bud. kulturowe": {
-		"research_cost": 150, "research_time": 15, "req": ["Tańsze farmy"], "unlocked": false, "desc": "-10% ceny budynków kulturowych", "grid_coords": Vector2(7, 5), "icon": "🎭"
+		"research_cost": 150, "research_time": 15, "req": ["Tańsze farmy"], "unlocked": false, "desc": "-10% Ceny b. kult.", "grid_coords": Vector2(7, 5), "icon": "🎭"
 	},
 	"Tańsza rekrutacja": {
-		"research_cost": 180, "research_time": 18, "req": ["Tańsze bud. naukowe"], "unlocked": false, "desc": "-10% koszt rekrutacji", "grid_coords": Vector2(8, 1), "icon": "🛡️"
+		"research_cost": 180, "research_time": 18, "req": ["Tańsze bud. naukowe"], "unlocked": false, "desc": "-10% Koszt rekr.", "grid_coords": Vector2(8, 1), "icon": "🛡️"
 	},
 	"Kultura z domów": {
-		"research_cost": 180, "research_time": 18, "req": ["Tańsze bud. kulturowe"], "unlocked": false, "desc": "+1 pkt kultury za dom na turę", "grid_coords": Vector2(8, 5), "icon": "🏘️"
+		"research_cost": 180, "research_time": 18, "req": ["Tańsze bud. kulturowe"], "unlocked": false, "desc": "+1 Kultury/dom.", "grid_coords": Vector2(8, 5), "icon": "🏘️"
 	},
 	"Złoto co turę": {
-		"research_cost": 220, "research_time": 22, "req": ["Tańsza rekrutacja"], "unlocked": false, "desc": "+1 złoto na turę", "grid_coords": Vector2(9, 1), "icon": "💸"
+		"research_cost": 220, "research_time": 22, "req": ["Tańsza rekrutacja"], "unlocked": false, "desc": "+1 Złoto/turę.", "grid_coords": Vector2(9, 1), "icon": "💸"
 	},
 	"Tech z baraków": {
-		"research_cost": 220, "research_time": 22, "req": ["Kultura z domów"], "unlocked": false, "desc": "+1 pkt technologii za każdy barak", "grid_coords": Vector2(9, 5), "icon": "⚙️"
+		"research_cost": 220, "research_time": 22, "req": ["Kultura z domów"], "unlocked": false, "desc": "+1 Nauki/barak.", "grid_coords": Vector2(9, 5), "icon": "⚙️"
 	},
 	"Złoto z drwala": {
-		"research_cost": 260, "research_time": 26, "req": ["Złoto co turę", "Tech z baraków"], "unlocked": false, "desc": "+1 złoto/tura za dom drwala", "grid_coords": Vector2(10, 3), "icon": "🪓"
+		"research_cost": 260, "research_time": 26, "req": ["Złoto co turę", "Tech z baraków"], "unlocked": false, "desc": "+1 Złoto/drwala.", "grid_coords": Vector2(10, 3), "icon": "🪓"
 	},
 	"Tańsza chata drwala": {
-		"research_cost": 300, "research_time": 30, "req": ["Złoto z drwala"], "unlocked": false, "desc": "-10% koszt chaty drwala", "grid_coords": Vector2(11, 1), "icon": "📉"
+		"research_cost": 300, "research_time": 30, "req": ["Złoto z drwala"], "unlocked": false, "desc": "-10% Ceny drwala.", "grid_coords": Vector2(11, 1), "icon": "📉"
 	},
 	"Tańsze baraki": {
-		"research_cost": 300, "research_time": 30, "req": ["Złoto z drwala"], "unlocked": false, "desc": "-10% koszt budowy baraków", "grid_coords": Vector2(11, 3), "icon": "🏯"
+		"research_cost": 300, "research_time": 30, "req": ["Złoto z drwala"], "unlocked": false, "desc": "-10% Ceny baraków.", "grid_coords": Vector2(11, 3), "icon": "🏯"
 	},
 	"Ruch generała III": {
-		"research_cost": 300, "research_time": 30, "req": ["Złoto z drwala"], "unlocked": false, "desc": "+1 ruch generała na turę", "grid_coords": Vector2(11, 5), "icon": "🏇"
+		"research_cost": 300, "research_time": 30, "req": ["Złoto z drwala"], "unlocked": false, "desc": "+1 Ruch generała.", "grid_coords": Vector2(11, 5), "icon": "🏇"
 	},
 	"Złoto z baraków": {
-		"research_cost": 350, "research_time": 35, "req": ["Tańsza chata drwala", "Tańsze baraki", "Ruch generała III"], "unlocked": false, "desc": "+1 złota/tura za każdy barak", "grid_coords": Vector2(12, 3), "icon": "🤑"
+		"research_cost": 350, "research_time": 35, "req": ["Tańsza chata drwala", "Tańsze baraki", "Ruch generała III"], "unlocked": false, "desc": "+1 Złoto/barak.", "grid_coords": Vector2(12, 3), "icon": "🤑"
 	}
 }
 
@@ -290,8 +291,6 @@ func can_afford_and_place(building_name: String, tile_type: String) -> bool:
 	if building_name == "Farma" and tile_type != "Pszenica": return false
 	if building_name == "Pastwisko" and tile_type != "Bydło": return false
 	
-	# POPRAWKA: Usunięto sztywne blokowanie typów innych niż Trawa dla budynków miejskich,
-	# aby kod niszczenia złóż w game_world.gd stał się osiągalny.
 	var costs = get_modified_building_costs(building_name)
 	for res in costs:
 		if resources.get(res, 0) < costs[res]:
@@ -470,6 +469,7 @@ func next_turn(active_buildings_data: Array) -> void:
 		resources["Złoto"] += 1
 
 	var total_science = 1 + turn_science
+	var total_culture = 1 + turn_culture
 	
 	resources["Nauka"] = min(
 		max_tech_points,
@@ -478,7 +478,7 @@ func next_turn(active_buildings_data: Array) -> void:
 
 	resources["Kultura"] = min(
 		max_culture_points,
-		resources["Kultura"] + turn_culture
+		resources["Kultura"] + total_culture
 	)
 
 	resources["Głoduje"] = resources["Jedzenie"] <= 0
