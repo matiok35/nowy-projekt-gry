@@ -122,12 +122,14 @@ var resources: Dictionary = {
 	"Głoduje": false
 }
 
+var turn_warnings: Array = []
+
 var max_tech_points: float = 350.0
 var max_culture_points: float = 350.0
 
 var building_costs: Dictionary = {
 	"Chata Drwala": {"Złoto": 30, "Drewno": 10},
-	"Kopalnia Żelaza": {"Złoto": 50, "Drewno": 20},
+	"Kopalnia Żelaza": {"Złoto": 50, "Drewno": 20, "Węgiel": 15},
 	"Kopalnia Węgla": {"Złoto": 60, "Drewno": 25},
 	"Farma": {"Złoto": 25, "Drewno": 15},
 	"Pastwisko": {"Złoto": 30, "Drewno": 15},
@@ -344,7 +346,7 @@ func get_building_tooltip(building_name: String) -> String:
 	var text = "Wymagania\n"
 	match building_name:
 		"Chata Drwala": text += "• Wymaga: Drewno\n"
-		"Kopalnia Żelaza": text += "• Wymaga: Żelazo\n"
+		"Kopalnia Żelaza": text += "• Wymaga: złoże Żelaza\n• Zużywa Węgiel co turę\n"
 		"Kopalnia Węgla": text += "• Wymaga: Węgiel\n"
 		"Farma": text += "• Wymaga: Pszenica\n"
 		"Pastwisko": text += "• Wymaga: Bydło\n"
@@ -479,6 +481,7 @@ func get_missing_tech_for_upgrade(building_name: String, target_level: int) -> S
 	return ""
 
 func next_turn(active_buildings_data: Array) -> void:
+	turn_warnings.clear()
 	current_turn += 1
 	var max_pop = 5
 	for b_data in active_buildings_data:
@@ -535,8 +538,15 @@ func next_turn(active_buildings_data: Array) -> void:
 					resources["Złoto"] += int(1 * b_level * temple_multiplier)
 			"Kopalnia Żelaza":
 				var iron_yield = 5
-				resources["Żelazo"] += int(iron_yield * size_modifier * b_level * iron_coal_multiplier * temple_multiplier)
-				resources["Złoto"] -= 2 * b_level
+				var produced_iron = int(iron_yield * size_modifier * b_level * iron_coal_multiplier * temple_multiplier)
+				var coal_consumed = int(3 * size_modifier * b_level)
+				if resources.get("Węgiel", 0) >= coal_consumed:
+					resources["Węgiel"] -= coal_consumed
+					resources["Żelazo"] += produced_iron
+					resources["Złoto"] -= 2 * b_level
+				else:
+					if not turn_warnings.has("Brak węgla! Kopalnie żelaza wstrzymały produkcję."):
+						turn_warnings.append("Brak węgla! Kopalnie żelaza wstrzymały produkcję.")
 			"Kopalnia Węgla":
 				var coal_yield = 4
 				resources["Węgiel"] += int(coal_yield * size_modifier * b_level * iron_coal_multiplier * temple_multiplier)

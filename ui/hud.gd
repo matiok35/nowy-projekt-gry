@@ -42,6 +42,7 @@ var last_mouse_pos: Vector2 = Vector2.ZERO
 var confirm_dialog: ConfirmationDialog
 var wood_warning_dialog: ConfirmationDialog
 var tech_warning_dialog: AcceptDialog
+var turn_warning_dialog: AcceptDialog
 var pending_building: String = ""
 
 var active_building_name: String = ""
@@ -877,6 +878,12 @@ func setup_custom_popups():
 	tech_warning_dialog.dialog_text = ""
 	tech_warning_dialog.ok_button_text = "Zrozumiałem"
 	add_child(tech_warning_dialog)
+	
+	turn_warning_dialog = AcceptDialog.new()
+	turn_warning_dialog.title = "Ostrzeżenie"
+	turn_warning_dialog.dialog_text = ""
+	turn_warning_dialog.ok_button_text = "Zrozumiałem"
+	add_child(turn_warning_dialog)
 func _format_cost_dict(cost: Dictionary) -> String:
 	var parts: Array = []
 	for res in cost:
@@ -1180,6 +1187,13 @@ func _on_turn_pressed():
 	if world_ref and world_ref.has_method("get_active_buildings_list"):
 		var buildings = world_ref.get_active_buildings_list()
 		EconomyManager.next_turn(buildings)
+		
+		if EconomyManager.turn_warnings.size() > 0:
+			var warning_text = ""
+			for w in EconomyManager.turn_warnings:
+				warning_text += w + "\n"
+			turn_warning_dialog.dialog_text = warning_text.strip_edges()
+			turn_warning_dialog.popup_centered()
 
 func style_main_hud_elements():
 	var top_panel = $Panel

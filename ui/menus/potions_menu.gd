@@ -28,6 +28,10 @@ func setup_potions_windows():
 	my_potions_window.visible = false
 	my_potions_window.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	my_potions_window.color = Color(0, 0, 0, 0)
+	my_potions_window.gui_input.connect(func(event):
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			my_potions_window.visible = false
+	)
 	
 	var center_my = CenterContainer.new()
 	center_my.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -51,12 +55,25 @@ func setup_potions_windows():
 	my_vbox.add_theme_constant_override("separation", 15)
 	my_panel.add_child(my_vbox)
 	
+	var header_hbox_my = HBoxContainer.new()
+	
 	var my_header = Label.new()
 	my_header.text = "🧪 Moje Potki"
 	my_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	my_header.add_theme_font_size_override("font_size", 24)
 	my_header.add_theme_color_override("font_color", Color(0.9, 0.7, 0.2))
-	my_vbox.add_child(my_header)
+	my_header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	
+	var btn_close_my = Button.new()
+	btn_close_my.text = "X"
+	btn_close_my.custom_minimum_size = Vector2(40, 40)
+	btn_close_my.pressed.connect(func(): my_potions_window.visible = false)
+	if hud.has_method("_style_df_button"):
+		hud._style_df_button(btn_close_my)
+	
+	header_hbox_my.add_child(my_header)
+	header_hbox_my.add_child(btn_close_my)
+	my_vbox.add_child(header_hbox_my)
 	
 	var my_scroll = ScrollContainer.new()
 	my_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -67,12 +84,7 @@ func setup_potions_windows():
 	my_potions_list.add_theme_constant_override("separation", 10)
 	my_scroll.add_child(my_potions_list)
 	
-	var btn_close_my = Button.new()
-	btn_close_my.text = "Zamknij"
-	btn_close_my.custom_minimum_size = Vector2(100, 40)
-	btn_close_my.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	btn_close_my.pressed.connect(func(): my_potions_window.visible = false)
-	my_vbox.add_child(btn_close_my)
+
 	
 	hud.add_child(my_potions_window)
 	
@@ -82,6 +94,10 @@ func setup_potions_windows():
 	buy_potions_window.visible = false
 	buy_potions_window.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	buy_potions_window.color = Color(0, 0, 0, 0)
+	buy_potions_window.gui_input.connect(func(event):
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			buy_potions_window.visible = false
+	)
 	
 	var center_buy = CenterContainer.new()
 	center_buy.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -96,12 +112,25 @@ func setup_potions_windows():
 	buy_vbox.add_theme_constant_override("separation", 15)
 	buy_panel.add_child(buy_vbox)
 	
+	var header_hbox_buy = HBoxContainer.new()
+	
 	var buy_header = Label.new()
 	buy_header.text = "💰 Kup Potki"
 	buy_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	buy_header.add_theme_font_size_override("font_size", 24)
 	buy_header.add_theme_color_override("font_color", Color(0.9, 0.7, 0.2))
-	buy_vbox.add_child(buy_header)
+	buy_header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	
+	var btn_close_buy = Button.new()
+	btn_close_buy.text = "X"
+	btn_close_buy.custom_minimum_size = Vector2(40, 40)
+	btn_close_buy.pressed.connect(func(): buy_potions_window.visible = false)
+	if hud.has_method("_style_df_button"):
+		hud._style_df_button(btn_close_buy)
+	
+	header_hbox_buy.add_child(buy_header)
+	header_hbox_buy.add_child(btn_close_buy)
+	buy_vbox.add_child(header_hbox_buy)
 	
 	var buy_scroll = ScrollContainer.new()
 	buy_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -112,12 +141,7 @@ func setup_potions_windows():
 	buy_potions_list.add_theme_constant_override("separation", 10)
 	buy_scroll.add_child(buy_potions_list)
 	
-	var btn_close_buy = Button.new()
-	btn_close_buy.text = "Zamknij"
-	btn_close_buy.custom_minimum_size = Vector2(100, 40)
-	btn_close_buy.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	btn_close_buy.pressed.connect(func(): buy_potions_window.visible = false)
-	buy_vbox.add_child(btn_close_buy)
+
 	
 	hud.add_child(buy_potions_window)
 

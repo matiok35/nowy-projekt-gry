@@ -2,16 +2,28 @@ class_name BarracksMenu
 extends RefCounted
 
 var hud: Control
-var barracks_window: PanelContainer
+var barracks_window: ColorRect
 var barracks_content_vbox: VBoxContainer
 
 func _init(_hud: Control):
 	hud = _hud
 
 func setup_barracks_window():
-	barracks_window = PanelContainer.new()
+	barracks_window = ColorRect.new()
 	barracks_window.visible = false
-	barracks_window.custom_minimum_size = Vector2(800, 500)
+	barracks_window.color = Color(0, 0, 0, 0)
+	barracks_window.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	barracks_window.gui_input.connect(func(event):
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			barracks_window.visible = false
+	)
+	
+	var center = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	barracks_window.add_child(center)
+	
+	var panel = PanelContainer.new()
+	panel.custom_minimum_size = Vector2(800, 500)
 	
 	var style_panel = StyleBoxFlat.new()
 	style_panel.bg_color = hud.DF_BG
@@ -24,18 +36,17 @@ func setup_barracks_window():
 	style_panel.content_margin_bottom = 20
 	style_panel.shadow_color = Color(0, 0, 0, 0.55)
 	style_panel.shadow_size = 6
-	barracks_window.add_theme_stylebox_override("panel", style_panel)
+	panel.add_theme_stylebox_override("panel", style_panel)
+	center.add_child(panel)
 	
 	barracks_content_vbox = VBoxContainer.new()
 	barracks_content_vbox.add_theme_constant_override("separation", 15)
-	barracks_window.add_child(barracks_content_vbox)
+	panel.add_child(barracks_content_vbox)
 	
 	hud.add_child(barracks_window)
 
 func show_barracks_menu():
 	barracks_window.visible = true
-	var viewport_size = hud.get_viewport_rect().size
-	barracks_window.position = (viewport_size - barracks_window.custom_minimum_size) / 2.0
 	
 	var humans_faction = null
 	if hud.unit_data_json.has("factions"):
@@ -54,9 +65,6 @@ func _populate_barracks_units(faction: Dictionary):
 	var header_hbox = HBoxContainer.new()
 	header_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	
-	var spacer = Control.new()
-	spacer.custom_minimum_size = Vector2(80, 40)
-	
 	var title_label = Label.new()
 	title_label.text = "Jednostki: " + faction["name"]
 	title_label.add_theme_font_size_override("font_size", 24)
@@ -64,11 +72,17 @@ func _populate_barracks_units(faction: Dictionary):
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	
 	var close_btn = Button.new()
-	close_btn.text = "Zamknij"
-	close_btn.custom_minimum_size = Vector2(80, 40)
+	close_btn.text = "X"
+	close_btn.custom_minimum_size = Vector2(40, 40)
 	close_btn.pressed.connect(func(): barracks_window.visible = false)
+	if hud.has_method("_style_df_button"):
+		hud._style_df_button(close_btn)
 	
-	header_hbox.add_child(spacer)
+	# Usunięcie spacer, by wyśrodkować tytuł mimo przycisku X po prawej:
+	var spacer_left = Control.new()
+	spacer_left.custom_minimum_size = Vector2(40, 40)
+	
+	header_hbox.add_child(spacer_left)
 	header_hbox.add_child(title_label)
 	header_hbox.add_child(close_btn)
 	barracks_content_vbox.add_child(header_hbox)

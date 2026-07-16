@@ -2,16 +2,28 @@ class_name ArmyMenu
 extends RefCounted
 
 var hud: Control
-var army_window: PanelContainer
+var army_window: ColorRect
 var army_content_vbox: VBoxContainer
 
 func _init(_hud: Control):
 	hud = _hud
 
 func setup_army_window():
-	army_window = PanelContainer.new()
+	army_window = ColorRect.new()
 	army_window.visible = false
-	army_window.custom_minimum_size = Vector2(800, 500)
+	army_window.color = Color(0, 0, 0, 0)
+	army_window.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	army_window.gui_input.connect(func(event):
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			army_window.visible = false
+	)
+	
+	var center = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	army_window.add_child(center)
+	
+	var panel = PanelContainer.new()
+	panel.custom_minimum_size = Vector2(800, 500)
 	
 	var style_panel = StyleBoxFlat.new()
 	style_panel.bg_color = hud.DF_BG
@@ -24,26 +36,19 @@ func setup_army_window():
 	style_panel.content_margin_bottom = 20
 	style_panel.shadow_color = Color(0, 0, 0, 0.55)
 	style_panel.shadow_size = 6
-	army_window.add_theme_stylebox_override("panel", style_panel)
+	panel.add_theme_stylebox_override("panel", style_panel)
+	center.add_child(panel)
 	
 	army_content_vbox = VBoxContainer.new()
 	army_content_vbox.add_theme_constant_override("separation", 15)
-	army_window.add_child(army_content_vbox)
+	panel.add_child(army_content_vbox)
 	
 	hud.add_child(army_window)
 
 func show_army_menu():
 	army_window.visible = true
-	var viewport_size = hud.get_viewport_rect().size
-	army_window.position = (viewport_size - army_window.custom_minimum_size) / 2.0
 	_populate_army()
-	_recenter_window_deferred(army_window)
 
-func _recenter_window_deferred(win: Control) -> void:
-	await hud.get_tree().process_frame
-	if not is_instance_valid(win) or not win.visible: return
-	var viewport_size = hud.get_viewport_rect().size
-	win.position = ((viewport_size - win.size) / 2.0).round()
 
 func _populate_army():
 	for child in army_content_vbox.get_children():
@@ -51,16 +56,6 @@ func _populate_army():
 		
 	var header_hbox = HBoxContainer.new()
 	header_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	var title_label = Label.new()
-	title_label.text = "Moja Armia"
-	title_label.add_theme_font_size_override("font_size", 24)
-	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	
-	var close_btn = Button.new()
-	close_btn.text = "Zamknij"
-	close_btn.custom_minimum_size = Vector2(80, 40)
-	close_btn.pressed.connect(func(): army_window.visible = false)
 	
 	var clear_all_btn = Button.new()
 	clear_all_btn.text = "Zwolnij armię"
@@ -73,7 +68,8 @@ func _populate_army():
 			EconomyManager.clear_army()
 			if hud.world_ref and hud.world_ref.get("character") and hud.world_ref.character:
 				hud.world_ref.character.army.clear()
-				hud.world_ref.character._update_army_label()
+				if hud.world_ref.character.has_method("_update_army_label"):
+					hud.world_ref.character._update_army_label()
 			_populate_army()
 			dialog.queue_free()
 		)
@@ -81,6 +77,19 @@ func _populate_army():
 		hud.add_child(dialog)
 		dialog.popup_centered()
 	)
+	
+	var title_label = Label.new()
+	title_label.text = "Moja Armia"
+	title_label.add_theme_font_size_override("font_size", 24)
+	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	
+	var close_btn = Button.new()
+	close_btn.text = "X"
+	close_btn.custom_minimum_size = Vector2(40, 40)
+	close_btn.pressed.connect(func(): army_window.visible = false)
+	if hud.has_method("_style_df_button"):
+		hud._style_df_button(close_btn)
 	
 	header_hbox.add_child(clear_all_btn)
 	header_hbox.add_child(title_label)
