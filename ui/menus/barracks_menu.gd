@@ -149,7 +149,10 @@ func _populate_barracks_units(faction: Dictionary):
 			var btn_recruit = Button.new()
 			var cost = EconomyManager.calculate_unit_cost(unit)
 			btn_recruit.text = "Zwerbuj"
-			btn_recruit.tooltip_text = "Koszt:\n%d Złota\n%d Żelaza\n%d Jedzenia\n%d Populacji" % [cost.get("Złoto", 0), cost.get("Żelazo", 0), cost.get("Jedzenie", 0), cost.get("Populacja", 0)]
+			if EconomyManager.is_army_full():
+				btn_recruit.tooltip_text = "Osiągnięto maksymalną liczbę jednostek w armii (%d/%d)." % [EconomyManager.player_army.size(), EconomyManager.MAX_ARMY_SIZE]
+			else:
+				btn_recruit.tooltip_text = "Koszt:\n%d Złota\n%d Żelaza\n%d Jedzenia\n%d Populacji" % [cost.get("Złoto", 0), cost.get("Żelazo", 0), cost.get("Jedzenie", 0), cost.get("Populacja", 0)]
 			btn_recruit.custom_minimum_size = Vector2(150, 40)
 			btn_recruit.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			if EconomyManager.can_recruit_unit(unit):

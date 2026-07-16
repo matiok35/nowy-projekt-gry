@@ -6,6 +6,7 @@ signal unit_training_complete(unit: Dictionary)
 
 var current_turn: int = 1
 var player_army: Array = []
+const MAX_ARMY_SIZE: int = 50
 
 var army_bonus_hp: int = 0
 var army_bonus_dmg: int = 0
@@ -691,6 +692,8 @@ func calculate_unit_cost(unit: Dictionary) -> Dictionary:
 	return cost
 
 func can_recruit_unit(unit: Dictionary) -> bool:
+	if player_army.size() >= MAX_ARMY_SIZE:
+		return false
 	var cost = calculate_unit_cost(unit)
 	if resources.get("Populacja", 0) - cost.get("Populacja", 0) < 1:
 		return false
@@ -698,6 +701,9 @@ func can_recruit_unit(unit: Dictionary) -> bool:
 		if resources.get(res, 0) < cost[res]:
 			return false
 	return true
+
+func is_army_full() -> bool:
+	return player_army.size() >= MAX_ARMY_SIZE
 
 func recruit_unit(unit: Dictionary) -> void:
 	if can_recruit_unit(unit):
