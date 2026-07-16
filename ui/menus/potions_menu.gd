@@ -7,6 +7,17 @@ var buy_potions_window: ColorRect
 var my_potions_list: VBoxContainer
 var buy_potions_list: VBoxContainer
 
+const POTION_IMAGES: Dictionary = {
+	"potka_sily_1": preload("res://assets/potions/cropped_Potion_of_Strength.png"),
+	"potka_sily_10": preload("res://assets/potions/cropped_Greater_Potion_of_Strength.png"),
+	"potka_wit_1": preload("res://assets/potions/cropped_Potion_of_Vitality.png"),
+	"potka_wit_10": preload("res://assets/potions/cropped_Greater_Potion_of_Vitality.png"),
+	"potka_obrony_1": preload("res://assets/potions/cropped_Potion_of_Stoneskin.png"),
+	"potka_obrony_10": preload("res://assets/potions/cropped_Greater_Potion_of_Stoneskin.png"),
+	"potka_szybkosci_1": preload("res://assets/potions/cropped_Potion_of_Wind.png"),
+	"potka_szybkosci_10": preload("res://assets/potions/cropped_Greater_Potion_of_Wind.png")
+}
+
 func _init(h):
 	hud = h
 
@@ -23,12 +34,12 @@ func setup_potions_windows():
 	my_potions_window.add_child(center_my)
 	
 	var my_panel = PanelContainer.new()
-	my_panel.custom_minimum_size = Vector2(650, 500)
+	my_panel.custom_minimum_size = Vector2(800, 500)
 	var my_style = StyleBoxFlat.new()
-	my_style.bg_color = Color(0.12, 0.12, 0.15, 0.95)
+	my_style.bg_color = hud.DF_BG
 	my_style.set_border_width_all(2)
-	my_style.border_color = Color(0.8, 0.6, 0.2)
-	my_style.set_corner_radius_all(8)
+	my_style.border_color = hud.DF_GOLD
+	my_style.set_corner_radius_all(10)
 	my_style.content_margin_left = 20
 	my_style.content_margin_right = 20
 	my_style.content_margin_top = 20
@@ -77,7 +88,7 @@ func setup_potions_windows():
 	buy_potions_window.add_child(center_buy)
 	
 	var buy_panel = PanelContainer.new()
-	buy_panel.custom_minimum_size = Vector2(650, 500)
+	buy_panel.custom_minimum_size = Vector2(800, 500)
 	buy_panel.add_theme_stylebox_override("panel", my_style)
 	center_buy.add_child(buy_panel)
 	
@@ -136,14 +147,37 @@ func _refresh_my_potions_list():
 		
 	for p_id in active.keys():
 		var p_data = EconomyManager.POTIONS_DATA[p_id]
+		var panel = PanelContainer.new()
+		var p_style = StyleBoxFlat.new()
+		p_style.bg_color = Color(0.15, 0.25, 0.15)
+		p_style.set_border_width_all(1)
+		p_style.border_color = Color(0.3, 0.8, 0.3)
+		p_style.set_corner_radius_all(4)
+		p_style.content_margin_left = 10
+		p_style.content_margin_right = 10
+		p_style.content_margin_top = 10
+		p_style.content_margin_bottom = 10
+		panel.add_theme_stylebox_override("panel", p_style)
+		
 		var hbox = HBoxContainer.new()
+		panel.add_child(hbox)
+		
+		var icon_container = CenterContainer.new()
+		icon_container.custom_minimum_size = Vector2(80, 64)
+		var icon = TextureRect.new()
+		icon.texture = POTION_IMAGES.get(p_id)
+		icon.custom_minimum_size = Vector2(64, 64)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon_container.add_child(icon)
+		hbox.add_child(icon_container)
 		var lbl = Label.new()
 		lbl.text = p_data["name"] + " (Aktywna jeszcze " + str(active[p_id]) + " tur) - " + p_data["desc"]
-		lbl.add_theme_color_override("font_color", Color(0.3, 0.8, 0.3))
+		lbl.add_theme_color_override("font_color", Color(0.5, 1.0, 0.5))
 		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		hbox.add_child(lbl)
-		my_potions_list.add_child(hbox)
+		my_potions_list.add_child(panel)
 		
 	for p_id in owned.keys():
 		if owned[p_id] <= 0: continue
@@ -163,6 +197,16 @@ func _refresh_my_potions_list():
 		var hbox = HBoxContainer.new()
 		panel.add_child(hbox)
 		
+		var icon_container = CenterContainer.new()
+		icon_container.custom_minimum_size = Vector2(80, 64)
+		var icon = TextureRect.new()
+		icon.texture = POTION_IMAGES.get(p_id)
+		icon.custom_minimum_size = Vector2(64, 64)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon_container.add_child(icon)
+		hbox.add_child(icon_container)
+		
 		var info_vbox = VBoxContainer.new()
 		info_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		hbox.add_child(info_vbox)
@@ -180,6 +224,7 @@ func _refresh_my_potions_list():
 		var btn_use = Button.new()
 		btn_use.text = "Użyj"
 		btn_use.custom_minimum_size = Vector2(120, 0)
+		_style_potion_button(btn_use)
 		var has_active_of_type = false
 		for a_id in active.keys():
 			if EconomyManager.POTIONS_DATA[a_id]["effect"] == p_data["effect"]:
@@ -221,6 +266,16 @@ func _refresh_buy_potions_list():
 		var hbox = HBoxContainer.new()
 		panel.add_child(hbox)
 		
+		var icon_container = CenterContainer.new()
+		icon_container.custom_minimum_size = Vector2(80, 64)
+		var icon = TextureRect.new()
+		icon.texture = POTION_IMAGES.get(p_id)
+		icon.custom_minimum_size = Vector2(64, 64)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon_container.add_child(icon)
+		hbox.add_child(icon_container)
+		
 		var info_vbox = VBoxContainer.new()
 		info_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		hbox.add_child(info_vbox)
@@ -242,6 +297,7 @@ func _refresh_buy_potions_list():
 		var btn_buy = Button.new()
 		btn_buy.text = "Kup\n(" + cost_str + ")"
 		btn_buy.custom_minimum_size = Vector2(120, 0)
+		_style_potion_button(btn_buy)
 		
 		var can_afford = true
 		for res in p_data["cost"]:
@@ -257,3 +313,30 @@ func _refresh_buy_potions_list():
 		hbox.add_child(btn_buy)
 		
 		buy_potions_list.add_child(panel)
+
+func _style_potion_button(btn: Button):
+	var style_btn = StyleBoxFlat.new()
+	style_btn.bg_color = Color(0.28, 0.22, 0.06, 0.95)
+	style_btn.set_border_width_all(2)
+	style_btn.border_color = hud.DF_GOLD
+	style_btn.set_corner_radius_all(6)
+	style_btn.set_content_margin_all(10)
+	
+	var style_btn_hover = style_btn.duplicate() as StyleBoxFlat
+	style_btn_hover.bg_color = Color(0.38, 0.3, 0.1, 0.95)
+	style_btn_hover.border_color = hud.DF_GOLD_BRIGHT
+	
+	var style_btn_disabled = StyleBoxFlat.new()
+	style_btn_disabled.bg_color = Color(0.15, 0.13, 0.11, 0.5)
+	style_btn_disabled.set_border_width_all(2)
+	style_btn_disabled.border_color = Color(0.4, 0.32, 0.16, 0.5)
+	style_btn_disabled.set_corner_radius_all(6)
+	style_btn_disabled.set_content_margin_all(10)
+	
+	btn.add_theme_stylebox_override("normal", style_btn)
+	btn.add_theme_stylebox_override("hover", style_btn_hover)
+	btn.add_theme_stylebox_override("pressed", style_btn_hover)
+	btn.add_theme_stylebox_override("disabled", style_btn_disabled)
+	btn.add_theme_color_override("font_color", hud.DF_GOLD_TEXT)
+	btn.add_theme_color_override("font_hover_color", Color.WHITE)
+	btn.add_theme_color_override("font_disabled_color", Color(0.5, 0.5, 0.5))
