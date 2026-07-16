@@ -166,7 +166,22 @@ func _populate_army():
 		info_vbox.add_child(name_lbl)
 		
 		var stats_lbl = Label.new()
-		stats_lbl.text = "HP: %d | DMG: %d | DEF: %d | RUCH: %d" % [unit.get("hp", 0), unit.get("dmg", 0), unit.get("def", 0), unit.get("move_range", 0)]
+		var p_hp = EconomyManager.potion_bonus_hp
+		var p_dmg = EconomyManager.potion_bonus_dmg
+		var p_def = EconomyManager.potion_bonus_def
+		var p_speed = EconomyManager.potion_bonus_speed
+		
+		var total_hp = unit.get("hp", 0) + p_hp
+		var total_dmg = unit.get("dmg", 0) + p_dmg
+		var total_def = unit.get("def", 0) + p_def
+		var total_speed = unit.get("move_range", 0) + p_speed
+		
+		var hp_str = str(total_hp) if p_hp == 0 else "%d(+%d)" % [total_hp, p_hp]
+		var dmg_str = str(total_dmg) if p_dmg == 0 else "%d(+%d)" % [total_dmg, p_dmg]
+		var def_str = str(total_def) if p_def == 0 else "%d(+%d)" % [total_def, p_def]
+		var speed_str = str(total_speed) if p_speed == 0 else "%d(+%d)" % [total_speed, p_speed]
+		
+		stats_lbl.text = "HP: %s | DMG: %s | DEF: %s | RUCH: %s" % [hp_str, dmg_str, def_str, speed_str]
 		stats_lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 		info_vbox.add_child(stats_lbl)
 

@@ -56,6 +56,10 @@ var army_button: Button
 var camp_details_btn: Button
 var battle_button: Button
 
+var potions_menu: PotionsMenu
+var btn_my_potions: Button
+var btn_buy_potions: Button
+
 var resources_container: HBoxContainer
 var resource_labels: Dictionary = {}
 
@@ -117,6 +121,8 @@ func _ready():
 	barracks_menu = BarracksMenu.new(self)
 	barracks_menu.setup_barracks_window()
 	army_menu = ArmyMenu.new(self)
+	potions_menu = PotionsMenu.new(self)
+	potions_menu.setup_potions_windows()
 	army_menu.setup_army_window()
 	camp_menu = CampMenu.new(self)
 	camp_menu.setup_camp_windows()
@@ -654,6 +660,28 @@ func setup_custom_popups():
 	tile_info_vbox.add_child(army_button)
 	tile_info_vbox.add_child(recruit_button)
 	
+	btn_my_potions = Button.new()
+	btn_my_potions.text = "🧪 Moje Potki"
+	btn_my_potions.add_theme_stylebox_override("normal", style_army)
+	btn_my_potions.add_theme_color_override("font_color", DF_TEXT)
+	btn_my_potions.pressed.connect(func():
+		hide_all_menus()
+		potions_menu.show_my_potions()
+	)
+	tile_info_vbox.add_child(btn_my_potions)
+	
+	btn_buy_potions = Button.new()
+	btn_buy_potions.text = "💰 Kup Potki"
+	var style_buy_potions = style_army.duplicate()
+	style_buy_potions.bg_color = DF_BLOOD
+	btn_buy_potions.add_theme_stylebox_override("normal", style_buy_potions)
+	btn_buy_potions.add_theme_color_override("font_color", DF_TEXT)
+	btn_buy_potions.pressed.connect(func():
+		hide_all_menus()
+		potions_menu.show_buy_potions()
+	)
+	tile_info_vbox.add_child(btn_buy_potions)
+	
 	camp_details_btn = Button.new()
 	camp_details_btn.text = "⛺ Szczegóły Obozowiska"
 	camp_details_btn.pressed.connect(func():
@@ -854,6 +882,8 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 	recruit_button.visible = (has_building and building_name == "Baraki" and is_owned)
 	army_button.visible = (has_building and building_name == "Baraki" and is_owned)
 	camp_details_btn.visible = (has_building and building_name.begins_with("Obóz"))
+	btn_my_potions.visible = (has_building and building_name == "Laboratorium" and is_owned)
+	btn_buy_potions.visible = (has_building and building_name == "Laboratorium" and is_owned)
 	if show_upgrade:
 		var can_upgrade = EconomyManager.can_afford_upgrade(building_name, building_level)
 		upgrade_button.disabled = not can_upgrade
@@ -955,9 +985,11 @@ func hide_all_menus():
 	if settings_menu and settings_menu.settings_window: settings_menu.settings_window.visible = false
 	if tutorial_menu and tutorial_menu.tutorial_window: tutorial_menu.tutorial_window.visible = false
 	if admin_menu and admin_menu.admin_window: admin_menu.admin_window.visible = false
+	if potions_menu and potions_menu.my_potions_window: potions_menu.my_potions_window.visible = false
+	if potions_menu and potions_menu.buy_potions_window: potions_menu.buy_potions_window.visible = false
 
 func any_menu_visible() -> bool:
-	return menu_budowania.visible or (tile_info_menu and tile_info_menu.visible) or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) or (tech_tree_menu and tech_tree_menu.tech_tree_window and tech_tree_menu.tech_tree_window.visible) or (culture_tree_menu and culture_tree_menu.culture_tree_window and culture_tree_menu.culture_tree_window.visible) or (barracks_menu and barracks_menu.barracks_window and barracks_menu.barracks_window.visible) or (army_menu and army_menu.army_window and army_menu.army_window.visible) or (help_menu and help_menu.help_window and help_menu.help_window.visible) or (camp_menu and camp_menu.camp_details_window and camp_menu.camp_details_window.visible) or (camp_menu and camp_menu.camp_army_window and camp_menu.camp_army_window.visible) or (settings_menu and settings_menu.settings_window and settings_menu.settings_window.visible) or (tutorial_menu and tutorial_menu.tutorial_window and tutorial_menu.tutorial_window.visible) or (admin_menu and admin_menu.admin_window and admin_menu.admin_window.visible)
+	return menu_budowania.visible or (tile_info_menu and tile_info_menu.visible) or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) or (tech_tree_menu and tech_tree_menu.tech_tree_window and tech_tree_menu.tech_tree_window.visible) or (culture_tree_menu and culture_tree_menu.culture_tree_window and culture_tree_menu.culture_tree_window.visible) or (barracks_menu and barracks_menu.barracks_window and barracks_menu.barracks_window.visible) or (army_menu and army_menu.army_window and army_menu.army_window.visible) or (help_menu and help_menu.help_window and help_menu.help_window.visible) or (camp_menu and camp_menu.camp_details_window and camp_menu.camp_details_window.visible) or (camp_menu and camp_menu.camp_army_window and camp_menu.camp_army_window.visible) or (settings_menu and settings_menu.settings_window and settings_menu.settings_window.visible) or (tutorial_menu and tutorial_menu.tutorial_window and tutorial_menu.tutorial_window.visible) or (admin_menu and admin_menu.admin_window and admin_menu.admin_window.visible) or (potions_menu and ((potions_menu.my_potions_window and potions_menu.my_potions_window.visible) or (potions_menu.buy_potions_window and potions_menu.buy_potions_window.visible)))
 
 func _reposition_menu(menu: Control, base_pos: Vector2):
 	var vbox = menu.get_node_or_null("VBoxContainer") as VBoxContainer

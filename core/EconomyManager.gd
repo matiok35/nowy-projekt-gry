@@ -11,6 +11,80 @@ var army_bonus_hp: int = 0
 var army_bonus_dmg: int = 0
 var army_bonus_def: int = 0
 
+var owned_potions: Dictionary = {}
+var active_potions: Dictionary = {}
+var potion_bonus_hp: int = 0
+var potion_bonus_dmg: int = 0
+var potion_bonus_def: int = 0
+var potion_bonus_speed: int = 0
+
+const POTIONS_DATA: Dictionary = {
+	"potka_sily_1": {
+		"name": "Potka Siły (1 tura)",
+		"desc": "+2 DMG dla wszystkich jednostek na 1 turę.",
+		"effect": "dmg",
+		"value": 2,
+		"duration": 1,
+		"cost": {"Złoto": 50}
+	},
+	"potka_sily_10": {
+		"name": "Większa Potka Siły (10 tur)",
+		"desc": "+1 DMG dla wszystkich jednostek na 10 tur.",
+		"effect": "dmg",
+		"value": 1,
+		"duration": 10,
+		"cost": {"Złoto": 150}
+	},
+	"potka_wit_1": {
+		"name": "Potka Witalności (1 tura)",
+		"desc": "+5 HP dla wszystkich jednostek na 1 turę.",
+		"effect": "hp",
+		"value": 5,
+		"duration": 1,
+		"cost": {"Złoto": 50}
+	},
+	"potka_wit_10": {
+		"name": "Większa Potka Witalności (10 tur)",
+		"desc": "+2 HP dla wszystkich jednostek na 10 tur.",
+		"effect": "hp",
+		"value": 2,
+		"duration": 10,
+		"cost": {"Złoto": 150}
+	},
+	"potka_obrony_1": {
+		"name": "Potka Kamiennej Skóry (1 tura)",
+		"desc": "+2 DEF dla wszystkich jednostek na 1 turę.",
+		"effect": "def",
+		"value": 2,
+		"duration": 1,
+		"cost": {"Złoto": 50}
+	},
+	"potka_obrony_10": {
+		"name": "Większa Potka Kamiennej Skóry (10 tur)",
+		"desc": "+1 DEF dla wszystkich jednostek na 10 tur.",
+		"effect": "def",
+		"value": 1,
+		"duration": 10,
+		"cost": {"Złoto": 150}
+	},
+	"potka_szybkosci_1": {
+		"name": "Potka Wiatru (1 tura)",
+		"desc": "+2 RUCH dla wszystkich jednostek na 1 turę.",
+		"effect": "speed",
+		"value": 2,
+		"duration": 1,
+		"cost": {"Złoto": 50}
+	},
+	"potka_szybkosci_10": {
+		"name": "Większa Potka Wiatru (10 tur)",
+		"desc": "+1 RUCH dla wszystkich jednostek na 10 tur.",
+		"effect": "speed",
+		"value": 1,
+		"duration": 10,
+		"cost": {"Złoto": 150}
+	}
+}
+
 var resources: Dictionary = {
 	"Złoto": 150,
 	"Drewno": 40,
@@ -517,6 +591,27 @@ func next_turn(active_buildings_data: Array) -> void:
 			if turns_in_recruitment >= turns_to_recruit:
 				unit_training_complete.emit(unit)
 
+	var expired_potions = []
+	for p_id in active_potions.keys():
+		active_potions[p_id] -= 1
+		if active_potions[p_id] <= 0:
+			expired_potions.append(p_id)
+	
+	for p_id in expired_potions:
+		active_potions.erase(p_id)
+		
+	potion_bonus_hp = 0
+	potion_bonus_dmg = 0
+	potion_bonus_def = 0
+	potion_bonus_speed = 0
+	for p_id in active_potions.keys():
+		var effect = POTIONS_DATA[p_id]["effect"]
+		var val = POTIONS_DATA[p_id]["value"]
+		if effect == "hp": potion_bonus_hp += val
+		elif effect == "dmg": potion_bonus_dmg += val
+		elif effect == "def": potion_bonus_def += val
+		elif effect == "speed": potion_bonus_speed += val
+
 	notify_change()
 
 func notify_change() -> void:
@@ -597,6 +692,13 @@ func reset() -> void:
 	army_bonus_hp = 0
 	army_bonus_dmg = 0
 	army_bonus_def = 0
+	owned_potions = {}
+	active_potions = {}
+	potion_bonus_hp = 0
+	potion_bonus_dmg = 0
+	potion_bonus_def = 0
+	potion_bonus_speed = 0
+	
 	
 	resources = {
 		"Złoto": 150,
@@ -624,3 +726,44 @@ func reset() -> void:
 		
 	for tech in culture_tree.values():
 		tech["unlocked"] = false
+
+func buy_potion(potion_id: String) -> bool:
+	if not POTIONS_DATA.has(potion_id): return false
+	var data = POTIONS_DATA[potion_id]
+	for res in data["cost"]:
+		if resources.get(res, 0) < data["cost"][res]:
+			return false
+			
+	for res in data["cost"]:
+		resources[res] -= data["cost"][res]
+		
+	if not owned_potions.has(potion_id):
+		owned_potions[potion_id] = 0
+	owned_potions[potion_id] += 1
+	notify_change()
+	return true
+
+func use_potion(potion_id: String) -> bool:
+	if not owned_potions.has(potion_id) or owned_potions[potion_id] <= 0: return false
+	
+	owned_potions[potion_id] -= 1
+	if owned_potions[potion_id] <= 0:
+		owned_potions.erase(potion_id)
+		
+	var data = POTIONS_DATA[potion_id]
+	active_potions[potion_id] = data["duration"]
+	
+	potion_bonus_hp = 0
+	potion_bonus_dmg = 0
+	potion_bonus_def = 0
+	potion_bonus_speed = 0
+	for p_id in active_potions.keys():
+		var effect = POTIONS_DATA[p_id]["effect"]
+		var val = POTIONS_DATA[p_id]["value"]
+		if effect == "hp": potion_bonus_hp += val
+		elif effect == "dmg": potion_bonus_dmg += val
+		elif effect == "def": potion_bonus_def += val
+		elif effect == "speed": potion_bonus_speed += val
+		
+	notify_change()
+	return true
