@@ -75,6 +75,13 @@ var help_menu: HelpMenu
 
 var settings_menu: SettingsMenu
 
+var temple_menu: TempleMenu
+var workshop_menu: WorkshopMenu
+var library_research_menu: LibraryResearchMenu
+var temple_button: Button
+var workshop_button: Button
+var library_research_button: Button
+
 var tutorial_menu: TutorialMenu
 
 var admin_menu: AdminMenu
@@ -126,6 +133,12 @@ func _ready():
 	army_menu.setup_army_window()
 	camp_menu = CampMenu.new(self)
 	camp_menu.setup_camp_windows()
+	temple_menu = TempleMenu.new(self)
+	temple_menu.setup_temple_window()
+	workshop_menu = WorkshopMenu.new(self)
+	workshop_menu.setup_workshop_window()
+	library_research_menu = LibraryResearchMenu.new(self)
+	library_research_menu.setup_library_window()
 	setup_battle_button()
 	help_menu = HelpMenu.new(self)
 	help_menu.setup_help_window()
@@ -682,6 +695,54 @@ func setup_custom_popups():
 	)
 	tile_info_vbox.add_child(btn_buy_potions)
 	
+	temple_button = Button.new()
+	temple_button.text = "🙏 Błogosławieństwo Świątyni"
+	var style_temple_btn = StyleBoxFlat.new()
+	style_temple_btn.bg_color = Color(0.32, 0.26, 0.08, 0.95)
+	style_temple_btn.set_border_width_all(1)
+	style_temple_btn.border_color = DF_GOLD
+	style_temple_btn.set_corner_radius_all(6)
+	style_temple_btn.set_content_margin_all(12)
+	temple_button.add_theme_stylebox_override("normal", style_temple_btn)
+	temple_button.add_theme_color_override("font_color", DF_TEXT)
+	temple_button.pressed.connect(func():
+		hide_all_menus()
+		temple_menu.show_temple_menu()
+	)
+	tile_info_vbox.add_child(temple_button)
+
+	workshop_button = Button.new()
+	workshop_button.text = "🔧 Warsztat: Uzdrawianie"
+	var style_workshop_btn = StyleBoxFlat.new()
+	style_workshop_btn.bg_color = Color(0.28, 0.2, 0.1, 0.95)
+	style_workshop_btn.set_border_width_all(1)
+	style_workshop_btn.border_color = DF_GOLD
+	style_workshop_btn.set_corner_radius_all(6)
+	style_workshop_btn.set_content_margin_all(12)
+	workshop_button.add_theme_stylebox_override("normal", style_workshop_btn)
+	workshop_button.add_theme_color_override("font_color", DF_TEXT)
+	workshop_button.pressed.connect(func():
+		hide_all_menus()
+		workshop_menu.show_workshop_menu(active_tile_pos)
+	)
+	tile_info_vbox.add_child(workshop_button)
+
+	library_research_button = Button.new()
+	library_research_button.text = "📚 Badania Umiejętności"
+	var style_libres_btn = StyleBoxFlat.new()
+	style_libres_btn.bg_color = Color(0.18, 0.12, 0.28, 0.95)
+	style_libres_btn.set_border_width_all(1)
+	style_libres_btn.border_color = DF_GOLD
+	style_libres_btn.set_corner_radius_all(6)
+	style_libres_btn.set_content_margin_all(12)
+	library_research_button.add_theme_stylebox_override("normal", style_libres_btn)
+	library_research_button.add_theme_color_override("font_color", DF_TEXT)
+	library_research_button.pressed.connect(func():
+		hide_all_menus()
+		library_research_menu.show_library_menu()
+	)
+	tile_info_vbox.add_child(library_research_button)
+	
 	camp_details_btn = Button.new()
 	camp_details_btn.text = "⛺ Szczegóły Obozowiska"
 	camp_details_btn.pressed.connect(func():
@@ -884,6 +945,9 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 	camp_details_btn.visible = (has_building and building_name.begins_with("Obóz"))
 	btn_my_potions.visible = (has_building and building_name == "Laboratorium" and is_owned)
 	btn_buy_potions.visible = (has_building and building_name == "Laboratorium" and is_owned)
+	temple_button.visible = (has_building and building_name == "Świątynia" and is_owned)
+	workshop_button.visible = (has_building and building_name == "Warsztat" and is_owned)
+	library_research_button.visible = (has_building and building_name == "Biblioteka" and is_owned)
 	if show_upgrade:
 		var can_upgrade = EconomyManager.can_afford_upgrade(building_name, building_level)
 		upgrade_button.disabled = not can_upgrade
@@ -987,9 +1051,12 @@ func hide_all_menus():
 	if admin_menu and admin_menu.admin_window: admin_menu.admin_window.visible = false
 	if potions_menu and potions_menu.my_potions_window: potions_menu.my_potions_window.visible = false
 	if potions_menu and potions_menu.buy_potions_window: potions_menu.buy_potions_window.visible = false
+	if temple_menu and temple_menu.temple_window: temple_menu.temple_window.visible = false
+	if workshop_menu and workshop_menu.workshop_window: workshop_menu.workshop_window.visible = false
+	if library_research_menu and library_research_menu.library_window: library_research_menu.library_window.visible = false
 
 func any_menu_visible() -> bool:
-	return menu_budowania.visible or (tile_info_menu and tile_info_menu.visible) or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) or (tech_tree_menu and tech_tree_menu.tech_tree_window and tech_tree_menu.tech_tree_window.visible) or (culture_tree_menu and culture_tree_menu.culture_tree_window and culture_tree_menu.culture_tree_window.visible) or (barracks_menu and barracks_menu.barracks_window and barracks_menu.barracks_window.visible) or (army_menu and army_menu.army_window and army_menu.army_window.visible) or (help_menu and help_menu.help_window and help_menu.help_window.visible) or (camp_menu and camp_menu.camp_details_window and camp_menu.camp_details_window.visible) or (camp_menu and camp_menu.camp_army_window and camp_menu.camp_army_window.visible) or (settings_menu and settings_menu.settings_window and settings_menu.settings_window.visible) or (tutorial_menu and tutorial_menu.tutorial_window and tutorial_menu.tutorial_window.visible) or (admin_menu and admin_menu.admin_window and admin_menu.admin_window.visible) or (potions_menu and ((potions_menu.my_potions_window and potions_menu.my_potions_window.visible) or (potions_menu.buy_potions_window and potions_menu.buy_potions_window.visible)))
+	return menu_budowania.visible or (tile_info_menu and tile_info_menu.visible) or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) or (tech_tree_menu and tech_tree_menu.tech_tree_window and tech_tree_menu.tech_tree_window.visible) or (culture_tree_menu and culture_tree_menu.culture_tree_window and culture_tree_menu.culture_tree_window.visible) or (barracks_menu and barracks_menu.barracks_window and barracks_menu.barracks_window.visible) or (army_menu and army_menu.army_window and army_menu.army_window.visible) or (help_menu and help_menu.help_window and help_menu.help_window.visible) or (camp_menu and camp_menu.camp_details_window and camp_menu.camp_details_window.visible) or (camp_menu and camp_menu.camp_army_window and camp_menu.camp_army_window.visible) or (settings_menu and settings_menu.settings_window and settings_menu.settings_window.visible) or (tutorial_menu and tutorial_menu.tutorial_window and tutorial_menu.tutorial_window.visible) or (admin_menu and admin_menu.admin_window and admin_menu.admin_window.visible) or (temple_menu and temple_menu.temple_window and temple_menu.temple_window.visible) or (workshop_menu and workshop_menu.workshop_window and workshop_menu.workshop_window.visible) or (library_research_menu and library_research_menu.library_window and library_research_menu.library_window.visible) or (potions_menu and ((potions_menu.my_potions_window and potions_menu.my_potions_window.visible) or (potions_menu.buy_potions_window and potions_menu.buy_potions_window.visible)))
 
 func _reposition_menu(menu: Control, base_pos: Vector2):
 	var vbox = menu.get_node_or_null("VBoxContainer") as VBoxContainer

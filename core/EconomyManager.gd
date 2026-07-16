@@ -85,6 +85,30 @@ const POTIONS_DATA: Dictionary = {
 	}
 }
 
+# --- SYSTEM BŁOGOSŁAWIEŃSTWA ŚWIĄTYNI --------------------------------------
+# Aktywowane z okna TempleMenu (przycisk na polu ze Świątynią). Efekt: +10%
+# produkcji wszystkich surowców materialnych przez TEMPLE_BLESSING_DURATION
+# tur, z odnowieniem (cooldown) liczonym od momentu aktywacji.
+const TEMPLE_BLESSING_DURATION: int = 10
+const TEMPLE_BLESSING_COOLDOWN: int = 30
+var temple_blessing_turns_left: int = 0
+var temple_blessing_cooldown_left: int = 0
+
+# --- DRZEWO UMIEJĘTNOŚCI (BIBLIOTEKA) --------------------------------------
+# Badane z okna LibraryResearchMenu (przycisk na polu z Biblioteką). Zakup
+# jest jednorazowy i natychmiastowy (bez tur oczekiwania) — odblokowuje
+# umiejętność na stałe dla powiązanej jednostki.
+var skill_tree: Dictionary = {
+	"zelazna_kurtyna": {"name": "Żelazna Kurtyna", "unit": "Rycerze", "desc": "Rycerze zyskują tymczasową odporność na obrażenia.", "cost_gold": 120, "cost_tech": 40, "unlocked": false},
+	"tarcza": {"name": "Tarcza", "unit": "Rycerze", "desc": "Rycerze mogą osłonić sojusznika, przejmując część obrażeń.", "cost_gold": 100, "cost_tech": 30, "unlocked": false},
+	"szarza": {"name": "Szarża", "unit": "Konnica", "desc": "Konnica zadaje dodatkowe obrażenia przy szarży na wroga.", "cost_gold": 110, "cost_tech": 35, "unlocked": false},
+	"przyspieszenie": {"name": "Przyspieszenie", "unit": "Konnica", "desc": "Konnica zyskuje dodatkowy zasięg ruchu na turę.", "cost_gold": 90, "cost_tech": 25, "unlocked": false},
+	"sokole_oko": {"name": "Sokole Oko", "unit": "Łucznicy", "desc": "Łucznicy zyskują zwiększony zasięg ataku.", "cost_gold": 100, "cost_tech": 30, "unlocked": false},
+	"precyzyjny_strzal": {"name": "Precyzyjny Strzał", "unit": "Łucznicy", "desc": "Łucznicy mają szansę na trafienie krytyczne.", "cost_gold": 130, "cost_tech": 40, "unlocked": false},
+	"lodowe_podloze": {"name": "Lodowe Podłoże", "unit": "Magowie", "desc": "Magowie spowalniają wrogów na polu bitwy.", "cost_gold": 140, "cost_tech": 45, "unlocked": false},
+	"medytacja": {"name": "Medytacja", "unit": "Magowie", "desc": "Magowie szybciej się regenerują i zadają więcej obrażeń.", "cost_gold": 120, "cost_tech": 35, "unlocked": false},
+}
+
 var resources: Dictionary = {
 	"Złoto": 150,
 	"Drewno": 40,
@@ -477,6 +501,12 @@ func next_turn(active_buildings_data: Array) -> void:
 	var wood_multiplier = 1.0
 	if culture_tree["Drewno +5%"]["unlocked"]: wood_multiplier = 1.05
 
+	# Mnożnik z aktywnego błogosławieństwa Świątyni (+10% produkcji surowców
+	# materialnych, dopóki temple_blessing_turns_left > 0).
+	var temple_multiplier = 1.0
+	if temple_blessing_turns_left > 0:
+		temple_multiplier = 1.1
+
 	for b_data in active_buildings_data:
 		var b_name = b_data["name"]
 		var b_level = b_data.get("level", 1)
@@ -491,31 +521,31 @@ func next_turn(active_buildings_data: Array) -> void:
 		match b_name:
 			"Dom mieszkalny":
 				if culture_tree["Złoto z domów"]["unlocked"]:
-					resources["Złoto"] += 2 * b_level
+					resources["Złoto"] += int(2 * b_level * temple_multiplier)
 				if culture_tree["Kultura z domów"]["unlocked"]:
 					turn_culture += 1 * b_level
 			"Centrum Miasta":
-				var gold_bonus = 10 * b_level
+				var gold_bonus = int(10 * b_level * temple_multiplier)
 				resources["Złoto"] += gold_bonus
-				resources["Jedzenie"] += 2 * b_level
-				resources["Drewno"] += 2 * b_level
+				resources["Jedzenie"] += int(2 * b_level * temple_multiplier)
+				resources["Drewno"] += int(2 * b_level * temple_multiplier)
 			"Chata Drwala":
-				resources["Drewno"] += int(8 * size_modifier * b_level * wood_multiplier)
+				resources["Drewno"] += int(8 * size_modifier * b_level * wood_multiplier * temple_multiplier)
 				if culture_tree["Złoto z drwala"]["unlocked"]:
-					resources["Złoto"] += 1 * b_level
+					resources["Złoto"] += int(1 * b_level * temple_multiplier)
 			"Kopalnia Żelaza":
 				var iron_yield = 5
-				resources["Żelazo"] += int(iron_yield * size_modifier * b_level * iron_coal_multiplier)
+				resources["Żelazo"] += int(iron_yield * size_modifier * b_level * iron_coal_multiplier * temple_multiplier)
 				resources["Złoto"] -= 2 * b_level
 			"Kopalnia Węgla":
 				var coal_yield = 4
-				resources["Węgiel"] += int(coal_yield * size_modifier * b_level * iron_coal_multiplier)
+				resources["Węgiel"] += int(coal_yield * size_modifier * b_level * iron_coal_multiplier * temple_multiplier)
 				resources["Złoto"] -= 2 * b_level
 			"Farma":
 				var farm_yield = 6
-				resources["Jedzenie"] += int(farm_yield * size_modifier * b_level * food_multiplier)
+				resources["Jedzenie"] += int(farm_yield * size_modifier * b_level * food_multiplier * temple_multiplier)
 			"Pastwisko":
-				resources["Jedzenie"] += int(8 * size_modifier * b_level * food_multiplier)
+				resources["Jedzenie"] += int(8 * size_modifier * b_level * food_multiplier * temple_multiplier)
 			"Laboratorium":
 				turn_science += 3 * b_level
 			"Warsztat":
@@ -528,19 +558,19 @@ func next_turn(active_buildings_data: Array) -> void:
 			"Świątynia":
 				turn_culture += 3 * b_level
 				if culture_tree["Złoto za świątynie"]["unlocked"]:
-					resources["Złoto"] += 2 * b_level
+					resources["Złoto"] += int(2 * b_level * temple_multiplier)
 			"Baraki":
 				if culture_tree["Tech z baraków"]["unlocked"]:
 					turn_science += 1 * b_level
 				if culture_tree["Złoto z baraków"]["unlocked"]:
-					resources["Złoto"] += 1 * b_level
+					resources["Złoto"] += int(1 * b_level * temple_multiplier)
 
 	if culture_tree["Kultura +2/tura"]["unlocked"]:
 		turn_culture += 2
 	if culture_tree["Złoto za mieszkańca"]["unlocked"]:
-		resources["Złoto"] += resources["Populacja"] * 1
+		resources["Złoto"] += int(resources["Populacja"] * 1 * temple_multiplier)
 	if culture_tree["Złoto co turę"]["unlocked"]:
-		resources["Złoto"] += 1
+		resources["Złoto"] += int(1 * temple_multiplier)
 
 	var total_science = 1 + turn_science
 	var total_culture = 1 + turn_culture
@@ -581,6 +611,12 @@ func next_turn(active_buildings_data: Array) -> void:
 				"Renesans":
 					max_culture_points += 25
 			current_culture_research = ""
+
+	# Odliczanie czasu aktywnego błogosławieństwa Świątyni oraz jego cooldownu.
+	if temple_blessing_turns_left > 0:
+		temple_blessing_turns_left -= 1
+	if temple_blessing_cooldown_left > 0:
+		temple_blessing_cooldown_left -= 1
 
 	for unit in player_army:
 		var turns_to_recruit = unit.get("turns_to_recruit", 0)
@@ -666,6 +702,12 @@ func recruit_unit(unit: Dictionary) -> void:
 		if army_bonus_hp > 0: new_unit["hp"] += army_bonus_hp
 		if army_bonus_dmg > 0: new_unit["dmg"] += army_bonus_dmg
 		if army_bonus_def > 0: new_unit["def"] += army_bonus_def
+
+		# Aktualne HP jednostki (do systemu leczenia w Warsztacie). Na razie
+		# gra nie ma jeszcze mechanizmu zadawania obrażeń w walce, więc
+		# current_hp startuje zawsze pełne — to pole jest przygotowane pod
+		# przyszły system walki, a leczenie po prostu przywraca je do max.
+		new_unit["current_hp"] = new_unit["hp"]
 		
 		player_army.append(new_unit)
 		notify_change()
@@ -698,7 +740,11 @@ func reset() -> void:
 	potion_bonus_dmg = 0
 	potion_bonus_def = 0
 	potion_bonus_speed = 0
-	
+
+	temple_blessing_turns_left = 0
+	temple_blessing_cooldown_left = 0
+	for skill in skill_tree.values():
+		skill["unlocked"] = false
 	
 	resources = {
 		"Złoto": 150,
@@ -767,3 +813,46 @@ func use_potion(potion_id: String) -> bool:
 		
 	notify_change()
 	return true
+
+# --- ŚWIĄTYNIA: BŁOGOSŁAWIEŃSTWO -------------------------------------------
+
+func can_activate_temple_blessing() -> bool:
+	return temple_blessing_cooldown_left <= 0
+
+func activate_temple_blessing() -> bool:
+	if not can_activate_temple_blessing():
+		return false
+	temple_blessing_turns_left = TEMPLE_BLESSING_DURATION
+	temple_blessing_cooldown_left = TEMPLE_BLESSING_COOLDOWN
+	notify_change()
+	return true
+
+# --- WARSZTAT: LECZENIE ARMII -----------------------------------------------
+
+func heal_army_units() -> void:
+	for unit in player_army:
+		if unit.has("hp"):
+			unit["current_hp"] = unit["hp"]
+	notify_change()
+
+# --- BIBLIOTEKA: BADANIE UMIEJĘTNOŚCI ---------------------------------------
+
+func can_research_skill(skill_id: String) -> bool:
+	if not skill_tree.has(skill_id): return false
+	var skill = skill_tree[skill_id]
+	if skill["unlocked"]: return false
+	if resources.get("Złoto", 0) < skill["cost_gold"]: return false
+	if resources.get("Nauka", 0) < skill["cost_tech"]: return false
+	return true
+
+func research_skill(skill_id: String) -> bool:
+	if not can_research_skill(skill_id): return false
+	var skill = skill_tree[skill_id]
+	resources["Złoto"] -= skill["cost_gold"]
+	resources["Nauka"] -= skill["cost_tech"]
+	skill["unlocked"] = true
+	notify_change()
+	return true
+
+func is_skill_unlocked(skill_id: String) -> bool:
+	return skill_tree.has(skill_id) and skill_tree[skill_id]["unlocked"]
