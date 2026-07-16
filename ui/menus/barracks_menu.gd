@@ -117,15 +117,18 @@ func _populate_barracks_units(faction: Dictionary):
 			var base_hp = unit.get("hp", 0)
 			var base_dmg = unit.get("dmg", 0)
 			var base_def = unit.get("def", 0)
-			var b_hp = EconomyManager.army_bonus_hp
-			var b_dmg = EconomyManager.army_bonus_dmg
-			var b_def = EconomyManager.army_bonus_def
+			var b_hp = EconomyManager.army_bonus_hp + EconomyManager.potion_bonus_hp
+			var b_dmg = EconomyManager.army_bonus_dmg + EconomyManager.potion_bonus_dmg
+			var b_def = EconomyManager.army_bonus_def + EconomyManager.potion_bonus_def
+			var base_speed = unit.get("move_range", 0)
+			var b_speed = EconomyManager.potion_bonus_speed
 			
 			var hp_text = str(base_hp) if b_hp == 0 else "%d(+%d)" % [base_hp + b_hp, b_hp]
 			var dmg_text = str(base_dmg) if b_dmg == 0 else "%d(+%d)" % [base_dmg + b_dmg, b_dmg]
 			var def_text = str(base_def) if b_def == 0 else "%d(+%d)" % [base_def + b_def, b_def]
+			var speed_text = str(base_speed) if b_speed == 0 else "%d(+%d)" % [base_speed + b_speed, b_speed]
 			
-			stats_lbl.text = "HP: %s | DMG: %s | DEF: %s | RUCH: %d" % [hp_text, dmg_text, def_text, unit.get("move_range", 0)]
+			stats_lbl.text = "HP: %s | DMG: %s | DEF: %s | RUCH: %s" % [hp_text, dmg_text, def_text, speed_text]
 			stats_lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 			info_vbox.add_child(stats_lbl)
 			
