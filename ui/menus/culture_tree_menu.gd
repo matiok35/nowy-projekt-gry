@@ -57,6 +57,8 @@ func setup_culture_tree_ui():
 	insufficient_points_dialog.title = "Za mało punktów"
 	insufficient_points_dialog.dialog_text = "Nie masz wystarczającej liczby punktów Kultury, aby rozpocząć to badanie."
 	insufficient_points_dialog.ok_button_text = "Zrozumiałem"
+	if hud.has_method("_style_alert_dialog"):
+		hud._style_alert_dialog(insufficient_points_dialog)
 	hud.add_child(insufficient_points_dialog)
 
 	# Zamiast nadpisywać przycisk, używamy tego z hud.culture_tree_button

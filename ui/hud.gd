@@ -88,6 +88,14 @@ var tutorial_menu: TutorialMenu
 var admin_menu: AdminMenu
 var admin_button: Button
 
+# Krótkie opóźnienie po naciśnięciu „Następnej tury”, żeby zapobiec
+# przypadkowemu spamowaniu przycisku (np. dwoma szybkimi kliknięciami).
+# Osobna flaga, bo turn_button.disabled jest też co klatkę nadpisywane w
+# _process() na podstawie any_menu_visible() — bez tej flagi to opóźnienie
+# zostałoby natychmiast skasowane w kolejnej klatce.
+const TURN_BUTTON_DELAY: float = 0.6
+var _turn_button_cooldown: bool = false
+
 # --- PALETA "DARK FANTASY" -------------------------------------------------
 # Wspólne kolory używane w całym HUD-zie, żeby całość wyglądała spójnie:
 # głębokie, prawie czarne tła z chłodnym odcieniem, postarzałe złoto jako
@@ -212,7 +220,7 @@ func _process(_delta: float) -> void:
 	if culture_tree_button:
 		culture_tree_button.disabled = menu_open
 	if turn_button:
-		turn_button.disabled = menu_open
+		turn_button.disabled = menu_open or _turn_button_cooldown
 	# POPRAWKA: Przyciski kategorii (Surowce/Kultura/Technologia/Wojskowe) są
 	# dziećmi menu_budowania, więc nie wolno ich blokować na podstawie
 	# any_menu_visible() — menu_budowania samo w sobie powoduje, że ta
@@ -871,6 +879,7 @@ func setup_custom_popups():
 	confirm_dialog.ok_button_text = "Tak"
 	confirm_dialog.cancel_button_text = "Anuluj"
 	confirm_dialog.confirmed.connect(_on_confirm_build_on_resource)
+	_style_alert_dialog(confirm_dialog)
 	add_child(confirm_dialog)
 	
 	wood_warning_dialog = ConfirmationDialog.new()
@@ -879,18 +888,21 @@ func setup_custom_popups():
 	wood_warning_dialog.ok_button_text = "Tak"
 	wood_warning_dialog.cancel_button_text = "Anuluj"
 	wood_warning_dialog.confirmed.connect(_on_confirm_wood_warning)
+	_style_alert_dialog(wood_warning_dialog)
 	add_child(wood_warning_dialog)
 	
 	tech_warning_dialog = AcceptDialog.new()
 	tech_warning_dialog.title = "Brak technologii"
 	tech_warning_dialog.dialog_text = ""
 	tech_warning_dialog.ok_button_text = "Zrozumiałem"
+	_style_alert_dialog(tech_warning_dialog)
 	add_child(tech_warning_dialog)
 	
 	turn_warning_dialog = AcceptDialog.new()
 	turn_warning_dialog.title = "Ostrzeżenie"
 	turn_warning_dialog.dialog_text = ""
 	turn_warning_dialog.ok_button_text = "Zrozumiałem"
+	_style_alert_dialog(turn_warning_dialog)
 	add_child(turn_warning_dialog)
 func _format_cost_dict(cost: Dictionary) -> String:
 	var parts: Array = []
@@ -1203,6 +1215,11 @@ func _on_turn_pressed():
 			turn_warning_dialog.dialog_text = warning_text.strip_edges()
 			turn_warning_dialog.popup_centered()
 
+	if not GameSettings.skip_turn_button_delay:
+		_turn_button_cooldown = true
+		await get_tree().create_timer(TURN_BUTTON_DELAY).timeout
+		_turn_button_cooldown = false
+
 func style_main_hud_elements():
 	var top_panel = $Panel
 	top_panel.anchor_left = 0.0
@@ -1384,6 +1401,36 @@ func load_unit_data():
 					file.close()
 			file_name = dir.get_next()
 		dir.list_dir_end()
+
+func _style_alert_dialog(dialog: AcceptDialog) -> void:
+	# Wspólne ostylowanie alertów (AcceptDialog / ConfirmationDialog) w
+	# klimacie "dark fantasy" spójnym z resztą HUD-u — domyślny, jasny
+	# systemowy wygląd Godota mocno odstawał od reszty interfejsu.
+	var style = StyleBoxFlat.new()
+	style.bg_color = DF_BG
+	style.set_corner_radius_all(10)
+	style.set_border_width_all(2)
+	style.border_color = DF_GOLD
+	style.set_content_margin_all(18)
+	style.shadow_color = Color(0, 0, 0, 0.6)
+	style.shadow_size = 8
+	dialog.add_theme_stylebox_override("panel", style)
+	dialog.add_theme_color_override("title_color", DF_GOLD_TEXT)
+	dialog.add_theme_font_size_override("title_font_size", 18)
+
+	var label = dialog.get_label()
+	if label:
+		label.add_theme_color_override("font_color", DF_TEXT)
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD
+
+	var ok_btn = dialog.get_ok_button()
+	if ok_btn:
+		_style_df_button(ok_btn)
+
+	if dialog is ConfirmationDialog:
+		var cancel_btn = dialog.get_cancel_button()
+		if cancel_btn:
+			_style_df_button(cancel_btn)
 
 func _style_df_button(btn: Button) -> void:
 	var normal = StyleBoxFlat.new()

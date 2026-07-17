@@ -68,6 +68,8 @@ func _populate_army():
 		dialog.get_cancel_button().text = "Anuluj"
 		if EconomyManager.resources.get("Populacja", 0) >= EconomyManager.resources.get("Maks_Populacja", 5):
 			dialog.dialog_text += "\n\nOsiągnięto limit populacji! Przepadną odzyskane jednostki bez zwrotu w populacji, chyba że wybudujesz dom mieszkalny."
+		if hud.has_method("_style_alert_dialog"):
+			hud._style_alert_dialog(dialog)
 		dialog.confirmed.connect(func():
 			EconomyManager.clear_army()
 			if hud.world_ref and hud.world_ref.get("character") and hud.world_ref.character:
@@ -223,6 +225,8 @@ func _populate_army():
 			dialog.get_cancel_button().text = "Anuluj"
 			if EconomyManager.resources.get("Populacja", 0) >= EconomyManager.resources.get("Maks_Populacja", 5):
 				dialog.dialog_text += "\n\nOsiągnięto limit populacji! Przepadnie nam 1 jednostka bez zwrotu w populacji, chyba że wybudujesz dom mieszkalny."
+			if hud.has_method("_style_alert_dialog"):
+				hud._style_alert_dialog(dialog)
 			dialog.confirmed.connect(func():
 				_unassign_units_from_general([u])
 				EconomyManager.remove_unit(u)
