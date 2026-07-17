@@ -767,7 +767,9 @@ func setup_custom_popups():
 	tile_info_vbox.add_child(camp_details_btn)
 	
 	kup_pole_button = Button.new()
-	kup_pole_button.text = "🪙 Kup to pole (50 złota)"
+	# POPRAWKA: cena pobierana z EconomyManager zamiast zaszytej na sztywno
+	# liczby — przyszła zmiana ceny w ekonomii nie rozjedzie już UI.
+	kup_pole_button.text = "🪙 Kup to pole (%d złota)" % EconomyManager.TILE_PURCHASE_GOLD_COST
 	kup_pole_button.custom_minimum_size = Vector2(180, 35)
 	var style_buy = StyleBoxFlat.new()
 	style_buy.bg_color = Color(0.14, 0.13, 0.08, 0.95)
@@ -942,7 +944,7 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 		kup_pole_button.visible = false
 	else:
 		kup_pole_button.visible = true
-		var can_afford = EconomyManager.resources["Złoto"] >= 50
+		var can_afford = EconomyManager.resources["Złoto"] >= EconomyManager.TILE_PURCHASE_GOLD_COST
 		var is_camp_territory = world_ref and world_ref.get("camp_owned_tiles") and world_ref.camp_owned_tiles.has(active_tile_pos)
 		var can_buy = can_afford and borders_owned and not is_camp_territory
 		kup_pole_button.disabled = not can_buy

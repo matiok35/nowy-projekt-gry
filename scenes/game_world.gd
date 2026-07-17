@@ -606,6 +606,11 @@ func build_on_tile(pos: Vector2, building_name: String) -> void:
 	if not owned_tiles.has(pos): return
 
 	var tile = map_data[pos]
+	# POPRAWKA: bez tego sprawdzenia dowolny budynek (włącznie z Centrum
+	# Miasta!) mógł zostać po cichu nadpisany nowym budynkiem — jedyną
+	# rzeczą, która wcześniej to blokowała, była warstwa UI (hud.gd chowa
+	# przyciski budowy, gdy pole ma już budynek), a nie logika gry.
+	if tile["building"] != "Brak": return
 	if not EconomyManager.can_afford_and_place(building_name, tile["type"]): return
 
 	EconomyManager.deduct_costs(building_name)
@@ -797,8 +802,10 @@ func _handle_left_click_on_tile(pos: Vector2, global_mouse_pos: Vector2) -> void
 	if character and character.selected and cell_to_id.has(pos):
 		var world_path = get_world_path_to(pos)
 		if not world_path.is_empty():
-			var steps = world_path.size() - 1
-			character.moves_left -= steps
+			# POPRAWKA: moves_left NIE jest już odejmowane tutaj z góry na
+			# podstawie długości zaplanowanej ścieżki. character.gd odejmuje
+			# je krok po kroku, dopiero gdy postać faktycznie dotrze do
+			# kolejnego pola (patrz Character._physics_process).
 			character.follow_path(world_path)
 
 func build_astar_graph() -> void:

@@ -136,7 +136,7 @@ func _help_tab_text(key: String) -> String:
 		"rozwoj":
 			return "[b][color=#8fdc8f]Drzewo Technologii[/color][/b]\n" \
 				+ "• Kliknij przycisk [b]„Drzewo Technologii”[/b] w panelu w prawym górnym rogu ekranu.\n" \
-				+ "• Kliknij dostępny (podświetlony) węzeł technologii, aby rozpocząć nad nim badanie — postęp naliczany jest automatycznie z każdą turą na podstawie generowanych punktów technologii.\n\n" \
+				+ "• Kliknij dostępny (podświetlony) węzeł technologii, aby rozpocząć nad nim badanie — koszt w punktach Nauki (lub Kultury) jest pobierany od razu w całości, a samo badanie kończy się dopiero po stałej liczbie tur widocznej przy węźle, niezależnie od tego, ile punktów wygenerujesz w międzyczasie. Jeśli nie masz wystarczająco punktów, gra Cię o tym poinformuje.\n\n" \
 				+ "[b][color=#8fdc8f]Drzewo Kultury[/color][/b]\n" \
 				+ "• Kliknij przycisk [b]„Drzewo Kultury”[/b] w tym samym panelu, aby rozwijać ścieżkę kulturową w analogiczny sposób, korzystając z Punktów Kultury.\n\n" \
 				+ "[color=#a0a0a0]Węzły wymagają spełnienia wcześniejszych wymagań (odblokowanych technologii/kultur) zanim staną się dostępne do zbadania.[/color]"

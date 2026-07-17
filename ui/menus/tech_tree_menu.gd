@@ -5,6 +5,7 @@ var hud: Control
 var tech_tree_button: Button
 var tech_tree_window: Panel
 var tech_tree_map: Control
+var insufficient_points_dialog: AcceptDialog
 
 const X_SPACING: float = 280.0
 const Y_SPACING: float = 95.0
@@ -63,7 +64,16 @@ func setup_tech_tree_ui():
 			scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 			scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	if tech_tree_map: tech_tree_map.draw.connect(_draw_tech_connections)
-	
+
+	# Dialog pokazywany, gdy kliknięcie węzła technologii nie mogło
+	# rozpocząć badania (np. za mało punktów Nauki) — wcześniej takie
+	# kliknięcie nie dawało żadnej reakcji, co wyglądało jak zepsuty przycisk.
+	insufficient_points_dialog = AcceptDialog.new()
+	insufficient_points_dialog.title = "Za mało punktów"
+	insufficient_points_dialog.dialog_text = "Nie masz wystarczającej liczby punktów Nauki, aby rozpocząć to badanie."
+	insufficient_points_dialog.ok_button_text = "Zrozumiałem"
+	hud.add_child(insufficient_points_dialog)
+
 	tech_tree_button.pressed.connect(func():
 		hud.hide_all_menus()
 		if tech_tree_window:
@@ -181,8 +191,10 @@ func refresh_technology_tree_view():
 			invisible_button.disabled = true
 		else:
 			invisible_button.pressed.connect(func():
-				EconomyManager.start_research(tech_name)
-				refresh_technology_tree_view()
+				if EconomyManager.start_research(tech_name):
+					refresh_technology_tree_view()
+				else:
+					insufficient_points_dialog.popup_centered()
 			)
 		tech_tree_map.add_child(node_panel)
 	tech_tree_map.custom_minimum_size = max_size

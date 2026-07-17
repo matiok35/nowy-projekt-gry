@@ -21,11 +21,15 @@ static func get_neighbors(pos: Vector2) -> Array[Vector2]:
 	return neighbors
  
 static func get_distance(a: Vector2, b: Vector2) -> int:
+	# UWAGA: użycie int(a.y) / 2 obcinałoby wynik dzielenia w stronę zera
+	# zamiast w dół, co dla ujemnych nieparzystych wierszy dawało błędny
+	# offset kolumny (a w efekcie zawyżony dystans dla par sąsiadujących
+	# pól). floori() zawsze zaokrągla w dół, niezależnie od znaku.
 	var az = a.y
-	var ax = a.x - (int(a.y) / 2)
+	var ax = a.x - floori(a.y / 2.0)
 	var ay = -ax - az
 	var bz = b.y
-	var bx = b.x - (int(b.y) / 2)
+	var bx = b.x - floori(b.y / 2.0)
 	var by = -bx - bz
 	return int((abs(ax - bx) + abs(ay - by) + abs(az - bz)) / 2.0)
  

@@ -98,6 +98,12 @@ func is_selected() -> bool:
 
 func follow_path(new_path: Array[Vector2]) -> void:
 	path = new_path
+	# Pierwszy punkt zwrócony przez A* to bieżąca pozycja postaci (start
+	# ścieżki). Jeśli go nie usuniemy, _physics_process "skonsumuje" go
+	# natychmiast i policzy jako wykonany krok, mimo że postać nigdzie się
+	# jeszcze nie ruszyła.
+	if not path.is_empty() and path[0].distance_to(global_position) < ARRIVAL_THRESHOLD:
+		path.pop_front()
 
 func _physics_process(_delta: float) -> void:
 	if path.is_empty():
@@ -108,6 +114,12 @@ func _physics_process(_delta: float) -> void:
 	
 	if to_target.length() < ARRIVAL_THRESHOLD:
 		path.pop_front()
+		# Punkty ruchu (moves_left) są odejmowane dopiero w chwili, gdy
+		# postać faktycznie dotrze do kolejnego pola — a nie z góry, w
+		# momencie kliknięcia docelowego pola na mapie. Dzięki temu np.
+		# przerwanie ruchu w połowie ścieżki nie zabiera punktów, których
+		# postać nigdy nie wykorzystała.
+		moves_left = max(0, moves_left - 1)
 		if get_parent() and get_parent().has_method("update_fog_of_war"):
 			get_parent().update_fog_of_war()
 		if path.is_empty():

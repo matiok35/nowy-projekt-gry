@@ -8,6 +8,11 @@ var current_turn: int = 1
 var player_army: Array = []
 const MAX_ARMY_SIZE: int = 50
 
+# Koszt zakupu jednego pola terytorium. Trzymany w jednym miejscu (zamiast
+# zaszytej na sztywno liczby w hud.gd), żeby zmiana ceny w przyszłości nie
+# rozjeżdżała interfejsu z faktyczną logiką ekonomii.
+const TILE_PURCHASE_GOLD_COST: int = 50
+
 var army_bonus_hp: int = 0
 var army_bonus_dmg: int = 0
 var army_bonus_def: int = 0
@@ -420,10 +425,10 @@ func deduct_upgrade_costs(b_name: String, current_level: int) -> void:
 	notify_change()
 
 func can_afford_tile_purchase() -> bool:
-	return resources["Złoto"] >= 50
+	return resources["Złoto"] >= TILE_PURCHASE_GOLD_COST
 
 func deduct_tile_purchase_costs() -> void:
-	resources["Złoto"] -= 50
+	resources["Złoto"] -= TILE_PURCHASE_GOLD_COST
 	notify_change()
 
 func deduct_costs(building_name: String) -> void:
@@ -433,13 +438,16 @@ func deduct_costs(building_name: String) -> void:
 			resources[res] -= costs[res]
 		notify_change()
 
-func start_research(tech_name:String):
+func start_research(tech_name: String) -> bool:
+	# Zwraca false (bez żadnej zmiany stanu), jeśli badanie nie mogło zostać
+	# rozpoczęte — dzięki temu UI może pokazać graczowi komunikat zamiast
+	# po cichu ignorować kliknięcie.
 	if current_research != "":
-		return
+		return false
 
 	var tech = technology_tree[tech_name]
 	if resources["Nauka"] < tech["research_cost"]:
-		return
+		return false
 
 	var time = tech["research_time"]
 	if culture_tree["Szybsze badania"]["unlocked"]:
@@ -449,14 +457,15 @@ func start_research(tech_name:String):
 	current_research = tech_name
 	research_turns_left = time
 	notify_change()
+	return true
 
-func start_culture_research(tech_name:String):
+func start_culture_research(tech_name: String) -> bool:
 	if current_culture_research != "":
-		return
+		return false
 
 	var tech = culture_tree[tech_name]
 	if resources["Kultura"] < tech["research_cost"]:
-		return
+		return false
 
 	var time = tech["research_time"]
 	if culture_tree["Szybsze badania"]["unlocked"]:
@@ -466,6 +475,7 @@ func start_culture_research(tech_name:String):
 	current_culture_research = tech_name
 	culture_turns_left = time
 	notify_change()
+	return true
 
 func get_missing_tech_for_building(building_name: String) -> String:
 	if building_tech_requirements.has(building_name):
@@ -608,9 +618,12 @@ func next_turn(active_buildings_data: Array) -> void:
 		resources["Kultura"] + total_culture
 	)
 
+	# Flaga "Głoduje" oraz kara za brak jedzenia muszą używać tego samego
+	# progu (<=0), inaczej gracz widzi ostrzeżenie o karze, która jeszcze
+	# faktycznie nie działa (np. przy jedzeniu dokładnie równym 0).
 	resources["Głoduje"] = resources["Jedzenie"] <= 0
 
-	if resources["Jedzenie"] < 0:
+	if resources["Jedzenie"] <= 0:
 		resources["Jedzenie"] = 0
 		resources["Złoto"] = max(0, resources["Złoto"] - 5)
 		if resources["Populacja"] > 1 and randf() < 0.25:
@@ -785,7 +798,8 @@ func reset() -> void:
 		"Nauka": 2, 
 		"Kultura": 1,
 		"Populacja": 1,
-		"Maks_Populacja": 5
+		"Maks_Populacja": 5,
+		"Głoduje": false
 	}
 	
 	max_tech_points = 350.0

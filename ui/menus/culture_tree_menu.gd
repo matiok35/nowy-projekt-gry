@@ -5,6 +5,7 @@ var hud: Control
 var culture_tree_button: Button
 var culture_tree_window: Panel
 var culture_tree_map: Control
+var insufficient_points_dialog: AcceptDialog
 
 const X_SPACING: float = 280.0
 const Y_SPACING: float = 90.0
@@ -48,6 +49,15 @@ func setup_culture_tree_ui():
 
 	if culture_tree_map:
 		culture_tree_map.draw.connect(_draw_culture_connections)
+
+	# Dialog pokazywany, gdy kliknięcie węzła kultury nie mogło rozpocząć
+	# badania (np. za mało punktów Kultury) — wcześniej takie kliknięcie
+	# nie dawało żadnej reakcji, co wyglądało jak zepsuty przycisk.
+	insufficient_points_dialog = AcceptDialog.new()
+	insufficient_points_dialog.title = "Za mało punktów"
+	insufficient_points_dialog.dialog_text = "Nie masz wystarczającej liczby punktów Kultury, aby rozpocząć to badanie."
+	insufficient_points_dialog.ok_button_text = "Zrozumiałem"
+	hud.add_child(insufficient_points_dialog)
 
 	# Zamiast nadpisywać przycisk, używamy tego z hud.culture_tree_button
 	# culture_tree_button = hud.culture_tree_button
@@ -169,8 +179,10 @@ func refresh_culture_tree_view():
 			invisible_button.disabled = true
 		else:
 			invisible_button.pressed.connect(func():
-				EconomyManager.start_culture_research(tech_name)
-				refresh_culture_tree_view()
+				if EconomyManager.start_culture_research(tech_name):
+					refresh_culture_tree_view()
+				else:
+					insufficient_points_dialog.popup_centered()
 			)
 		culture_tree_map.add_child(node_panel)
 	culture_tree_map.custom_minimum_size = max_size
