@@ -48,7 +48,7 @@ func setup_library_window():
 	main_vbox.add_child(header_hbox)
 
 	var desc_label = Label.new()
-	desc_label.text = "Odblokuj umiejętności jednostek za Złoto i Punkty Nauki. Raz zbadana umiejętność pozostaje odblokowana na stałe."
+	desc_label.text = "Odblokuj umiejętności jednostek za Złoto i punkty technologii. Raz zbadana umiejętność pozostaje odblokowana na stałe."
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	desc_label.add_theme_font_size_override("font_size", 13)
 	desc_label.add_theme_color_override("font_color", hud.DF_TEXT)
@@ -112,7 +112,7 @@ func _populate_list() -> void:
 			cost_lbl.text = "✅ Odkryta"
 			cost_lbl.add_theme_color_override("font_color", Color(0.55, 0.85, 0.55))
 		else:
-			cost_lbl.text = "Koszt: 🪙 %d Złota, 🔬 %d Nauki" % [skill["cost_gold"], skill["cost_tech"]]
+			cost_lbl.text = "Koszt: 🪙 %d Złota, 🔬 %d punktów technologii" % [skill["cost_gold"], skill["cost_tech"]]
 			cost_lbl.add_theme_color_override("font_color", Color(0.85, 0.75, 0.4))
 		cost_lbl.add_theme_font_size_override("font_size", 12)
 		info_vbox.add_child(cost_lbl)

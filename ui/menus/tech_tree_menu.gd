@@ -18,7 +18,7 @@ func setup_tech_tree_ui():
 	tech_tree_map = hud.get_node("TechTreeWindow/ScrollContainer/TechTreeMap")
 
 	tech_tree_button = Button.new()
-	tech_tree_button.text = "Drzewo Rozwoju"
+	tech_tree_button.text = "Drzewo Technologii"
 	tech_tree_button.custom_minimum_size = Vector2(0, 40)
 	var btn_style = StyleBoxFlat.new()
 	btn_style.bg_color = Color(0.1, 0.16, 0.22, 0.95)

@@ -291,7 +291,7 @@ var culture_tree: Dictionary = {
 		"research_cost": 100, "research_time": 10, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "-1 Tura badań.", "grid_coords": Vector2(5, 1), "icon": "⏳"
 	},
 	"Nauka z warsztatu": {
-		"research_cost": 100, "research_time": 10, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "+1 Nauki/warsztat.", "grid_coords": Vector2(5, 3), "icon": "🧪"
+		"research_cost": 100, "research_time": 10, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "+1 pkt tech./warsztat.", "grid_coords": Vector2(5, 3), "icon": "🧪"
 	},
 	"Szybsza rekrutacja": {
 		"research_cost": 100, "research_time": 10, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "-1 Tura rekrutacji.", "grid_coords": Vector2(5, 5), "icon": "⚔️"
@@ -321,7 +321,7 @@ var culture_tree: Dictionary = {
 		"research_cost": 220, "research_time": 22, "req": ["Tańsza rekrutacja"], "unlocked": false, "desc": "+1 Złoto/turę.", "grid_coords": Vector2(9, 1), "icon": "💸"
 	},
 	"Tech z baraków": {
-		"research_cost": 220, "research_time": 22, "req": ["Kultura z domów"], "unlocked": false, "desc": "+1 Nauki/barak.", "grid_coords": Vector2(9, 5), "icon": "⚙️"
+		"research_cost": 220, "research_time": 22, "req": ["Kultura z domów"], "unlocked": false, "desc": "+1 pkt tech./barak.", "grid_coords": Vector2(9, 5), "icon": "⚙️"
 	},
 	"Złoto z drwala": {
 		"research_cost": 260, "research_time": 26, "req": ["Złoto co turę", "Tech z baraków"], "unlocked": false, "desc": "+1 Złoto/drwala.", "grid_coords": Vector2(10, 3), "icon": "🪓"
@@ -490,6 +490,9 @@ func next_turn(active_buildings_data: Array) -> void:
 			max_pop += 5 * b_data.get("level", 1)
 	resources["Maks_Populacja"] = max_pop
 	
+	if resources["Populacja"] > resources["Maks_Populacja"]:
+		resources["Populacja"] = resources["Maks_Populacja"]
+	
 	var food_consumption = resources["Populacja"] * 1
 	resources["Jedzenie"] -= food_consumption
 	
@@ -541,17 +544,26 @@ func next_turn(active_buildings_data: Array) -> void:
 				var iron_yield = 5
 				var produced_iron = int(iron_yield * size_modifier * b_level * iron_coal_multiplier * temple_multiplier)
 				var coal_consumed = int(3 * size_modifier * b_level)
-				if resources.get("Węgiel", 0) >= coal_consumed:
+				var gold_cost = 2 * b_level
+				if resources.get("Złoto", 0) < gold_cost:
+					if not turn_warnings.has("Brak złota! Kopalnie wstrzymały produkcję."):
+						turn_warnings.append("Brak złota! Kopalnie wstrzymały produkcję.")
+				elif resources.get("Węgiel", 0) >= coal_consumed:
 					resources["Węgiel"] -= coal_consumed
 					resources["Żelazo"] += produced_iron
-					resources["Złoto"] -= 2 * b_level
+					resources["Złoto"] -= gold_cost
 				else:
 					if not turn_warnings.has("Brak węgla! Kopalnie żelaza wstrzymały produkcję."):
 						turn_warnings.append("Brak węgla! Kopalnie żelaza wstrzymały produkcję.")
 			"Kopalnia Węgla":
 				var coal_yield = 4
-				resources["Węgiel"] += int(coal_yield * size_modifier * b_level * iron_coal_multiplier * temple_multiplier)
-				resources["Złoto"] -= 2 * b_level
+				var gold_cost = 2 * b_level
+				if resources.get("Złoto", 0) < gold_cost:
+					if not turn_warnings.has("Brak złota! Kopalnie wstrzymały produkcję."):
+						turn_warnings.append("Brak złota! Kopalnie wstrzymały produkcję.")
+				else:
+					resources["Węgiel"] += int(coal_yield * size_modifier * b_level * iron_coal_multiplier * temple_multiplier)
+					resources["Złoto"] -= gold_cost
 			"Farma":
 				var farm_yield = 6
 				resources["Jedzenie"] += int(farm_yield * size_modifier * b_level * food_multiplier * temple_multiplier)
@@ -733,7 +745,7 @@ func remove_unit(unit: Dictionary) -> void:
 		player_army.erase(unit)
 		var cost = calculate_unit_cost(unit)
 		if cost.has("Populacja"):
-			resources["Populacja"] += cost["Populacja"]
+			resources["Populacja"] = min(resources["Populacja"] + cost["Populacja"], resources["Maks_Populacja"])
 		notify_change()
 
 func clear_army() -> void:
@@ -741,6 +753,8 @@ func clear_army() -> void:
 		var cost = calculate_unit_cost(unit)
 		if cost.has("Populacja"):
 			resources["Populacja"] += cost["Populacja"]
+	
+	resources["Populacja"] = min(resources["Populacja"], resources["Maks_Populacja"])
 	player_army.clear()
 	notify_change()
 
