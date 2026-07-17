@@ -92,6 +92,22 @@ func setup_admin_window():
 	unlock_cult_btn.pressed.connect(_unlock_all_cultures)
 	main_vbox.add_child(unlock_cult_btn)
 
+	var sep3 = HSeparator.new()
+	sep3.add_theme_color_override("separator", Color(0.8, 0.2, 0.2, 1.0))
+	main_vbox.add_child(sep3)
+
+	# Przełącznik pozwalający wyłączyć krótkie opóźnienie (cooldown)
+	# przycisku „Następna tura” — przydatne przy testowaniu, gdy trzeba
+	# szybko przeklikać wiele tur pod rząd.
+	var skip_delay_check = CheckButton.new()
+	skip_delay_check.text = "Wyłącz opóźnienie przycisku „Następna tura”"
+	skip_delay_check.button_pressed = GameSettings.skip_turn_button_delay
+	skip_delay_check.add_theme_color_override("font_color", hud.DF_TEXT)
+	skip_delay_check.toggled.connect(func(pressed: bool):
+		GameSettings.skip_turn_button_delay = pressed
+	)
+	main_vbox.add_child(skip_delay_check)
+
 	hud.add_child(admin_window)
 
 func _add_cheat_button(parent: Node, text: String, callback: Callable):
