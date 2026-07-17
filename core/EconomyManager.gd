@@ -13,9 +13,6 @@ const MAX_ARMY_SIZE: int = 50
 # rozjeżdżała interfejsu z faktyczną logiką ekonomii.
 const TILE_PURCHASE_GOLD_COST: int = 50
 
-var army_bonus_hp: int = 0
-var army_bonus_dmg: int = 0
-var army_bonus_def: int = 0
 
 var owned_potions: Dictionary = {}
 var active_potions: Dictionary = {}
@@ -182,43 +179,43 @@ var upgrade_tech_requirements: Dictionary = {
 # SKRÓCONE OPISY ("desc") DLA ZAPEWNIENIA MAŁYCH KAFELKÓW
 var technology_tree: Dictionary = {
 	"Chata drwala": {
-		"research_cost": 10, "research_time": 1, "req": [], "unlocked": false, "desc": "Budowa Chaty Drwala.", "grid_coords": Vector2(0, 3), "icon": "🪓"
+		"research_cost": 5, "research_time": 1, "req": [], "unlocked": false, "desc": "Budowa Chaty Drwala.", "grid_coords": Vector2(0, 3), "icon": "🪓"
 	},
 	"Piła Dwuręczna": {
-		"research_cost": 30, "research_time": 3, "req": ["Chata drwala"], "unlocked": false, "desc": "Chata Drwala Lvl 2.", "grid_coords": Vector2(1, 2), "icon": "🪚"
+		"research_cost": 15, "research_time": 3, "req": ["Chata drwala"], "unlocked": false, "desc": "Chata Drwala Lvl 2.", "grid_coords": Vector2(1, 2), "icon": "🪚"
 	},
 	"Tartak Mechaniczny": {
-		"research_cost": 50, "research_time": 5, "req": ["Piła Dwuręczna"], "unlocked": false, "desc": "Chata Drwala Lvl 3.", "grid_coords": Vector2(2, 1), "icon": "🪵"
+		"research_cost": 25, "research_time": 5, "req": ["Piła Dwuręczna"], "unlocked": false, "desc": "Chata Drwala Lvl 3.", "grid_coords": Vector2(2, 1), "icon": "🪵"
 	},
 	"Hodowla bydła": {
-		"research_cost": 20, "research_time": 2, "req": ["Chata drwala"], "unlocked": false, "desc": "Budowa Pastwiska.", "grid_coords": Vector2(1, 4), "icon": "🐄"
+		"research_cost": 10, "research_time": 2, "req": ["Chata drwala"], "unlocked": false, "desc": "Budowa Pastwiska.", "grid_coords": Vector2(1, 4), "icon": "🐄"
 	},
 	"Płodozmian": {
-		"research_cost": 40, "research_time": 4, "req": ["Hodowla bydła", "Piła Dwuręczna"], "unlocked": false, "desc": "Farma/Pastwisko Lvl 2.", "grid_coords": Vector2(2, 3), "icon": "🌾"
+		"research_cost": 20, "research_time": 4, "req": ["Hodowla bydła", "Piła Dwuręczna"], "unlocked": false, "desc": "Farma/Pastwisko Lvl 2.", "grid_coords": Vector2(2, 3), "icon": "🌾"
 	},
 	"Górnictwo": {
-		"research_cost": 40, "research_time": 4, "req": ["Hodowla bydła"], "unlocked": false, "desc": "Kopalnie Żelaza i Węgla.", "grid_coords": Vector2(2, 5), "icon": "⛏️"
+		"research_cost": 20, "research_time": 4, "req": ["Hodowla bydła"], "unlocked": false, "desc": "Kopalnie Żelaza i Węgla.", "grid_coords": Vector2(2, 5), "icon": "⛏️"
 	},
 	"Agronomia": {
-		"research_cost": 60, "research_time": 6, "req": ["Płodozmian", "Tartak Mechaniczny"], "unlocked": false, "desc": "Farma/Pastwisko Lvl 3.", "grid_coords": Vector2(3, 1), "icon": "🚜"
+		"research_cost": 30, "research_time": 6, "req": ["Płodozmian", "Tartak Mechaniczny"], "unlocked": false, "desc": "Farma/Pastwisko Lvl 3.", "grid_coords": Vector2(3, 1), "icon": "🚜"
 	},
 	"Warsztat": {
-		"research_cost": 60, "research_time": 6, "req": ["Płodozmian", "Górnictwo"], "unlocked": false, "desc": "Budowa Warsztatu.", "grid_coords": Vector2(3, 3), "icon": "⚒️"
+		"research_cost": 30, "research_time": 6, "req": ["Płodozmian", "Górnictwo"], "unlocked": false, "desc": "Budowa Warsztatu.", "grid_coords": Vector2(3, 3), "icon": "⚒️"
 	},
 	"Głębokie Szyby": {
-		"research_cost": 60, "research_time": 6, "req": ["Górnictwo"], "unlocked": false, "desc": "Kopalnie Lvl 2.", "grid_coords": Vector2(3, 5), "icon": "🗻"
+		"research_cost": 30, "research_time": 6, "req": ["Górnictwo"], "unlocked": false, "desc": "Kopalnie Lvl 2.", "grid_coords": Vector2(3, 5), "icon": "🗻"
 	},
 	"Precyzyjne Narzędzia": {
-		"research_cost": 80, "research_time": 8, "req": ["Agronomia", "Warsztat"], "unlocked": false, "desc": "Warsztat Lvl 2.", "grid_coords": Vector2(4, 2), "icon": "⚙️"
+		"research_cost": 40, "research_time": 8, "req": ["Agronomia", "Warsztat"], "unlocked": false, "desc": "Warsztat Lvl 2.", "grid_coords": Vector2(4, 2), "icon": "⚙️"
 	},
 	"Świątynia": {
-		"research_cost": 80, "research_time": 8, "req": ["Warsztat", "Głębokie Szyby"], "unlocked": false, "desc": "Budowa Świątyni.", "grid_coords": Vector2(4, 4), "icon": "🕍"
+		"research_cost": 40, "research_time": 8, "req": ["Warsztat", "Głębokie Szyby"], "unlocked": false, "desc": "Budowa Świątyni.", "grid_coords": Vector2(4, 4), "icon": "🕍"
 	},
 	"Manufaktura": {
-		"research_cost": 100, "research_time": 10, "req": ["Precyzyjne Narzędzia"], "unlocked": false, "desc": "Warsztat Lvl 3.", "grid_coords": Vector2(5, 2), "icon": "🏭"
+		"research_cost": 50, "research_time": 10, "req": ["Precyzyjne Narzędzia"], "unlocked": false, "desc": "Warsztat Lvl 3.", "grid_coords": Vector2(5, 2), "icon": "🏭"
 	},
 	"Odnowa Wiary": {
-		"research_cost": 100, "research_time": 10, "req": ["Świątynia"], "unlocked": false, "desc": "Świątynia Lvl 2.", "grid_coords": Vector2(5, 4), "icon": "🛕"
+		"research_cost": 50, "research_time": 10, "req": ["Świątynia"], "unlocked": false, "desc": "Świątynia Lvl 2.", "grid_coords": Vector2(5, 4), "icon": "🛕"
 	},
 	"Baraki": {
 		"research_cost": 120, "research_time": 12, "req": ["Manufaktura", "Odnowa Wiary"], "unlocked": false, "desc": "Budowa Baraków.", "grid_coords": Vector2(6, 3), "icon": "⚔️"
@@ -293,7 +290,7 @@ var culture_tree: Dictionary = {
 		"research_cost": 80, "research_time": 8, "req": ["Złoto za mieszkańca", "Drewno +5%"], "unlocked": false, "desc": "+2 Złota/świątynię.", "grid_coords": Vector2(4, 3), "icon": "🕍"
 	},
 	"Szybsze badania": {
-		"research_cost": 100, "research_time": 10, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "-1 Tura badań.", "grid_coords": Vector2(5, 1), "icon": "⏳"
+		"research_cost": 100, "research_time": 10, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "-20% Koszt badań, -1 Tura badań.", "grid_coords": Vector2(5, 1), "icon": "⏳"
 	},
 	"Nauka z warsztatu": {
 		"research_cost": 100, "research_time": 10, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "+1 pkt tech./warsztat.", "grid_coords": Vector2(5, 3), "icon": "🧪"
@@ -438,6 +435,12 @@ func deduct_costs(building_name: String) -> void:
 			resources[res] -= costs[res]
 		notify_change()
 
+func get_tech_cost(tech_name: String) -> int:
+	var base_cost = technology_tree[tech_name]["research_cost"]
+	if culture_tree["Szybsze badania"]["unlocked"]:
+		return max(1, int(base_cost * 0.8)) # -20% do ceny
+	return base_cost
+
 func start_research(tech_name: String) -> bool:
 	# Zwraca false (bez żadnej zmiany stanu), jeśli badanie nie mogło zostać
 	# rozpoczęte — dzięki temu UI może pokazać graczowi komunikat zamiast
@@ -446,14 +449,16 @@ func start_research(tech_name: String) -> bool:
 		return false
 
 	var tech = technology_tree[tech_name]
-	if resources["Nauka"] < tech["research_cost"]:
+	var cost = get_tech_cost(tech_name)
+	
+	if resources["Nauka"] < cost:
 		return false
 
 	var time = tech["research_time"]
 	if culture_tree["Szybsze badania"]["unlocked"]:
 		time = max(1, time - 1)
 
-	resources["Nauka"] -= tech["research_cost"]
+	resources["Nauka"] -= cost
 	current_research = tech_name
 	research_turns_left = time
 	notify_change()
@@ -730,7 +735,7 @@ func can_recruit_unit(unit: Dictionary) -> bool:
 func is_army_full() -> bool:
 	return player_army.size() >= MAX_ARMY_SIZE
 
-func recruit_unit(unit: Dictionary) -> void:
+func recruit_unit(unit: Dictionary, source_pos: Vector2 = Vector2(-1, -1)) -> void:
 	if can_recruit_unit(unit):
 		var cost = calculate_unit_cost(unit)
 		for res in cost:
@@ -739,10 +744,8 @@ func recruit_unit(unit: Dictionary) -> void:
 		var new_unit = unit.duplicate()
 		new_unit["turns_to_recruit"] = calculate_recruitment_turns(new_unit)
 		new_unit["turns_in_recruitment"] = 0
+		new_unit["source_barracks_pos"] = source_pos
 		
-		if army_bonus_hp > 0: new_unit["hp"] += army_bonus_hp
-		if army_bonus_dmg > 0: new_unit["dmg"] += army_bonus_dmg
-		if army_bonus_def > 0: new_unit["def"] += army_bonus_def
 
 		# Aktualne HP jednostki (do systemu leczenia w Warsztacie). Na razie
 		# gra nie ma jeszcze mechanizmu zadawania obrażeń w walce, więc
@@ -751,6 +754,44 @@ func recruit_unit(unit: Dictionary) -> void:
 		new_unit["current_hp"] = new_unit["hp"]
 		
 		player_army.append(new_unit)
+		notify_change()
+
+func upgrade_units_from_barracks(pos: Vector2, new_level: int, unit_data_json: Dictionary) -> void:
+	if not unit_data_json.has("factions"): return
+	
+	var target_faction_id = "humans"
+	if new_level == 2:
+		target_faction_id = "humans_lvl2"
+	elif new_level >= 3:
+		target_faction_id = "humans_lvl3"
+		
+	var target_faction = null
+	for faction in unit_data_json["factions"]:
+		if faction.get("id") == target_faction_id:
+			target_faction = faction
+			break
+			
+	if target_faction == null: return
+	
+	var any_upgraded = false
+	for u in player_army:
+		if u.get("source_barracks_pos") == pos:
+			var base_short = u.get("short_name", "")
+			# Znajdź nowy wariant na podstawie short_name
+			for new_u in target_faction["units"]:
+				if new_u.get("short_name", "") == base_short:
+					u["id"] = new_u["id"]
+					u["name"] = new_u["name"]
+					# HP może być uszkodzone, zaktualizujmy max_hp i wyleczmy (lub zachowajmy procent)
+					var hp_diff = new_u["hp"] - u.get("hp", 0)
+					u["hp"] = new_u["hp"]
+					u["current_hp"] = u.get("current_hp", 0) + hp_diff
+					u["dmg"] = new_u["dmg"]
+					u["def"] = new_u["def"]
+					any_upgraded = true
+					break
+	
+	if any_upgraded:
 		notify_change()
 
 func remove_unit(unit: Dictionary) -> void:
@@ -774,9 +815,7 @@ func clear_army() -> void:
 func reset() -> void:
 	current_turn = 1
 	player_army = []
-	army_bonus_hp = 0
-	army_bonus_dmg = 0
-	army_bonus_def = 0
+
 	owned_potions = {}
 	active_potions = {}
 	potion_bonus_hp = 0

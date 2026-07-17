@@ -160,7 +160,8 @@ func refresh_technology_tree_view():
 		lbl_title.add_theme_color_override("font_color", Color(0.9, 0.85, 0.75))
 		vbox.add_child(lbl_title)
 		var lbl_desc = Label.new()
-		lbl_desc.text = "%s\n💎 Koszt: %d pkt" % [tech["desc"], tech["research_cost"]]
+		var current_cost = EconomyManager.get_tech_cost(tech_name)
+		lbl_desc.text = "%s\n💎 Koszt: %d pkt" % [tech["desc"], current_cost]
 		lbl_desc.add_theme_font_size_override("font_size", 9)
 		lbl_desc.add_theme_color_override("font_color", Color(0.75, 0.65, 0.85))
 		vbox.add_child(lbl_desc)
@@ -182,8 +183,8 @@ func refresh_technology_tree_view():
 			node_style.border_color = Color(0.85, 0.64, 0.22) 
 			node_style.bg_color = Color(0.24, 0.2, 0.14)
 			var current_science = EconomyManager.resources["Nauka"]
-			var progress = tech["research_cost"] - EconomyManager.resources["Nauka"]
-			progress = clamp(progress, 0, tech["research_cost"])
+			var progress = EconomyManager.get_tech_cost(tech_name) - EconomyManager.resources["Nauka"]
+			progress = clamp(progress, 0, EconomyManager.get_tech_cost(tech_name))
 			lbl_title.text = "%s (%d tur)" % [tech_name, EconomyManager.research_turns_left]
 			invisible_button.disabled = true
 		elif not reqs_ok:
@@ -191,9 +192,15 @@ func refresh_technology_tree_view():
 			invisible_button.disabled = true
 		else:
 			invisible_button.pressed.connect(func():
-				if EconomyManager.start_research(tech_name):
+				if EconomyManager.current_research != "":
+					insufficient_points_dialog.title = "Trwają badania"
+					insufficient_points_dialog.dialog_text = "Nie możesz rozpocząć nowego badania, dopóki obecne się nie zakończy."
+					insufficient_points_dialog.popup_centered()
+				elif EconomyManager.start_research(tech_name):
 					refresh_technology_tree_view()
 				else:
+					insufficient_points_dialog.title = "Za mało punktów"
+					insufficient_points_dialog.dialog_text = "Nie masz wystarczającej liczby punktów Nauki, aby rozpocząć to badanie."
 					insufficient_points_dialog.popup_centered()
 			)
 		tech_tree_map.add_child(node_panel)
