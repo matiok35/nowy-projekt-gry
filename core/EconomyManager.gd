@@ -127,8 +127,8 @@ var resources: Dictionary = {
 
 var turn_warnings: Array = []
 
-var max_tech_points: float = 350.0
-var max_culture_points: float = 350.0
+var max_tech_points: float = 600.0
+var max_culture_points: float = 600.0
 
 # Koszty budynków podniesione o 100% względem wartości bazowych.
 var building_costs: Dictionary = {
@@ -222,46 +222,46 @@ var technology_tree: Dictionary = {
 		"research_cost": 120, "research_time": 12, "req": ["Manufaktura", "Odnowa Wiary"], "unlocked": false, "desc": "Budowa Baraków.", "grid_coords": Vector2(6, 3), "icon": "⚔️"
 	},
 	"Sanktuarium": {
-		"research_cost": 150, "research_time": 15, "req": ["Baraki"], "unlocked": false, "desc": "Świątynia Lvl 3.", "grid_coords": Vector2(7, 1), "icon": "⛪"
+		"research_cost": 225, "research_time": 8, "req": ["Baraki"], "unlocked": false, "desc": "Świątynia Lvl 3.", "grid_coords": Vector2(7, 1), "icon": "⛪"
 	},
 	"Musztra": {
-		"research_cost": 150, "research_time": 15, "req": ["Baraki"], "unlocked": false, "desc": "Baraki Lvl 2.", "grid_coords": Vector2(7, 3), "icon": "🛡️"
+		"research_cost": 225, "research_time": 8, "req": ["Baraki"], "unlocked": false, "desc": "Baraki Lvl 2.", "grid_coords": Vector2(7, 3), "icon": "🛡️"
 	},
 	"Metalurgia": {
-		"research_cost": 150, "research_time": 15, "req": ["Baraki"], "unlocked": false, "desc": "Kopalnie Lvl 3.", "grid_coords": Vector2(7, 5), "icon": "🌋"
+		"research_cost": 225, "research_time": 8, "req": ["Baraki"], "unlocked": false, "desc": "Kopalnie Lvl 3.", "grid_coords": Vector2(7, 5), "icon": "🌋"
 	},
 	"Laboratorium": {
-		"research_cost": 180, "research_time": 18, "req": ["Sanktuarium", "Musztra"], "unlocked": false, "desc": "Budowa Laboratorium.", "grid_coords": Vector2(8, 2), "icon": "🧪"
+		"research_cost": 270, "research_time": 9, "req": ["Sanktuarium", "Musztra"], "unlocked": false, "desc": "Budowa Laboratorium.", "grid_coords": Vector2(8, 2), "icon": "🧪"
 	},
 	"Konnica": {
-		"research_cost": 180, "research_time": 18, "req": ["Musztra", "Metalurgia"], "unlocked": false, "desc": "Jednostki konne.", "grid_coords": Vector2(8, 4), "icon": "🐎"
+		"research_cost": 270, "research_time": 9, "req": ["Musztra", "Metalurgia"], "unlocked": false, "desc": "Jednostki konne.", "grid_coords": Vector2(8, 4), "icon": "🐎"
 	},
 	"Biblioteka": {
-		"research_cost": 220, "research_time": 22, "req": ["Laboratorium", "Konnica"], "unlocked": false, "desc": "Budowa Biblioteki.", "grid_coords": Vector2(9, 3), "icon": "📚"
+		"research_cost": 330, "research_time": 11, "req": ["Laboratorium", "Konnica"], "unlocked": false, "desc": "Budowa Biblioteki.", "grid_coords": Vector2(9, 3), "icon": "📚"
 	},
 	"Alchemia": {
-		"research_cost": 260, "research_time": 26, "req": ["Biblioteka"], "unlocked": false, "desc": "Laboratorium Lvl 2.", "grid_coords": Vector2(10, 1), "icon": "🔬"
+		"research_cost": 390, "research_time": 13, "req": ["Biblioteka"], "unlocked": false, "desc": "Laboratorium Lvl 2.", "grid_coords": Vector2(10, 1), "icon": "🔬"
 	},
 	"Archiwa": {
-		"research_cost": 260, "research_time": 26, "req": ["Biblioteka"], "unlocked": false, "desc": "Biblioteka Lvl 2.", "grid_coords": Vector2(10, 3), "icon": "📖"
+		"research_cost": 390, "research_time": 13, "req": ["Biblioteka"], "unlocked": false, "desc": "Biblioteka Lvl 2.", "grid_coords": Vector2(10, 3), "icon": "📖"
 	},
 	"Urbanizacja": {
-		"research_cost": 260, "research_time": 26, "req": ["Biblioteka"], "unlocked": false, "desc": "Domy Lvl 2.", "grid_coords": Vector2(10, 5), "icon": "🏘️"
+		"research_cost": 390, "research_time": 13, "req": ["Biblioteka"], "unlocked": false, "desc": "Domy Lvl 2.", "grid_coords": Vector2(10, 5), "icon": "🏘️"
 	},
 	"Akademia Nauk": {
-		"research_cost": 300, "research_time": 30, "req": ["Alchemia"], "unlocked": false, "desc": "Laboratorium Lvl 3.", "grid_coords": Vector2(11, 1), "icon": "🌌"
+		"research_cost": 450, "research_time": 15, "req": ["Alchemia"], "unlocked": false, "desc": "Laboratorium Lvl 3.", "grid_coords": Vector2(11, 1), "icon": "🌌"
 	},
 	"Wielkie Archiwum": {
-		"research_cost": 300, "research_time": 30, "req": ["Archiwa"], "unlocked": false, "desc": "Biblioteka Lvl 3.", "grid_coords": Vector2(11, 3), "icon": "🏛️"
+		"research_cost": 450, "research_time": 15, "req": ["Archiwa"], "unlocked": false, "desc": "Biblioteka Lvl 3.", "grid_coords": Vector2(11, 3), "icon": "🏛️"
 	},
 	"Twierdza": {
-		"research_cost": 300, "research_time": 30, "req": ["Urbanizacja"], "unlocked": false, "desc": "Baraki Lvl 3.", "grid_coords": Vector2(11, 5), "icon": "🏰"
+		"research_cost": 450, "research_time": 15, "req": ["Urbanizacja"], "unlocked": false, "desc": "Baraki Lvl 3.", "grid_coords": Vector2(11, 5), "icon": "🏰"
 	},
 	"Mag": {
-		"research_cost": 350, "research_time": 35, "req": ["Akademia Nauk", "Wielkie Archiwum"], "unlocked": false, "desc": "Rekrutacja Magów.", "grid_coords": Vector2(12, 2), "icon": "🧙"
+		"research_cost": 525, "research_time": 18, "req": ["Akademia Nauk", "Wielkie Archiwum"], "unlocked": false, "desc": "Rekrutacja Magów.", "grid_coords": Vector2(12, 2), "icon": "🧙"
 	},
 	"Metropolia": {
-		"research_cost": 350, "research_time": 35, "req": ["Wielkie Archiwum", "Twierdza"], "unlocked": false, "desc": "Domy Lvl 3.", "grid_coords": Vector2(12, 4), "icon": "🏙️"
+		"research_cost": 525, "research_time": 18, "req": ["Wielkie Archiwum", "Twierdza"], "unlocked": false, "desc": "Domy Lvl 3.", "grid_coords": Vector2(12, 4), "icon": "🏙️"
 	}
 }
 
@@ -407,7 +407,10 @@ func get_upgrade_cost(b_name: String, current_level: int) -> Dictionary:
 	if building_costs.has(b_name):
 		var mod_costs = get_modified_building_costs(b_name)
 		for res in mod_costs:
-			cost[res] = mod_costs[res] * (current_level + 1)
+			var amount = mod_costs[res] * (current_level + 1)
+			if res == "Drewno":
+				amount = int(amount * 2.5)
+			cost[res] = amount
 	return cost
 
 func can_afford_upgrade(b_name: String, current_level: int) -> bool:
