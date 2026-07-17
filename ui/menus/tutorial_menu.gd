@@ -106,7 +106,7 @@ func _tutorial_text() -> String:
 		+ "3. Budynki produkują surowce (Drewno, Żelazo, Węgiel, Jedzenie, Złoto) po zakończeniu tury — kliknij [b]„Następna tura”[/b] w lewym dolnym rogu, aby naliczyć produkcję.\n" \
 		+ "4. Powiększaj terytorium kupując sąsiednie pola za złoto (opcja [b]„Kup to pole”[/b] w menu pola) — miasto rozszerza się też automatycznie co kilka tur.\n\n" \
 		+ "[b][color=#8fdc8f]Rozwój i kultura[/color][/b]\n" \
-		+ "Buduj Laboratoria, Warsztaty, Biblioteki i Świątynie, aby generować Punkty Nauki i Kultury. Odblokowuj nowe technologie i tradycje w oknach [b]„Drzewo Rozwoju”[/b] i [b]„Drzewo Kultury”[/b] w prawym górnym rogu ekranu.\n\n" \
+		+ "Buduj Laboratoria, Warsztaty, Biblioteki i Świątynie, aby generować punkty technologii i kultury. Odblokowuj nowe technologie i tradycje w oknach [b]„Drzewo Technologii”[/b] i [b]„Drzewo Kultury”[/b] w prawym górnym rogu ekranu.\n\n" \
 		+ "[b][color=#8fdc8f]Wojsko i obozowiska[/color][/b]\n" \
 		+ "Zbuduj [b]Baraki[/b], aby rekrutować jednostki. Zarządzaj armią w oknie [b]„Moja Armia”[/b] i przypisuj jednostki do swojego generała. Na mapie napotkasz wrogie [b]obozowiska[/b] — sprawdzaj ich siłę zanim zaatakujesz.\n\n" \
 		+ "[color=#a0a0a0]To tylko skrót — pełny opis sterowania (kamera, ruch generała, menu kontekstowe) znajdziesz w oknie pomocy pod klawiszem TAB.[/color]"

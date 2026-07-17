@@ -135,8 +135,8 @@ func _help_tab_text(key: String) -> String:
 				+ "• Zaznacz swoją postać kliknięciem [b]LPM[/b], a następnie kliknij [b]LPM[/b] na pole docelowe w jej zasięgu ruchu."
 		"rozwoj":
 			return "[b][color=#8fdc8f]Drzewo Technologii[/color][/b]\n" \
-				+ "• Kliknij przycisk [b]„Drzewo Rozwoju”[/b] w panelu w prawym górnym rogu ekranu.\n" \
-				+ "• Kliknij dostępny (podświetlony) węzeł technologii, aby rozpocząć nad nim badanie — postęp naliczany jest automatycznie z każdą turą na podstawie generowanej Nauki.\n\n" \
+				+ "• Kliknij przycisk [b]„Drzewo Technologii”[/b] w panelu w prawym górnym rogu ekranu.\n" \
+				+ "• Kliknij dostępny (podświetlony) węzeł technologii, aby rozpocząć nad nim badanie — postęp naliczany jest automatycznie z każdą turą na podstawie generowanych punktów technologii.\n\n" \
 				+ "[b][color=#8fdc8f]Drzewo Kultury[/color][/b]\n" \
 				+ "• Kliknij przycisk [b]„Drzewo Kultury”[/b] w tym samym panelu, aby rozwijać ścieżkę kulturową w analogiczny sposób, korzystając z Punktów Kultury.\n\n" \
 				+ "[color=#a0a0a0]Węzły wymagają spełnienia wcześniejszych wymagań (odblokowanych technologii/kultur) zanim staną się dostępne do zbadania.[/color]"

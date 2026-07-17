@@ -11,8 +11,8 @@ extends Camera2D
 
 # --- ZMIENNE DLA PRZYBLIŻANIA (ZOOM) ---
 @export var ZOOM_SPEED: float = 0.1
-@export var MIN_ZOOM: float = 0.5  
-@export var MAX_ZOOM: float = 2.0  
+@export var MIN_ZOOM: float = 0.15  
+@export var MAX_ZOOM: float = 4.0  
 
 # --- ZMIENNE DLA PRZESUWANIA MYSZKĄ (LPM) ---
 var _is_dragging: bool = false
@@ -59,7 +59,8 @@ func _unhandled_input(event: InputEvent):
 			_clamp_position()
 
 func change_zoom(amount: float):
-	var new_zoom = zoom + Vector2(amount, amount)
+	var factor = 1.0 + amount
+	var new_zoom = zoom * factor
 	new_zoom.x = clamp(new_zoom.x, MIN_ZOOM, MAX_ZOOM)
 	new_zoom.y = clamp(new_zoom.y, MIN_ZOOM, MAX_ZOOM)
 	zoom = new_zoom

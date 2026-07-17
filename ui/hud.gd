@@ -253,8 +253,14 @@ func _update_battle_button() -> void:
 		battle_button.visible = false
 		return
 
-	battle_button.visible = true
 	var screen_pos: Vector2 = get_viewport().canvas_transform * (gen.global_position + Vector2(0, -75))
+	var visible_rect = get_viewport().get_visible_rect()
+	
+	if not visible_rect.has_point(screen_pos):
+		battle_button.visible = false
+		return
+		
+	battle_button.visible = true
 	battle_button.position = screen_pos - battle_button.size / 2.0
 
 func setup_battle_button() -> void:
@@ -262,7 +268,7 @@ func setup_battle_button() -> void:
 	battle_button.text = "⚔️ Rozpocznij walkę"
 	battle_button.custom_minimum_size = Vector2(190, 46)
 	battle_button.visible = false
-	battle_button.z_index = 20
+	battle_button.z_index = -1
 	battle_button.tooltip_text = "Funkcja walki będzie dostępna wkrótce"
 
 	var style = StyleBoxFlat.new()
