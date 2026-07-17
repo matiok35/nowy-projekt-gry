@@ -800,7 +800,7 @@ func setup_custom_popups():
 	# 4. GRID CONTAINER FOR BUTTONS
 	build_grid = GridContainer.new()
 	build_grid.columns = 3
-	build_grid.custom_minimum_size = Vector2(320, 0) # Miejsce na 3 kolumny po 100px + odstępy
+	build_grid.custom_minimum_size = Vector2(320, 210) # Miejsce na 3 kolumny po 100px i stała wysokość na 2 rzędy
 	build_grid.add_theme_constant_override("h_separation", 10)
 	build_grid.add_theme_constant_override("v_separation", 10)
 	build_grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
