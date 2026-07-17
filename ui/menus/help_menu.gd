@@ -113,7 +113,7 @@ func _help_tab_text(key: String) -> String:
 			return "[b][color=#8fdc8f]Jak wybudować budynek[/color][/b]\n" \
 				+ "1. Kliknij [b]PPM[/b] na pole, które [b]należy do Ciebie[/b] (posiadane pola).\n" \
 				+ "2. W otwartym „Menu Budowy” wybierz kategorię u góry: [b]Surowce[/b], [b]Kultura[/b], [b]Technologia[/b] lub [b]Wojskowe[/b].\n" \
-				+ "3. Kliknij przycisk wybranego budynku — jeśli masz wystarczająco surowców, budynek zostanie postawiony na tym polu.\n\n" \
+				+ "3. Kliknij przycisk wybranego budynku — jeśli masz wystarczająco surowców, budynek zostanie postawiony na tym polu. Koszt budowy sprawdzisz najeżdżając kursorem na przycisk wybranego budynku.\n\n" \
 				+ "[b][color=#8fdc8f]Ulepszanie budynków[/color][/b]\n" \
 				+ "• Kliknij [b]PPM[/b] na pole z istniejącym budynkiem i wybierz [b]„⬆️ Ulepsz budynek”[/b], aby zwiększyć jego poziom (jeśli stać Cię na koszt ulepszenia).\n\n" \
 				+ "[color=#e0b060][b]Uwaga:[/b] postawienie budynku na polu ze złożem surowca (np. żelaza, węgla) bezpowrotnie zniszczy złoże i zamieni pole w zwykłą trawę — gra poprosi o potwierdzenie tej decyzji.[/color]"
@@ -127,7 +127,7 @@ func _help_tab_text(key: String) -> String:
 		"wojsko":
 			return "[b][color=#8fdc8f]Rekrutacja jednostek[/color][/b]\n" \
 				+ "• Zbuduj [b]Baraki[/b] (kategoria „Wojskowe” w menu budowy).\n" \
-				+ "• Kliknij [b]PPM[/b] na pole z barakami i wybierz [b]„⚔️ Rekrutuj”[/b], aby otworzyć listę dostępnych jednostek do zwerbowania.\n" \
+				+ "• Kliknij [b]PPM[/b] na pole z barakami i wybierz [b]„⚔️ Rekrutuj”[/b], aby otworzyć listę dostępnych jednostek do zwerbowania. Koszt rekrutacji poznasz po najechaniu kursorem na przycisk rekrutacji wybranej jednostki.\n" \
 				+ "• Rekrutacja trwa określoną liczbę tur — postęp widać na ikonie jednostki w oknie „Moja Armia”.\n\n" \
 				+ "[b][color=#8fdc8f]Zarządzanie armią[/color][/b]\n" \
 				+ "• Otwórz [b]„🛡️ Moja Armia”[/b] z menu kontekstowego pola, aby zobaczyć wszystkie zwerbowane jednostki, ich statystyki oraz usunąć wybraną jednostkę lub całą armię.\n\n" \

@@ -657,7 +657,12 @@ func setup_custom_popups():
 	recruit_button.text = "⚔️ Rekrutuj"
 	recruit_button.pressed.connect(func():
 		hide_all_menus()
-		barracks_menu.show_barracks_menu()
+		var b_level = 1
+		var source_pos = Vector2(-1, -1)
+		if world_ref and active_tile_pos != null and world_ref.map_data.has(active_tile_pos):
+			b_level = world_ref.map_data[active_tile_pos].get("level", 1)
+			source_pos = active_tile_pos
+		barracks_menu.show_barracks_menu(b_level, source_pos)
 	)
 	var style_recruit = StyleBoxFlat.new()
 	style_recruit.bg_color = DF_BLOOD
@@ -1132,6 +1137,13 @@ func execute_build(building_name: String) -> void:
 		tech_warning_dialog.popup_centered()
 		hide_all_menus()
 		return
+
+	if building_name in ["Laboratorium", "Warsztat", "Biblioteka", "Świątynia"]:
+		if world_ref.get_building_count(building_name) >= 3:
+			tech_warning_dialog.dialog_text = "Osiągnięto limit budynków tego typu! (Maksymalnie 3)"
+			tech_warning_dialog.popup_centered()
+			hide_all_menus()
+			return
 
 	var costs = EconomyManager.get_modified_building_costs(building_name)
 	var wood_cost = costs.get("Drewno", 0)

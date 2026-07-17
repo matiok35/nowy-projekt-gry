@@ -181,9 +181,15 @@ func refresh_culture_tree_view():
 			invisible_button.disabled = true
 		else:
 			invisible_button.pressed.connect(func():
-				if EconomyManager.start_culture_research(tech_name):
+				if EconomyManager.current_culture_research != "":
+					insufficient_points_dialog.title = "Trwają badania"
+					insufficient_points_dialog.dialog_text = "Nie możesz rozpocząć nowego badania, dopóki obecne się nie zakończy."
+					insufficient_points_dialog.popup_centered()
+				elif EconomyManager.start_culture_research(tech_name):
 					refresh_culture_tree_view()
 				else:
+					insufficient_points_dialog.title = "Za mało punktów"
+					insufficient_points_dialog.dialog_text = "Nie masz wystarczającej liczby punktów Kultury, aby rozpocząć to badanie."
 					insufficient_points_dialog.popup_centered()
 			)
 		culture_tree_map.add_child(node_panel)

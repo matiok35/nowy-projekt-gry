@@ -45,18 +45,34 @@ func setup_barracks_window():
 	
 	hud.add_child(barracks_window)
 
-func show_barracks_menu():
+var active_source_pos: Vector2 = Vector2(-1, -1)
+
+func show_barracks_menu(building_level: int = 1, source_pos: Vector2 = Vector2(-1, -1)):
+	active_source_pos = source_pos
 	barracks_window.visible = true
 	
-	var humans_faction = null
+	var target_faction_id = "humans"
+	if building_level == 2:
+		target_faction_id = "humans_lvl2"
+	elif building_level >= 3:
+		target_faction_id = "humans_lvl3"
+	
+	var target_faction = null
 	if hud.unit_data_json.has("factions"):
 		for faction in hud.unit_data_json["factions"]:
-			if faction.get("id") == "humans":
-				humans_faction = faction
+			if faction.get("id") == target_faction_id:
+				target_faction = faction
 				break
 				
-	if humans_faction != null:
-		_populate_barracks_units(humans_faction)
+		# Fallback na humans jeśli brakuje plików wyższych poziomów
+		if target_faction == null:
+			for faction in hud.unit_data_json["factions"]:
+				if faction.get("id") == "humans":
+					target_faction = faction
+					break
+				
+	if target_faction != null:
+		_populate_barracks_units(target_faction)
 
 func _populate_barracks_units(faction: Dictionary):
 	for child in barracks_content_vbox.get_children():
@@ -131,9 +147,9 @@ func _populate_barracks_units(faction: Dictionary):
 			var base_hp = unit.get("hp", 0)
 			var base_dmg = unit.get("dmg", 0)
 			var base_def = unit.get("def", 0)
-			var b_hp = EconomyManager.army_bonus_hp + EconomyManager.potion_bonus_hp
-			var b_dmg = EconomyManager.army_bonus_dmg + EconomyManager.potion_bonus_dmg
-			var b_def = EconomyManager.army_bonus_def + EconomyManager.potion_bonus_def
+			var b_hp = EconomyManager.potion_bonus_hp
+			var b_dmg = EconomyManager.potion_bonus_dmg
+			var b_def = EconomyManager.potion_bonus_def
 			var base_speed = unit.get("move_range", 0)
 			var b_speed = EconomyManager.potion_bonus_speed
 			
@@ -167,7 +183,7 @@ func _populate_barracks_units(faction: Dictionary):
 						hud.tech_warning_dialog.popup_centered()
 						return
 
-					EconomyManager.recruit_unit(unit)
+					EconomyManager.recruit_unit(unit, active_source_pos)
 					_populate_barracks_units(faction)
 				)
 				var style_ok = StyleBoxFlat.new()
@@ -180,13 +196,3 @@ func _populate_barracks_units(faction: Dictionary):
 			hbox.add_child(btn_recruit)
 			
 			vbox.add_child(panel)
-
-func upgrade_barracks_units() -> void:
-	EconomyManager.army_bonus_hp += 5
-	EconomyManager.army_bonus_dmg += 2
-	EconomyManager.army_bonus_def += 1
-	
-	for unit in EconomyManager.player_army:
-		if unit.has("hp"): unit["hp"] += 5
-		if unit.has("dmg"): unit["dmg"] += 2
-		if unit.has("def"): unit["def"] += 1

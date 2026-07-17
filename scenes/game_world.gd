@@ -601,6 +601,13 @@ func _get_hex_distance_to_nearest_city(tile: Vector2) -> int:
 		if d < min_d: min_d = d
 	return min_d
 
+func get_building_count(building_name: String) -> int:
+	var count = 0
+	for pos in owned_tiles:
+		if map_data.has(pos) and map_data[pos].get("building", "") == building_name:
+			count += 1
+	return count
+
 func build_on_tile(pos: Vector2, building_name: String) -> void:
 	if character and character.selected: return
 	if not owned_tiles.has(pos): return
@@ -634,8 +641,9 @@ func upgrade_building(pos: Vector2) -> void:
 		EconomyManager.deduct_upgrade_costs(b_name, tile["level"])
 		tile["level"] += 1
 		_update_building_label(pos, b_name, tile["level"])
-		if b_name == "Baraki" and hud_node and hud_node.barracks_menu:
-			hud_node.barracks_menu.upgrade_barracks_units()
+		if b_name == "Baraki" and hud_node:
+			EconomyManager.upgrade_units_from_barracks(pos, tile["level"], hud_node.unit_data_json)
+
 
 func _get_building_color(building_name: String) -> Color:
 	match building_name:
