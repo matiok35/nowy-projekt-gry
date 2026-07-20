@@ -121,6 +121,31 @@ func setup_settings_window():
 	resume_btn.pressed.connect(func(): settings_window.visible = false)
 	main_vbox.add_child(resume_btn)
 
+	var save_btn = Button.new()
+	save_btn.text = "💾 Zapisz Grę"
+	save_btn.custom_minimum_size = Vector2(0, 42)
+	hud._style_df_button(save_btn)
+	save_btn.pressed.connect(func():
+		SaveManager.save_game(GameSettings.current_seed, hud.world_ref)
+		save_btn.text = "✅ Zapisano!"
+		hud.get_tree().create_timer(1.5).timeout.connect(func():
+			if is_instance_valid(save_btn):
+				save_btn.text = "💾 Zapisz Grę"
+		)
+	)
+	main_vbox.add_child(save_btn)
+
+	var reset_btn = Button.new()
+	reset_btn.text = "🔄 Zresetuj Grę (Ten sam seed)"
+	reset_btn.custom_minimum_size = Vector2(0, 42)
+	hud._style_df_button(reset_btn)
+	reset_btn.pressed.connect(func():
+		SaveManager.delete_save(GameSettings.current_seed)
+		EconomyManager.reset()
+		hud.get_tree().change_scene_to_file("res://scenes/game_world.tscn")
+	)
+	main_vbox.add_child(reset_btn)
+
 	var menu_btn = Button.new()
 	menu_btn.text = "🏠 Wróć do menu głównego"
 	menu_btn.custom_minimum_size = Vector2(0, 42)
