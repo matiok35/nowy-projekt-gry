@@ -7,6 +7,11 @@ extends Control
 @onready var random_button: Button = $VBoxContainer/RandomButton
 @onready var seed_button: Button = $VBoxContainer/SeedButton
 
+# Przełącznik trybu Debug — tworzony programowo (nie ma go w .tscn), żeby
+# nie trzeba było edytować sceny. Zastępuje dawny "hack" polegający na tym,
+# że seed == 0 automatycznie włączał panel administratora w HUD-zie.
+var debug_checkbox: CheckButton
+
 # --- PALETA "DARK FANTASY" (spójna z hud.gd) -------------------------------
 const DF_BG: Color = Color(0.055, 0.05, 0.06, 1.0)
 const DF_BG_LIGHT: Color = Color(0.12, 0.1, 0.09, 0.97)
@@ -18,7 +23,17 @@ const DF_TEXT: Color = Color(0.85, 0.8, 0.7, 1.0)
 func _ready() -> void:
 	random_button.pressed.connect(_on_random_button_pressed)
 	seed_button.pressed.connect(_on_seed_button_pressed)
+	_setup_debug_checkbox()
 	_apply_dark_fantasy_style()
+
+func _setup_debug_checkbox() -> void:
+	debug_checkbox = CheckButton.new()
+	debug_checkbox.text = "🛠️ Tryb Debug (Panel Administratora w grze)"
+	debug_checkbox.button_pressed = GameSettings.debug_mode
+	debug_checkbox.toggled.connect(func(pressed: bool):
+		GameSettings.debug_mode = pressed
+	)
+	vbox.add_child(debug_checkbox)
 
 func _apply_dark_fantasy_style() -> void:
 	# Tlo - gleboka, prawie czarna czern zamiast plaskiego szarego fioletu
@@ -53,6 +68,12 @@ func _apply_dark_fantasy_style() -> void:
 	# Przyciski
 	_style_button(random_button, false)
 	_style_button(seed_button, true)
+
+	# Checkbox trybu Debug
+	if debug_checkbox:
+		debug_checkbox.add_theme_color_override("font_color", DF_TEXT)
+		debug_checkbox.add_theme_color_override("font_hover_color", DF_GOLD_TEXT)
+		debug_checkbox.add_theme_font_size_override("font_size", 14)
 
 func _style_button(btn: Button, accent: bool) -> void:
 	btn.custom_minimum_size = Vector2(0, 44)

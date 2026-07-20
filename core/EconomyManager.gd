@@ -201,7 +201,12 @@ var technology_tree: Dictionary = {
 		"research_cost": 30, "research_time": 6, "req": ["Płodozmian", "Tartak Mechaniczny"], "unlocked": false, "desc": "Farma/Pastwisko Lvl 3.", "grid_coords": Vector2(3, 1), "icon": "🚜"
 	},
 	"Warsztat": {
-		"research_cost": 30, "research_time": 6, "req": ["Hodowla bydła", "Górnictwo"], "unlocked": false, "desc": "Budowa Warsztatu.", "grid_coords": Vector2(2, 3), "icon": "⚒️"
+		# POPRAWKA: Warsztat wizualnie leży pomiędzy ścieżką Piły Dwuręcznej
+		# i Hodowli bydła (patrz grid_coords poniżej), ale logicznie
+		# wymagał Górnictwa, które znajduje się zupełnie gdzie indziej w
+		# drzewie. Teraz Piła Dwuręczna i Hodowla bydła faktycznie
+		# odblokowują Warsztat, zgodnie z tym, jak drzewo wygląda na ekranie.
+		"research_cost": 30, "research_time": 6, "req": ["Piła Dwuręczna", "Hodowla bydła"], "unlocked": false, "desc": "Budowa Warsztatu.", "grid_coords": Vector2(2, 3), "icon": "⚒️"
 	},
 	"Głębokie Szyby": {
 		"research_cost": 30, "research_time": 6, "req": ["Górnictwo"], "unlocked": false, "desc": "Kopalnie Lvl 2.", "grid_coords": Vector2(3, 5), "icon": "🗻"
@@ -496,6 +501,120 @@ func get_missing_tech_for_upgrade(building_name: String, target_level: int) -> S
 		if technology_tree.has(req_tech) and not technology_tree[req_tech]["unlocked"]:
 			return req_tech
 	return ""
+
+# --- BILANS ZASOBÓW NA NADCHODZĄCĄ TURĘ ------------------------------------
+# Zwraca przewidywany bilans zasobów, jaki zostanie naliczony przy
+# najbliższym wywołaniu next_turn(), na podstawie aktualnego stanu budynków
+# i odkrytych technologii/kultur. Funkcja NIE modyfikuje żadnego stanu gry —
+# służy wyłącznie do wyświetlenia podglądu "na turę" w HUD-zie.
+#
+# Uwaga: pomija efekty zależne od losowości i faktycznego wykonania tury
+# (np. karę za głód, losowy przyrost/spadek populacji) — te są znane
+# dopiero w chwili przejścia tury. Dzięki temu liczby pokazane graczowi są
+# stabilne i nie migoczą losowo z turę na turę.
+func get_turn_preview(active_buildings_data: Array) -> Dictionary:
+	var preview: Dictionary = {
+		"Złoto": 0,
+		"Drewno": 0,
+		"Żelazo": 0,
+		"Węgiel": 0,
+		"Jedzenie": 0,
+		"Nauka": 1,
+		"Kultura": 1
+	}
+
+	var food_consumption = resources.get("Populacja", 0) * 1
+	preview["Jedzenie"] -= food_consumption
+
+	var flat_food_bonus = 0
+	if culture_tree["Jedzenie +2"]["unlocked"]: flat_food_bonus = 2
+
+	var flat_iron_coal_bonus = 0
+	if culture_tree["Więcej surowców"]["unlocked"]: flat_iron_coal_bonus = 1
+
+	var flat_wood_bonus = 0
+	if culture_tree["Drewno +2"]["unlocked"]: flat_wood_bonus = 2
+
+	var temple_multiplier = 1.0
+	if temple_blessing_turns_left > 0:
+		temple_multiplier = 1.1
+
+	for b_data in active_buildings_data:
+		var b_name = b_data["name"]
+		var b_level = b_data.get("level", 1)
+		var size_modifier = 1.0
+
+		if b_data.has("deposit_size"):
+			match b_data["deposit_size"]:
+				"Małe": size_modifier = 0.5
+				"Średnie": size_modifier = 1.0
+				"Duże": size_modifier = 2.0
+
+		match b_name:
+			"Dom mieszkalny":
+				if culture_tree["Złoto z domów"]["unlocked"]:
+					preview["Złoto"] += int(2 * b_level * temple_multiplier)
+				if culture_tree["Kultura z domów"]["unlocked"]:
+					preview["Kultura"] += 1 * b_level
+			"Centrum Miasta":
+				preview["Złoto"] += int(10 * b_level * temple_multiplier)
+				preview["Jedzenie"] += int(2 * b_level * temple_multiplier)
+				preview["Drewno"] += int(2 * b_level * temple_multiplier)
+			"Chata Drwala":
+				preview["Drewno"] += int(4 * size_modifier * b_level * temple_multiplier) + flat_wood_bonus * b_level
+				if culture_tree["Złoto z drwala"]["unlocked"]:
+					preview["Złoto"] += int(1 * b_level * temple_multiplier)
+			"Kopalnia Żelaza":
+				var iron_yield = 2
+				var produced_iron = int(iron_yield * size_modifier * b_level * temple_multiplier) + flat_iron_coal_bonus * b_level
+				var coal_consumed = int(3 * size_modifier * b_level)
+				var gold_cost = 2 * b_level
+				# Podgląd zakłada, że surowce potrzebne do działania kopalni
+				# będą dostępne w chwili naliczania tury (tak samo jak
+				# next_turn() sprawdza to na bieżąco) — używamy aktualnego
+				# stanu jako najlepszego dostępnego przybliżenia.
+				if resources.get("Złoto", 0) >= gold_cost and resources.get("Węgiel", 0) >= coal_consumed:
+					preview["Żelazo"] += produced_iron
+					preview["Węgiel"] -= coal_consumed
+					preview["Złoto"] -= gold_cost
+			"Kopalnia Węgla":
+				var coal_yield = 2
+				var gold_cost2 = 2 * b_level
+				if resources.get("Złoto", 0) >= gold_cost2:
+					preview["Węgiel"] += int(coal_yield * size_modifier * b_level * temple_multiplier) + flat_iron_coal_bonus * b_level
+					preview["Złoto"] -= gold_cost2
+			"Farma":
+				var farm_yield = 6
+				preview["Jedzenie"] += int(farm_yield * size_modifier * b_level * temple_multiplier) + flat_food_bonus * b_level
+			"Pastwisko":
+				preview["Jedzenie"] += int(4 * size_modifier * b_level * temple_multiplier) + flat_food_bonus * b_level
+			"Laboratorium":
+				preview["Nauka"] += 3 * b_level
+			"Warsztat":
+				preview["Nauka"] += 1 * b_level
+				if culture_tree["Nauka z warsztatu"]["unlocked"]:
+					preview["Nauka"] += 1 * b_level
+			"Biblioteka":
+				preview["Nauka"] += 2 * b_level
+				preview["Kultura"] += 1 * b_level
+			"Świątynia":
+				preview["Kultura"] += 3 * b_level
+				if culture_tree["Złoto za świątynie"]["unlocked"]:
+					preview["Złoto"] += int(2 * b_level * temple_multiplier)
+			"Baraki":
+				if culture_tree["Tech z baraków"]["unlocked"]:
+					preview["Nauka"] += 1 * b_level
+				if culture_tree["Złoto z baraków"]["unlocked"]:
+					preview["Złoto"] += int(1 * b_level * temple_multiplier)
+
+	if culture_tree["Kultura +2/tura"]["unlocked"]:
+		preview["Kultura"] += 2
+	if culture_tree["Złoto za mieszkańca"]["unlocked"]:
+		preview["Złoto"] += int(resources.get("Populacja", 0) * 1 * temple_multiplier)
+	if culture_tree["Złoto co turę"]["unlocked"]:
+		preview["Złoto"] += int(1 * temple_multiplier)
+
+	return preview
 
 func next_turn(active_buildings_data: Array) -> void:
 	turn_warnings.clear()

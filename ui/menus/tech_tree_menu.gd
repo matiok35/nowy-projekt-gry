@@ -61,7 +61,11 @@ func setup_tech_tree_ui():
 			close_btn.get_parent().move_child(close_btn, -1)
 		var scroll = tech_tree_window.get_node_or_null("ScrollContainer")
 		if scroll:
-			scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+			# POPRAWKA: drzewo ma być przewijane wyłącznie kółkiem myszy —
+			# suwak przewijania (scrollbar) jest ukryty (SHOW_NEVER), ale
+			# przewijanie kółkiem myszy w ScrollContainer nadal działa
+			# niezależnie od trybu wyświetlania suwaka.
+			scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 			scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	if tech_tree_map: tech_tree_map.draw.connect(_draw_tech_connections)
 
