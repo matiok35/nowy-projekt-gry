@@ -529,7 +529,7 @@ func setup_hunger_label():
 	hunger_label = Label.new()
 	hunger_label.name = "HungerWarningLabel"
 	hunger_label.visible = false
-	hunger_label.text = "⚠️ Głód! Jedzenie się skończyło — populacja może zacząć wymierać, a Złoto topnieje (-5/turę)."
+	hunger_label.text = "⚠️ Głód! Brak jedzenia — populacja wymiera, a Złoto gwałtownie topnieje (kara % od skarbca)."
 	hunger_label.add_theme_font_size_override("font_size", 14)
 	hunger_label.add_theme_color_override("font_color", Color(1.0, 0.35, 0.3, 1.0))
 	hunger_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))

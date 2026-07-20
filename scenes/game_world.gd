@@ -42,18 +42,32 @@ func _ready() -> void:
 	else:
 		randomize()
 	_load_fractions()
+	
+	var has_save = SaveManager.has_save(GameSettings.current_seed)
+	if has_save:
+		SaveManager.load_game(GameSettings.current_seed)
+		
 	generate_map()
-	generate_camps(8)
+	
+	if not has_save:
+		generate_camps(8)
+		
 	build_astar_graph()
 	character = get_node_or_null("Character")
 	path_line = get_node_or_null("PathLine")
 	if path_line:
 		path_line.width = 4.0
 		path_line.default_color = Color(1.0, 0.85, 0.0, 0.85)
+		
+	if has_save:
+		_restore_state_from_save()
+	else:
+		if character:
+			var start_pos = Vector2(MAP_SIZE / 2, MAP_SIZE / 2)
+			if cell_to_world.has(start_pos):
+				character.global_position = cell_to_world[start_pos]
+				
 	if character:
-		var start_pos = Vector2(MAP_SIZE / 2, MAP_SIZE / 2)
-		if cell_to_world.has(start_pos):
-			character.global_position = cell_to_world[start_pos]
 		character.city_creation_requested.connect(_on_character_city_creation_requested)
 		var cam = get_node_or_null("StrategyCamera")
 		if cam:
@@ -86,13 +100,16 @@ func generate_map() -> void:
 			if type != "Trawa":
 				deposit_size = sizes[randi() % sizes.size()]
 
-			map_data[pos] = {
-				"type": type,
-				"building": "Brak",
-				"level": 1,
-				"deposit_size": deposit_size
-			}
-			create_procedural_hex(pos, type, deposit_size)
+			if SaveManager.is_loading and SaveManager.loaded_gw_data.has("map_data") and SaveManager.loaded_gw_data["map_data"].has(pos):
+				map_data[pos] = SaveManager.loaded_gw_data["map_data"][pos]
+			else:
+				map_data[pos] = {
+					"type": type,
+					"building": "Brak",
+					"level": 1,
+					"deposit_size": deposit_size
+				}
+			create_procedural_hex(pos, map_data[pos]["type"], map_data[pos]["deposit_size"])
 
 func _load_fractions() -> void:
 	var dir = DirAccess.open("res://data/fractions")
@@ -786,6 +803,54 @@ func _get_tile_at_world_pos(world_pos: Vector2) -> Variant:
 		if tile_nodes[pos] == hit_area: return pos
 	return null
 
+func _restore_state_from_save() -> void:
+	if not SaveManager.is_loading: return
+	var gw = SaveManager.loaded_gw_data
+	
+	owned_tiles = gw.get("owned_tiles", {})
+	city_centers = gw.get("city_centers", [])
+	camps = gw.get("camps", {})
+	camp_owned_tiles = gw.get("camp_owned_tiles", {})
+	explored_tiles = gw.get("explored_tiles", {})
+	last_expansion_turn = gw.get("last_expansion_turn", 1)
+	
+	for pos in map_data:
+		var tile = map_data[pos]
+		if tile["building"] != "Brak":
+			_update_building_label(pos, tile["building"], tile["level"])
+			_update_tile_texture_for_building(pos, tile["building"])
+			
+	for pos in owned_tiles:
+		if tile_nodes.has(pos):
+			var tile_area = tile_nodes[pos]
+			var base_poly = tile_area.get_child(0) as Polygon2D
+			if base_poly:
+				var overlay = Polygon2D.new()
+				overlay.polygon = base_poly.polygon
+				overlay.color = Color(1.0, 0.85, 0.0, 0.12)
+				overlay.z_index = 1
+				tile_area.add_child(overlay)
+				territory_overlays[pos] = overlay
+				
+	for pos in camp_owned_tiles:
+		if tile_nodes.has(pos):
+			var tile_area = tile_nodes[pos]
+			var base_poly = tile_area.get_child(0) as Polygon2D
+			if base_poly:
+				var overlay = Polygon2D.new()
+				overlay.polygon = base_poly.polygon
+				overlay.color = Color(0.8, 0.1, 0.1, 0.25)
+				overlay.z_index = 1
+				tile_area.add_child(overlay)
+				camp_territory_overlays[pos] = overlay
+
+	if character and gw.has("character_pos"):
+		character.global_position = gw.get("character_pos")
+		character.path = gw.get("character_path", [])
+
+	SaveManager.is_loading = false
+	SaveManager.loaded_gw_data.clear()
+
 func _show_context_menu_for(pos: Vector2) -> void:
 	var tile = map_data[pos]
 	var is_owned = owned_tiles.has(pos)
@@ -798,8 +863,14 @@ func _show_context_menu_for(pos: Vector2) -> void:
 	var screen_mouse_pos = get_viewport().get_mouse_position()
 	if hud_node and hud_node.has_method("show_context_menu"):
 		hud_node.show_context_menu(
-			screen_mouse_pos, pos, tile["type"], tile["building"], tile.get("level", 1),
-			is_owned, borders_owned, tile["deposit_size"]
+			screen_mouse_pos, 
+			pos, 
+			tile["type"], 
+			tile["building"], 
+			tile["level"],
+			is_owned,
+			borders_owned,
+			tile["deposit_size"]
 		)
 
 func _handle_left_click_on_tile(pos: Vector2, global_mouse_pos: Vector2) -> void:
@@ -810,10 +881,6 @@ func _handle_left_click_on_tile(pos: Vector2, global_mouse_pos: Vector2) -> void
 	if character and character.selected and cell_to_id.has(pos):
 		var world_path = get_world_path_to(pos)
 		if not world_path.is_empty():
-			# POPRAWKA: moves_left NIE jest już odejmowane tutaj z góry na
-			# podstawie długości zaplanowanej ścieżki. character.gd odejmuje
-			# je krok po kroku, dopiero gdy postać faktycznie dotrze do
-			# kolejnego pola (patrz Character._physics_process).
 			character.follow_path(world_path)
 
 func build_astar_graph() -> void:
