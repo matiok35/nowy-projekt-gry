@@ -8,7 +8,7 @@ var skip_turn_button_delay: bool = false
 var debug_mode: bool = false
 
 func _ready():
-	var emoji_font = load("res://assets/fonts/NotoColorEmoji.ttf")
+	var emoji_font = load("res://assets/fonts/WindowsEmoji.ttf")
 	if emoji_font:
 		var default_font = ThemeDB.fallback_font
 		if default_font:

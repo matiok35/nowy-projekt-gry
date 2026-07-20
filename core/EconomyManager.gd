@@ -118,8 +118,8 @@ var resources: Dictionary = {
 	"Żelazo": 0,
 	"Węgiel": 0,
 	"Jedzenie": 10,
-	"Nauka": 2, 
-	"Kultura": 1,
+	"Nauka": 10, 
+	"Kultura": 10,
 	"Populacja": 1,
 	"Maks_Populacja": 5,
 	"Głoduje": false
@@ -192,7 +192,7 @@ var technology_tree: Dictionary = {
 		"research_cost": 10, "research_time": 2, "req": ["Chata drwala"], "unlocked": false, "desc": "Budowa Pastwiska.", "grid_coords": Vector2(1, 4), "icon": "🐄"
 	},
 	"Płodozmian": {
-		"research_cost": 20, "research_time": 4, "req": ["Hodowla bydła", "Piła Dwuręczna"], "unlocked": false, "desc": "Farma/Pastwisko Lvl 2.", "grid_coords": Vector2(3, 3), "icon": "🌾"
+		"research_cost": 20, "research_time": 4, "req": ["Warsztat"], "unlocked": false, "desc": "Farma/Pastwisko Lvl 2.", "grid_coords": Vector2(3, 3), "icon": "🌾"
 	},
 	"Górnictwo": {
 		"research_cost": 20, "research_time": 4, "req": ["Hodowla bydła"], "unlocked": false, "desc": "Kopalnie Żelaza i Węgla.", "grid_coords": Vector2(2, 5), "icon": "⛏️"
@@ -508,23 +508,34 @@ func get_missing_tech_for_upgrade(building_name: String, target_level: int) -> S
 # i odkrytych technologii/kultur. Funkcja NIE modyfikuje żadnego stanu gry —
 # służy wyłącznie do wyświetlenia podglądu "na turę" w HUD-zie.
 #
-# Uwaga: pomija efekty zależne od losowości i faktycznego wykonania tury
-# (np. karę za głód, losowy przyrost/spadek populacji) — te są znane
-# dopiero w chwili przejścia tury. Dzięki temu liczby pokazane graczowi są
-# stabilne i nie migoczą losowo z turę na turę.
+# Uwaga: pomija efekty w pełni losowe 
+# (np. losowy przyrost/spadek populacji) — te są znane
+# dopiero w chwili przejścia tury. Kara za głód (utrata złota)
+# jest deterministyczna i została uwzględniona w podglądzie.
 func get_turn_preview(active_buildings_data: Array) -> Dictionary:
 	var preview: Dictionary = {
-		"Złoto": 0,
-		"Drewno": 0,
-		"Żelazo": 0,
-		"Węgiel": 0,
-		"Jedzenie": 0,
-		"Nauka": 1,
-		"Kultura": 1
+		"Złoto": {"produced": 0, "consumed": 0, "balance": 0},
+		"Drewno": {"produced": 0, "consumed": 0, "balance": 0},
+		"Żelazo": {"produced": 0, "consumed": 0, "balance": 0},
+		"Węgiel": {"produced": 0, "consumed": 0, "balance": 0},
+		"Jedzenie": {"produced": 0, "consumed": 0, "balance": 0},
+		"Nauka": {"produced": 0, "consumed": 0, "balance": 0},
+		"Kultura": {"produced": 0, "consumed": 0, "balance": 0}
 	}
 
-	var food_consumption = resources.get("Populacja", 0) * 1
-	preview["Jedzenie"] -= food_consumption
+	var add_res = func(res: String, val: int):
+		if val > 0:
+			preview[res]["produced"] += val
+		elif val < 0:
+			preview[res]["consumed"] += -val
+		preview[res]["balance"] += val
+
+	# Base generation
+	add_res.call("Nauka", 1)
+	add_res.call("Kultura", 1)
+
+	var food_consumption = resources.get("Populacja", 0) * 2
+	add_res.call("Jedzenie", -food_consumption)
 
 	var flat_food_bonus = 0
 	if culture_tree["Jedzenie +2"]["unlocked"]: flat_food_bonus = 2
@@ -553,66 +564,86 @@ func get_turn_preview(active_buildings_data: Array) -> Dictionary:
 		match b_name:
 			"Dom mieszkalny":
 				if culture_tree["Złoto z domów"]["unlocked"]:
-					preview["Złoto"] += int(2 * b_level * temple_multiplier)
+					add_res.call("Złoto", int(2 * b_level * temple_multiplier))
 				if culture_tree["Kultura z domów"]["unlocked"]:
-					preview["Kultura"] += 1 * b_level
+					add_res.call("Kultura", 1 * b_level)
 			"Centrum Miasta":
-				preview["Złoto"] += int(10 * b_level * temple_multiplier)
-				preview["Jedzenie"] += int(2 * b_level * temple_multiplier)
-				preview["Drewno"] += int(2 * b_level * temple_multiplier)
+				add_res.call("Złoto", int(10 * b_level * temple_multiplier))
+				add_res.call("Jedzenie", int(2 * b_level * temple_multiplier))
+				add_res.call("Drewno", int(2 * b_level * temple_multiplier))
 			"Chata Drwala":
-				preview["Drewno"] += int(4 * size_modifier * b_level * temple_multiplier) + flat_wood_bonus * b_level
+				add_res.call("Drewno", int(4 * size_modifier * b_level * temple_multiplier) + flat_wood_bonus * b_level)
 				if culture_tree["Złoto z drwala"]["unlocked"]:
-					preview["Złoto"] += int(1 * b_level * temple_multiplier)
+					add_res.call("Złoto", int(1 * b_level * temple_multiplier))
 			"Kopalnia Żelaza":
 				var iron_yield = 2
 				var produced_iron = int(iron_yield * size_modifier * b_level * temple_multiplier) + flat_iron_coal_bonus * b_level
 				var coal_consumed = int(3 * size_modifier * b_level)
 				var gold_cost = 2 * b_level
-				# Podgląd zakłada, że surowce potrzebne do działania kopalni
-				# będą dostępne w chwili naliczania tury (tak samo jak
-				# next_turn() sprawdza to na bieżąco) — używamy aktualnego
-				# stanu jako najlepszego dostępnego przybliżenia.
 				if resources.get("Złoto", 0) >= gold_cost and resources.get("Węgiel", 0) >= coal_consumed:
-					preview["Żelazo"] += produced_iron
-					preview["Węgiel"] -= coal_consumed
-					preview["Złoto"] -= gold_cost
+					add_res.call("Żelazo", produced_iron)
+					add_res.call("Węgiel", -coal_consumed)
+					add_res.call("Złoto", -gold_cost)
 			"Kopalnia Węgla":
 				var coal_yield = 2
 				var gold_cost2 = 2 * b_level
 				if resources.get("Złoto", 0) >= gold_cost2:
-					preview["Węgiel"] += int(coal_yield * size_modifier * b_level * temple_multiplier) + flat_iron_coal_bonus * b_level
-					preview["Złoto"] -= gold_cost2
+					add_res.call("Węgiel", int(coal_yield * size_modifier * b_level * temple_multiplier) + flat_iron_coal_bonus * b_level)
+					add_res.call("Złoto", -gold_cost2)
 			"Farma":
 				var farm_yield = 6
-				preview["Jedzenie"] += int(farm_yield * size_modifier * b_level * temple_multiplier) + flat_food_bonus * b_level
+				add_res.call("Jedzenie", int(farm_yield * size_modifier * b_level * temple_multiplier) + flat_food_bonus * b_level)
 			"Pastwisko":
-				preview["Jedzenie"] += int(4 * size_modifier * b_level * temple_multiplier) + flat_food_bonus * b_level
+				add_res.call("Jedzenie", int(4 * size_modifier * b_level * temple_multiplier) + flat_food_bonus * b_level)
 			"Laboratorium":
-				preview["Nauka"] += 3 * b_level
+				add_res.call("Nauka", 3 * b_level)
 			"Warsztat":
-				preview["Nauka"] += 1 * b_level
+				add_res.call("Nauka", 1 * b_level)
 				if culture_tree["Nauka z warsztatu"]["unlocked"]:
-					preview["Nauka"] += 1 * b_level
+					add_res.call("Nauka", 1 * b_level)
 			"Biblioteka":
-				preview["Nauka"] += 2 * b_level
-				preview["Kultura"] += 1 * b_level
+				add_res.call("Nauka", 2 * b_level)
+				add_res.call("Kultura", 1 * b_level)
 			"Świątynia":
-				preview["Kultura"] += 3 * b_level
+				add_res.call("Kultura", 3 * b_level)
 				if culture_tree["Złoto za świątynie"]["unlocked"]:
-					preview["Złoto"] += int(2 * b_level * temple_multiplier)
+					add_res.call("Złoto", int(2 * b_level * temple_multiplier))
 			"Baraki":
 				if culture_tree["Tech z baraków"]["unlocked"]:
-					preview["Nauka"] += 1 * b_level
+					add_res.call("Nauka", 1 * b_level)
 				if culture_tree["Złoto z baraków"]["unlocked"]:
-					preview["Złoto"] += int(1 * b_level * temple_multiplier)
+					add_res.call("Złoto", int(1 * b_level * temple_multiplier))
 
 	if culture_tree["Kultura +2/tura"]["unlocked"]:
-		preview["Kultura"] += 2
+		add_res.call("Kultura", 2)
 	if culture_tree["Złoto za mieszkańca"]["unlocked"]:
-		preview["Złoto"] += int(resources.get("Populacja", 0) * 1 * temple_multiplier)
+		add_res.call("Złoto", int(resources.get("Populacja", 0) * 1 * temple_multiplier))
 	if culture_tree["Złoto co turę"]["unlocked"]:
-		preview["Złoto"] += int(1 * temple_multiplier)
+		add_res.call("Złoto", int(1 * temple_multiplier))
+
+	# Przewidywanie kary za głód (utrata złota)
+	var expected_food = resources.get("Jedzenie", 0) + preview["Jedzenie"]["balance"]
+	if expected_food <= 0:
+		var deficit = 0
+		if expected_food < 0:
+			deficit = -expected_food
+			
+		var pop = resources.get("Populacja", 1)
+		var current_demand = max(1, pop * 2)
+		var starvation_ratio = float(deficit) / float(current_demand)
+		var starving_pop = pop * starvation_ratio
+		
+		var loss_percent = starving_pop * 0.05
+		var expected_gold = resources.get("Złoto", 0) + preview["Złoto"]["balance"]
+		expected_gold = max(0, expected_gold)
+		
+		var gold_loss = int(expected_gold * loss_percent)
+		if deficit > 0:
+			gold_loss = max(5, gold_loss)
+			
+		gold_loss = min(gold_loss, expected_gold)
+		if gold_loss > 0:
+			add_res.call("Złoto", -gold_loss)
 
 	return preview
 
@@ -628,7 +659,7 @@ func next_turn(active_buildings_data: Array) -> void:
 	if resources["Populacja"] > resources["Maks_Populacja"]:
 		resources["Populacja"] = resources["Maks_Populacja"]
 	
-	var food_consumption = resources["Populacja"] * 1
+	var food_consumption = resources["Populacja"] * 2
 	resources["Jedzenie"] -= food_consumption
 	
 	var turn_science = 0
@@ -753,7 +784,7 @@ func next_turn(active_buildings_data: Array) -> void:
 		if resources["Jedzenie"] < 0:
 			deficit = -resources["Jedzenie"]
 			
-		var current_demand = max(1, resources["Populacja"] * 1)
+		var current_demand = max(1, resources["Populacja"] * 2)
 		var starvation_ratio = float(deficit) / float(current_demand)
 		var starving_pop = resources["Populacja"] * starvation_ratio
 		
@@ -988,8 +1019,8 @@ func reset() -> void:
 		"Żelazo": 0,
 		"Węgiel": 0,
 		"Jedzenie": 10,
-		"Nauka": 2, 
-		"Kultura": 1,
+		"Nauka": 10, 
+		"Kultura": 10,
 		"Populacja": 1,
 		"Maks_Populacja": 5,
 		"Głoduje": false
