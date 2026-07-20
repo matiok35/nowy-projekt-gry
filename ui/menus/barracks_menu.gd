@@ -46,12 +46,6 @@ func setup_barracks_window():
 	hud.add_child(barracks_window)
 
 var active_source_pos: Vector2 = Vector2(-1, -1)
-
-# Poziom baraków, z których otwarto to menu. Baraki na poziomie 2 lub
-# wyższym pozwalają rekrutować jednostki normalnie wymagające odkrycia
-# odpowiedniej technologii (Konnica / Magowie) — traktujemy to jako
-# "szkolenie na miejscu" w rozbudowanych barakach, z pominięciem
-# standardowego wymogu technologicznego.
 var active_building_level: int = 1
 
 func show_barracks_menu(building_level: int = 1, source_pos: Vector2 = Vector2(-1, -1)):
@@ -72,7 +66,6 @@ func show_barracks_menu(building_level: int = 1, source_pos: Vector2 = Vector2(-
 				target_faction = faction
 				break
 				
-		# Fallback na humans jeśli brakuje plików wyższych poziomów
 		if target_faction == null:
 			for faction in hud.unit_data_json["factions"]:
 				if faction.get("id") == "humans":
@@ -102,7 +95,6 @@ func _populate_barracks_units(faction: Dictionary):
 	if hud.has_method("_style_df_button"):
 		hud._style_df_button(close_btn)
 	
-	# Usunięcie spacer, by wyśrodkować tytuł mimo przycisku X po prawej:
 	var spacer_left = Control.new()
 	spacer_left.custom_minimum_size = Vector2(40, 40)
 	
@@ -182,19 +174,14 @@ func _populate_barracks_units(faction: Dictionary):
 			if EconomyManager.can_recruit_unit(unit):
 				btn_recruit.pressed.connect(func():
 					var unit_name = unit.get("name", "")
-					# Baraki lvl2+ pozwalają rekrutować te jednostki bez
-					# wymogu odkrycia technologii — pomijamy wtedy ten
-					# warunek całkowicie.
-					var bypass_tech_requirement = active_building_level >= 2
-					if not bypass_tech_requirement:
-						if unit_name == "Konnica" and EconomyManager.technology_tree.has("Konnica") and not EconomyManager.technology_tree["Konnica"]["unlocked"]:
-							hud.tech_warning_dialog.dialog_text = "Aby zwerbować tę jednostkę, musisz najpierw odkryć technologię:\nKonnica\n\n(lub rozbudować Baraki do poziomu 2)"
-							hud.tech_warning_dialog.popup_centered()
-							return
-						elif unit_name == "Magowie" and EconomyManager.technology_tree.has("Mag") and not EconomyManager.technology_tree["Mag"]["unlocked"]:
-							hud.tech_warning_dialog.dialog_text = "Aby zwerbować tę jednostkę, musisz najpierw odkryć technologię:\nMag\n\n(lub rozbudować Baraki do poziomu 2)"
-							hud.tech_warning_dialog.popup_centered()
-							return
+					if unit_name == "Konnica" and EconomyManager.technology_tree.has("Konnica") and not EconomyManager.technology_tree["Konnica"]["unlocked"]:
+						hud.tech_warning_dialog.dialog_text = "Aby zwerbować tę jednostkę, musisz najpierw odkryć technologię:\nKonnica"
+						hud.tech_warning_dialog.popup_centered()
+						return
+					elif unit_name == "Magowie" and EconomyManager.technology_tree.has("Mag") and not EconomyManager.technology_tree["Mag"]["unlocked"]:
+						hud.tech_warning_dialog.dialog_text = "Aby zwerbować tę jednostkę, musisz najpierw odkryć technologię:\nMag"
+						hud.tech_warning_dialog.popup_centered()
+						return
 
 					EconomyManager.recruit_unit(unit, active_source_pos)
 					_populate_barracks_units(faction)
@@ -207,5 +194,4 @@ func _populate_barracks_units(faction: Dictionary):
 				btn_recruit.disabled = true
 			
 			hbox.add_child(btn_recruit)
-			
 			vbox.add_child(panel)

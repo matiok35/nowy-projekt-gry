@@ -3,6 +3,8 @@ extends Node
 
 signal economy_updated(balances: Dictionary, current_turn: int, selected_build: String)
 signal unit_training_complete(unit: Dictionary)
+signal research_completed(tech_name: String)
+signal culture_research_completed(tech_name: String)
 
 var current_turn: int = 1
 var player_army: Array = []
@@ -11,7 +13,7 @@ const MAX_ARMY_SIZE: int = 50
 # Koszt zakupu jednego pola terytorium. Trzymany w jednym miejscu (zamiast
 # zaszytej na sztywno liczby w hud.gd), żeby zmiana ceny w przyszłości nie
 # rozjeżdżała interfejsu z faktyczną logiką ekonomii.
-const TILE_PURCHASE_GOLD_COST: int = 50
+const TILE_PURCHASE_GOLD_COST: int = 75
 
 
 var owned_potions: Dictionary = {}
@@ -28,7 +30,7 @@ const POTIONS_DATA: Dictionary = {
 		"effect": "dmg",
 		"value": 2,
 		"duration": 1,
-		"cost": {"Złoto": 50}
+		"cost": {"Złoto": 75}
 	},
 	"potka_sily_10": {
 		"name": "Większa Potka Siły (10 tur)",
@@ -36,7 +38,7 @@ const POTIONS_DATA: Dictionary = {
 		"effect": "dmg",
 		"value": 1,
 		"duration": 10,
-		"cost": {"Złoto": 150}
+		"cost": {"Złoto": 225}
 	},
 	"potka_wit_1": {
 		"name": "Potka Witalności (1 tura)",
@@ -44,7 +46,7 @@ const POTIONS_DATA: Dictionary = {
 		"effect": "hp",
 		"value": 5,
 		"duration": 1,
-		"cost": {"Złoto": 50}
+		"cost": {"Złoto": 75}
 	},
 	"potka_wit_10": {
 		"name": "Większa Potka Witalności (10 tur)",
@@ -52,7 +54,7 @@ const POTIONS_DATA: Dictionary = {
 		"effect": "hp",
 		"value": 2,
 		"duration": 10,
-		"cost": {"Złoto": 150}
+		"cost": {"Złoto": 225}
 	},
 	"potka_obrony_1": {
 		"name": "Potka Kamiennej Skóry (1 tura)",
@@ -60,7 +62,7 @@ const POTIONS_DATA: Dictionary = {
 		"effect": "def",
 		"value": 2,
 		"duration": 1,
-		"cost": {"Złoto": 50}
+		"cost": {"Złoto": 75}
 	},
 	"potka_obrony_10": {
 		"name": "Większa Potka Kamiennej Skóry (10 tur)",
@@ -68,7 +70,7 @@ const POTIONS_DATA: Dictionary = {
 		"effect": "def",
 		"value": 1,
 		"duration": 10,
-		"cost": {"Złoto": 150}
+		"cost": {"Złoto": 225}
 	},
 	"potka_szybkosci_1": {
 		"name": "Potka Wiatru (1 tura)",
@@ -76,7 +78,7 @@ const POTIONS_DATA: Dictionary = {
 		"effect": "speed",
 		"value": 2,
 		"duration": 1,
-		"cost": {"Złoto": 50}
+		"cost": {"Złoto": 75}
 	},
 	"potka_szybkosci_10": {
 		"name": "Większa Potka Wiatru (10 tur)",
@@ -84,7 +86,7 @@ const POTIONS_DATA: Dictionary = {
 		"effect": "speed",
 		"value": 1,
 		"duration": 10,
-		"cost": {"Złoto": 150}
+		"cost": {"Złoto": 225}
 	}
 }
 
@@ -102,14 +104,14 @@ var temple_blessing_cooldown_left: int = 0
 # jest jednorazowy i natychmiastowy (bez tur oczekiwania) — odblokowuje
 # umiejętność na stałe dla powiązanej jednostki.
 var skill_tree: Dictionary = {
-	"zelazna_kurtyna": {"name": "Żelazna Kurtyna", "unit": "Rycerze", "desc": "Rycerze zyskują tymczasową odporność na obrażenia.", "cost_gold": 120, "cost_tech": 40, "unlocked": false},
-	"tarcza": {"name": "Tarcza", "unit": "Rycerze", "desc": "Rycerze mogą osłonić sojusznika, przejmując część obrażeń.", "cost_gold": 100, "cost_tech": 30, "unlocked": false},
-	"szarza": {"name": "Szarża", "unit": "Konnica", "desc": "Konnica zadaje dodatkowe obrażenia przy szarży na wroga.", "cost_gold": 110, "cost_tech": 35, "unlocked": false},
-	"przyspieszenie": {"name": "Przyspieszenie", "unit": "Konnica", "desc": "Konnica zyskuje dodatkowy zasięg ruchu na turę.", "cost_gold": 90, "cost_tech": 25, "unlocked": false},
-	"sokole_oko": {"name": "Sokole Oko", "unit": "Łucznicy", "desc": "Łucznicy zyskują zwiększony zasięg ataku.", "cost_gold": 100, "cost_tech": 30, "unlocked": false},
-	"precyzyjny_strzal": {"name": "Precyzyjny Strzał", "unit": "Łucznicy", "desc": "Łucznicy mają szansę na trafienie krytyczne.", "cost_gold": 130, "cost_tech": 40, "unlocked": false},
-	"lodowe_podloze": {"name": "Lodowe Podłoże", "unit": "Magowie", "desc": "Magowie spowalniają wrogów na polu bitwy.", "cost_gold": 140, "cost_tech": 45, "unlocked": false},
-	"medytacja": {"name": "Medytacja", "unit": "Magowie", "desc": "Magowie szybciej się regenerują i zadają więcej obrażeń.", "cost_gold": 120, "cost_tech": 35, "unlocked": false},
+	"zelazna_kurtyna": {"name": "Żelazna Kurtyna", "unit": "Rycerze", "desc": "Rycerze zyskują tymczasową odporność na obrażenia.", "cost_gold": 180, "cost_tech": 40, "unlocked": false},
+	"tarcza": {"name": "Tarcza", "unit": "Rycerze", "desc": "Rycerze mogą osłonić sojusznika, przejmując część obrażeń.", "cost_gold": 150, "cost_tech": 30, "unlocked": false},
+	"szarza": {"name": "Szarża", "unit": "Konnica", "desc": "Konnica zadaje dodatkowe obrażenia przy szarży na wroga.", "cost_gold": 165, "cost_tech": 35, "unlocked": false},
+	"przyspieszenie": {"name": "Przyspieszenie", "unit": "Konnica", "desc": "Konnica zyskuje dodatkowy zasięg ruchu na turę.", "cost_gold": 135, "cost_tech": 25, "unlocked": false},
+	"sokole_oko": {"name": "Sokole Oko", "unit": "Łucznicy", "desc": "Łucznicy zyskują zwiększony zasięg ataku.", "cost_gold": 150, "cost_tech": 30, "unlocked": false},
+	"precyzyjny_strzal": {"name": "Precyzyjny Strzał", "unit": "Łucznicy", "desc": "Łucznicy mają szansę na trafienie krytyczne.", "cost_gold": 195, "cost_tech": 40, "unlocked": false},
+	"lodowe_podloze": {"name": "Lodowe Podłoże", "unit": "Magowie", "desc": "Magowie spowalniają wrogów na polu bitwy.", "cost_gold": 210, "cost_tech": 45, "unlocked": false},
+	"medytacja": {"name": "Medytacja", "unit": "Magowie", "desc": "Magowie szybciej się regenerują i zadają więcej obrażeń.", "cost_gold": 180, "cost_tech": 35, "unlocked": false},
 }
 
 var resources: Dictionary = {
@@ -130,19 +132,21 @@ var turn_warnings: Array = []
 var max_tech_points: float = 600.0
 var max_culture_points: float = 600.0
 
-# Koszty budynków podniesione o 100% względem wartości bazowych.
+# Koszty budynków podniesione o 100% względem wartości bazowych, a koszty
+# złota dodatkowo podniesione o kolejne ~50% (żeby złoto było rzadszym,
+# bardziej wartościowym zasobem).
 var building_costs: Dictionary = {
-	"Chata Drwala": {"Złoto": 60, "Drewno": 20},
-	"Kopalnia Żelaza": {"Złoto": 100, "Drewno": 40, "Węgiel": 30},
-	"Kopalnia Węgla": {"Złoto": 120, "Drewno": 50},
-	"Farma": {"Złoto": 50, "Drewno": 30},
-	"Pastwisko": {"Złoto": 60, "Drewno": 30},
-	"Dom mieszkalny": {"Złoto": 80, "Drewno": 40},
-	"Laboratorium": {"Złoto": 200, "Drewno": 100, "Żelazo": 20},
-	"Warsztat": {"Złoto": 160, "Drewno": 80, "Żelazo": 10},
-	"Biblioteka": {"Złoto": 140, "Drewno": 60},
-	"Świątynia": {"Złoto": 300, "Drewno": 80, "Żelazo": 30},
-	"Baraki": {"Złoto": 120, "Drewno": 60}
+	"Chata Drwala": {"Złoto": 90, "Drewno": 20},
+	"Kopalnia Żelaza": {"Złoto": 150, "Drewno": 40, "Węgiel": 30},
+	"Kopalnia Węgla": {"Złoto": 180, "Drewno": 50},
+	"Farma": {"Złoto": 75, "Drewno": 30},
+	"Pastwisko": {"Złoto": 90, "Drewno": 30},
+	"Dom mieszkalny": {"Złoto": 120, "Drewno": 40},
+	"Laboratorium": {"Złoto": 300, "Drewno": 100, "Żelazo": 20},
+	"Warsztat": {"Złoto": 240, "Drewno": 80, "Żelazo": 10},
+	"Biblioteka": {"Złoto": 210, "Drewno": 60},
+	"Świątynia": {"Złoto": 450, "Drewno": 80, "Żelazo": 30},
+	"Baraki": {"Złoto": 180, "Drewno": 60}
 }
 
 var current_research := ""
@@ -227,46 +231,46 @@ var technology_tree: Dictionary = {
 		"research_cost": 120, "research_time": 12, "req": ["Manufaktura", "Odnowa Wiary"], "unlocked": false, "desc": "Budowa Baraków.", "grid_coords": Vector2(6, 3), "icon": "⚔️"
 	},
 	"Sanktuarium": {
-		"research_cost": 225, "research_time": 8, "req": ["Baraki"], "unlocked": false, "desc": "Świątynia Lvl 3.", "grid_coords": Vector2(7, 1), "icon": "⛪"
+		"research_cost": 225, "research_time": 6, "req": ["Baraki"], "unlocked": false, "desc": "Świątynia Lvl 3.", "grid_coords": Vector2(7, 1), "icon": "⛪"
 	},
 	"Musztra": {
-		"research_cost": 225, "research_time": 8, "req": ["Baraki"], "unlocked": false, "desc": "Baraki Lvl 2.", "grid_coords": Vector2(7, 3), "icon": "🛡️"
+		"research_cost": 225, "research_time": 6, "req": ["Baraki"], "unlocked": false, "desc": "Baraki Lvl 2.", "grid_coords": Vector2(7, 3), "icon": "🛡️"
 	},
 	"Metalurgia": {
-		"research_cost": 225, "research_time": 8, "req": ["Baraki"], "unlocked": false, "desc": "Kopalnie Lvl 3.", "grid_coords": Vector2(7, 5), "icon": "🌋"
+		"research_cost": 225, "research_time": 6, "req": ["Baraki"], "unlocked": false, "desc": "Kopalnie Lvl 3.", "grid_coords": Vector2(7, 5), "icon": "🌋"
 	},
 	"Laboratorium": {
-		"research_cost": 270, "research_time": 9, "req": ["Sanktuarium", "Musztra"], "unlocked": false, "desc": "Budowa Laboratorium.", "grid_coords": Vector2(8, 2), "icon": "🧪"
+		"research_cost": 270, "research_time": 7, "req": ["Sanktuarium", "Musztra"], "unlocked": false, "desc": "Budowa Laboratorium.", "grid_coords": Vector2(8, 2), "icon": "🧪"
 	},
 	"Konnica": {
-		"research_cost": 270, "research_time": 9, "req": ["Musztra", "Metalurgia"], "unlocked": false, "desc": "Jednostki konne.", "grid_coords": Vector2(8, 4), "icon": "🐎"
+		"research_cost": 270, "research_time": 7, "req": ["Musztra", "Metalurgia"], "unlocked": false, "desc": "Jednostki konne.", "grid_coords": Vector2(8, 4), "icon": "🐎"
 	},
 	"Biblioteka": {
-		"research_cost": 330, "research_time": 11, "req": ["Laboratorium", "Konnica"], "unlocked": false, "desc": "Budowa Biblioteki.", "grid_coords": Vector2(9, 3), "icon": "📚"
+		"research_cost": 330, "research_time": 8, "req": ["Laboratorium", "Konnica"], "unlocked": false, "desc": "Budowa Biblioteki.", "grid_coords": Vector2(9, 3), "icon": "📚"
 	},
 	"Alchemia": {
-		"research_cost": 390, "research_time": 13, "req": ["Biblioteka"], "unlocked": false, "desc": "Laboratorium Lvl 2.", "grid_coords": Vector2(10, 1), "icon": "🔬"
+		"research_cost": 390, "research_time": 9, "req": ["Biblioteka"], "unlocked": false, "desc": "Laboratorium Lvl 2.", "grid_coords": Vector2(10, 1), "icon": "🔬"
 	},
 	"Archiwa": {
-		"research_cost": 390, "research_time": 13, "req": ["Biblioteka"], "unlocked": false, "desc": "Biblioteka Lvl 2.", "grid_coords": Vector2(10, 3), "icon": "📖"
+		"research_cost": 390, "research_time": 9, "req": ["Biblioteka"], "unlocked": false, "desc": "Biblioteka Lvl 2.", "grid_coords": Vector2(10, 3), "icon": "📖"
 	},
 	"Urbanizacja": {
-		"research_cost": 390, "research_time": 13, "req": ["Biblioteka"], "unlocked": false, "desc": "Domy Lvl 2.", "grid_coords": Vector2(10, 5), "icon": "🏘️"
+		"research_cost": 390, "research_time": 9, "req": ["Biblioteka"], "unlocked": false, "desc": "Domy Lvl 2.", "grid_coords": Vector2(10, 5), "icon": "🏘️"
 	},
 	"Akademia Nauk": {
-		"research_cost": 450, "research_time": 15, "req": ["Alchemia"], "unlocked": false, "desc": "Laboratorium Lvl 3.", "grid_coords": Vector2(11, 1), "icon": "🌌"
+		"research_cost": 450, "research_time": 10, "req": ["Alchemia"], "unlocked": false, "desc": "Laboratorium Lvl 3.", "grid_coords": Vector2(11, 1), "icon": "🌌"
 	},
 	"Wielkie Archiwum": {
-		"research_cost": 450, "research_time": 15, "req": ["Archiwa"], "unlocked": false, "desc": "Biblioteka Lvl 3.", "grid_coords": Vector2(11, 3), "icon": "🏛️"
+		"research_cost": 450, "research_time": 10, "req": ["Archiwa"], "unlocked": false, "desc": "Biblioteka Lvl 3.", "grid_coords": Vector2(11, 3), "icon": "🏛️"
 	},
 	"Twierdza": {
-		"research_cost": 450, "research_time": 15, "req": ["Urbanizacja"], "unlocked": false, "desc": "Baraki Lvl 3.", "grid_coords": Vector2(11, 5), "icon": "🏰"
+		"research_cost": 450, "research_time": 10, "req": ["Urbanizacja"], "unlocked": false, "desc": "Baraki Lvl 3.", "grid_coords": Vector2(11, 5), "icon": "🏰"
 	},
 	"Mag": {
-		"research_cost": 525, "research_time": 18, "req": ["Akademia Nauk", "Wielkie Archiwum"], "unlocked": false, "desc": "Rekrutacja Magów.", "grid_coords": Vector2(12, 2), "icon": "🧙"
+		"research_cost": 525, "research_time": 12, "req": ["Akademia Nauk", "Wielkie Archiwum"], "unlocked": false, "desc": "Rekrutacja Magów.", "grid_coords": Vector2(12, 2), "icon": "🧙"
 	},
 	"Metropolia": {
-		"research_cost": 525, "research_time": 18, "req": ["Wielkie Archiwum", "Twierdza"], "unlocked": false, "desc": "Domy Lvl 3.", "grid_coords": Vector2(12, 4), "icon": "🏙️"
+		"research_cost": 525, "research_time": 12, "req": ["Wielkie Archiwum", "Twierdza"], "unlocked": false, "desc": "Domy Lvl 3.", "grid_coords": Vector2(12, 4), "icon": "🏙️"
 	}
 }
 
@@ -297,7 +301,7 @@ var culture_tree: Dictionary = {
 		"research_cost": 96, "research_time": 8, "req": ["Złoto za mieszkańca", "Drewno +2"], "unlocked": false, "desc": "+2 Złota/świątynię.", "grid_coords": Vector2(4, 3), "icon": "🕍"
 	},
 	"Szybsze badania": {
-		"research_cost": 100, "research_time": 10, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "-25 koszt badań, -1 Tura.", "grid_coords": Vector2(5, 1), "icon": "⏳"
+		"research_cost": 100, "research_time": 10, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "-5 koszt badań, -1 Tura.", "grid_coords": Vector2(5, 1), "icon": "⏳"
 	},
 	"Nauka z warsztatu": {
 		"research_cost": 120, "research_time": 10, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "+1 pkt tech./warsztat.", "grid_coords": Vector2(5, 3), "icon": "🧪"
@@ -327,25 +331,25 @@ var culture_tree: Dictionary = {
 		"research_cost": 216, "research_time": 18, "req": ["Tańsze bud. kulturowe"], "unlocked": false, "desc": "+1 Kultury/dom.", "grid_coords": Vector2(8, 5), "icon": "🏘️"
 	},
 	"Złoto co turę": {
-		"research_cost": 264, "research_time": 22, "req": ["Tańsza rekrutacja"], "unlocked": false, "desc": "+1 Złoto/turę.", "grid_coords": Vector2(9, 1), "icon": "💸"
+		"research_cost": 264, "research_time": 14, "req": ["Tańsza rekrutacja"], "unlocked": false, "desc": "+1 Złoto/turę.", "grid_coords": Vector2(9, 1), "icon": "💸"
 	},
 	"Tech z baraków": {
-		"research_cost": 264, "research_time": 22, "req": ["Kultura z domów"], "unlocked": false, "desc": "+1 pkt tech./barak.", "grid_coords": Vector2(9, 5), "icon": "⚙️"
+		"research_cost": 264, "research_time": 14, "req": ["Kultura z domów"], "unlocked": false, "desc": "+1 pkt tech./barak.", "grid_coords": Vector2(9, 5), "icon": "⚙️"
 	},
 	"Złoto z drwala": {
-		"research_cost": 312, "research_time": 26, "req": ["Złoto co turę", "Tech z baraków"], "unlocked": false, "desc": "+1 Złoto/drwala.", "grid_coords": Vector2(10, 3), "icon": "🪓"
+		"research_cost": 312, "research_time": 16, "req": ["Złoto co turę", "Tech z baraków"], "unlocked": false, "desc": "+1 Złoto/drwala.", "grid_coords": Vector2(10, 3), "icon": "🪓"
 	},
 	"Tańsza chata drwala": {
-		"research_cost": 360, "research_time": 30, "req": ["Złoto z drwala"], "unlocked": false, "desc": "-10 Złota za drwala.", "grid_coords": Vector2(11, 1), "icon": "📉"
+		"research_cost": 360, "research_time": 18, "req": ["Złoto z drwala"], "unlocked": false, "desc": "-10 Złota za drwala.", "grid_coords": Vector2(11, 1), "icon": "📉"
 	},
 	"Tańsze baraki": {
-		"research_cost": 360, "research_time": 30, "req": ["Złoto z drwala"], "unlocked": false, "desc": "-20 Złota za baraki.", "grid_coords": Vector2(11, 3), "icon": "🏯"
+		"research_cost": 360, "research_time": 18, "req": ["Złoto z drwala"], "unlocked": false, "desc": "-20 Złota za baraki.", "grid_coords": Vector2(11, 3), "icon": "🏯"
 	},
 	"Ruch generała III": {
-		"research_cost": 360, "research_time": 30, "req": ["Złoto z drwala"], "unlocked": false, "desc": "+1 Ruch generała.", "grid_coords": Vector2(11, 5), "icon": "🏇"
+		"research_cost": 360, "research_time": 18, "req": ["Złoto z drwala"], "unlocked": false, "desc": "+1 Ruch generała.", "grid_coords": Vector2(11, 5), "icon": "🏇"
 	},
 	"Złoto z baraków": {
-		"research_cost": 420, "research_time": 35, "req": ["Tańsza chata drwala", "Tańsze baraki", "Ruch generała III"], "unlocked": false, "desc": "+1 Złoto/barak.", "grid_coords": Vector2(12, 3), "icon": "🤑"
+		"research_cost": 420, "research_time": 20, "req": ["Tańsza chata drwala", "Tańsze baraki", "Ruch generała III"], "unlocked": false, "desc": "+1 Złoto/barak.", "grid_coords": Vector2(12, 3), "icon": "🤑"
 	}
 }
 
