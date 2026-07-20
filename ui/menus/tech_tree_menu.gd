@@ -9,7 +9,7 @@ var insufficient_points_dialog: AcceptDialog
 
 const X_SPACING: float = 280.0
 const Y_SPACING: float = 95.0
-const OFFSET_POS: Vector2 = Vector2(80, -20)
+const OFFSET_POS: Vector2 = Vector2(80, -70)
 
 func _init(_hud: Control):
 	hud = _hud
@@ -61,12 +61,16 @@ func setup_tech_tree_ui():
 			close_btn.get_parent().move_child(close_btn, -1)
 		var scroll = tech_tree_window.get_node_or_null("ScrollContainer")
 		if scroll:
-			# POPRAWKA: drzewo ma być przewijane wyłącznie kółkiem myszy —
-			# suwak przewijania (scrollbar) jest ukryty (SHOW_NEVER), ale
-			# przewijanie kółkiem myszy w ScrollContainer nadal działa
-			# niezależnie od trybu wyświetlania suwaka.
-			scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
-			scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+			scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
+			scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+			scroll.offset_left = 10
+			scroll.offset_right = -10
+			scroll.offset_bottom = -20
+			
+			if not scroll.gui_input.is_connected(_on_scroll_gui_input.bind(scroll, scroll)):
+				scroll.gui_input.connect(_on_scroll_gui_input.bind(scroll, scroll))
+			if tech_tree_map and not tech_tree_map.gui_input.is_connected(_on_scroll_gui_input.bind(tech_tree_map, scroll)):
+				tech_tree_map.gui_input.connect(_on_scroll_gui_input.bind(tech_tree_map, scroll))
 	if tech_tree_map: tech_tree_map.draw.connect(_draw_tech_connections)
 
 	# Dialog pokazywany, gdy kliknięcie węzła technologii nie mogło
@@ -211,3 +215,12 @@ func refresh_technology_tree_view():
 			)
 		tech_tree_map.add_child(node_panel)
 	tech_tree_map.custom_minimum_size = max_size
+
+func _on_scroll_gui_input(event: InputEvent, node: Control, scroll: ScrollContainer):
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			scroll.scroll_horizontal -= 60
+			node.accept_event()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			scroll.scroll_horizontal += 60
+			node.accept_event()

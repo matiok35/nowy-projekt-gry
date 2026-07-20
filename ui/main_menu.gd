@@ -21,10 +21,25 @@ const DF_GOLD_TEXT: Color = Color(0.86, 0.72, 0.4, 1.0)
 const DF_TEXT: Color = Color(0.85, 0.8, 0.7, 1.0)
 
 func _ready() -> void:
+	_apply_emoji_fallback()
 	random_button.pressed.connect(_on_random_button_pressed)
 	seed_button.pressed.connect(_on_seed_button_pressed)
 	_setup_debug_checkbox()
 	_apply_dark_fantasy_style()
+
+func _apply_emoji_fallback() -> void:
+	var emoji_font = load("res://assets/fonts/WindowsEmoji.ttf")
+	if not emoji_font:
+		return
+	
+	var var_font = FontVariation.new()
+	var_font.base_font = ThemeDB.fallback_font
+	var_font.fallbacks = [emoji_font]
+	
+	if not self.theme:
+		self.theme = Theme.new()
+	
+	self.theme.default_font = var_font
 
 func _setup_debug_checkbox() -> void:
 	debug_checkbox = CheckButton.new()

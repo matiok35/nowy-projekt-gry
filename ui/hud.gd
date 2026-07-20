@@ -112,6 +112,8 @@ const DF_TEXT: Color = Color(0.85, 0.8, 0.7, 1.0)
 const DF_TEXT_DIM: Color = Color(0.6, 0.56, 0.5, 0.85)
 
 func _ready():
+	apply_emoji_fallback()
+	
 	world_ref = get_tree().current_scene
 	if world_ref == null or not world_ref.has_method("build_on_tile"):
 		world_ref = get_tree().root.find_child("GameWorld", true, false)
@@ -166,6 +168,20 @@ func _ready():
 	setup_admin_button()
 
 	EconomyManager.notify_change()
+
+func apply_emoji_fallback() -> void:
+	var emoji_font = load("res://assets/fonts/WindowsEmoji.ttf")
+	if not emoji_font:
+		return
+	
+	var var_font = FontVariation.new()
+	var_font.base_font = ThemeDB.fallback_font
+	var_font.fallbacks = [emoji_font]
+	
+	if not self.theme:
+		self.theme = Theme.new()
+	
+	self.theme.default_font = var_font
 
 func setup_seed_label():
 	var seed_lbl = Label.new()
@@ -399,6 +415,7 @@ func setup_points_panel():
 	culture_label.text = "Punkty Kultury: 0/100"
 	culture_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	culture_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	culture_label.mouse_filter = Control.MOUSE_FILTER_STOP
 	culture_label.add_theme_font_size_override("font_size", 14)
 	
 	culture_bar = ProgressBar.new()
@@ -458,6 +475,7 @@ func setup_points_panel():
 	tech_label.text = "Punkty Technologii: 0/100"
 	tech_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tech_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	tech_label.mouse_filter = Control.MOUSE_FILTER_STOP
 	tech_label.add_theme_font_size_override("font_size", 14)
 	
 	tech_bar = ProgressBar.new()
@@ -519,6 +537,7 @@ func setup_resources_header():
 		lbl.add_theme_font_size_override("font_size", 16)
 		lbl.add_theme_color_override("font_color", Color(0.9, 0.88, 0.8))
 		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		lbl.mouse_filter = Control.MOUSE_FILTER_STOP
 		lbl.text = res_name + ": 0"
 		
 		hbox.add_child(icon)
@@ -1195,29 +1214,39 @@ func _do_execute_build(building_name: String) -> void:
 	hide_all_menus()
 
 func _on_economy_updated(balances: Dictionary, turn: int, _selected_build: String):
-	# POPRAWKA: podgląd bilansu "na turę" dla surowców oraz Punktów Kultury
-	# i Technologii — wcześniej HUD pokazywał tylko aktualny stan, bez
-	# informacji o tym, ile danego zasobu przybędzie/ubędzie w najbliższej
-	# turze.
 	var preview: Dictionary = {}
 	if world_ref and world_ref.has_method("get_active_buildings_list"):
 		preview = EconomyManager.get_turn_preview(world_ref.get_active_buildings_list())
 
+	var get_balance = func(res_name: String) -> int:
+		if preview.has(res_name):
+			return preview[res_name].get("balance", 0)
+		return 0
+
+	var setup_tooltip = func(res_name: String) -> String:
+		if preview.has(res_name):
+			var p = preview[res_name]
+			return "Zasób: %s\nProdukcja: +%d\nPobieranie: -%d\nBilans: %s" % [
+				res_name, p.get("produced", 0), p.get("consumed", 0), _format_delta(p.get("balance", 0))
+			]
+		return ""
+
 	if resources_container:
-		resource_labels["Drewno"].text = "Drewno: %d (%s)" % [balances["Drewno"], _format_delta(preview.get("Drewno", 0))]
-		resource_labels["Żelazo"].text = "Żelazo: %d (%s)" % [balances["Żelazo"], _format_delta(preview.get("Żelazo", 0))]
-		resource_labels["Węgiel"].text = "Węgiel: %d (%s)" % [balances["Węgiel"], _format_delta(preview.get("Węgiel", 0))]
-		resource_labels["Jedzenie"].text = "Jedzenie: %d (%s)" % [balances["Jedzenie"], _format_delta(preview.get("Jedzenie", 0))]
-		resource_labels["Złoto"].text = "Złoto: %d (%s)" % [balances["Złoto"], _format_delta(preview.get("Złoto", 0))]
+		resource_labels["Drewno"].text = "Drewno: %d" % [balances["Drewno"]]
+		resource_labels["Drewno"].tooltip_text = setup_tooltip.call("Drewno")
+		resource_labels["Żelazo"].text = "Żelazo: %d" % [balances["Żelazo"]]
+		resource_labels["Żelazo"].tooltip_text = setup_tooltip.call("Żelazo")
+		resource_labels["Węgiel"].text = "Węgiel: %d" % [balances["Węgiel"]]
+		resource_labels["Węgiel"].tooltip_text = setup_tooltip.call("Węgiel")
+		resource_labels["Jedzenie"].text = "Jedzenie: %d" % [balances["Jedzenie"]]
+		resource_labels["Jedzenie"].tooltip_text = setup_tooltip.call("Jedzenie")
+		resource_labels["Złoto"].text = "Złoto: %d" % [balances["Złoto"]]
+		resource_labels["Złoto"].tooltip_text = setup_tooltip.call("Złoto")
 		resource_labels["Populacja"].text = "Pop: %d/%d" % [balances.get("Populacja", 1), balances.get("Maks_Populacja", 5)]
+		resource_labels["Populacja"].tooltip_text = "Twoja obecna populacja.\nJedzenie na turę: -%d" % [balances.get("Populacja", 1) * 1]
 	else:
-		resources_label.text = "🪵 Drewno: %d (%s)      ⛓️ Żelazo: %d (%s)      🌋 Węgiel: %d (%s)      🌾 Jedzenie: %d (%s)      🪙 Złoto: %d (%s)      👥 Pop: %d/%d" % [
-			balances["Drewno"], _format_delta(preview.get("Drewno", 0)),
-			balances["Żelazo"], _format_delta(preview.get("Żelazo", 0)),
-			balances["Węgiel"], _format_delta(preview.get("Węgiel", 0)),
-			balances["Jedzenie"], _format_delta(preview.get("Jedzenie", 0)),
-			balances["Złoto"], _format_delta(preview.get("Złoto", 0)),
-			balances.get("Populacja", 1), balances.get("Maks_Populacja", 5)
+		resources_label.text = "🪵 Drewno: %d      ⛓️ Żelazo: %d      🌋 Węgiel: %d      🌾 Jedzenie: %d      🪙 Złoto: %d      👥 Pop: %d/%d" % [
+			balances["Drewno"], balances["Żelazo"], balances["Węgiel"], balances["Jedzenie"], balances["Złoto"], balances.get("Populacja", 1), balances.get("Maks_Populacja", 5)
 		]
 	turn_button.text = "Następna tura (%d)" % turn
 
@@ -1229,12 +1258,14 @@ func _on_economy_updated(balances: Dictionary, turn: int, _selected_build: Strin
 		var t_val = balances.get("Nauka", 0)
 		var c_max = EconomyManager.max_culture_points
 		var t_max = EconomyManager.max_tech_points
-		culture_label.text = "Punkty Kultury:    %d/%d (%s)" % [c_val, int(c_max), _format_delta(preview.get("Kultura", 0))]
+		culture_label.text = "Punkty Kultury:    %d/%d" % [c_val, int(c_max)]
 		culture_bar.max_value = c_max
 		culture_bar.value = c_val
-		tech_label.text = "Punkty Technologii:    %d/%d (%s)" % [t_val, int(t_max), _format_delta(preview.get("Nauka", 0))]
+		culture_label.tooltip_text = setup_tooltip.call("Kultura")
+		tech_label.text = "Punkty Technologii:    %d/%d" % [t_val, int(t_max)]
 		tech_bar.max_value = t_max
 		tech_bar.value = t_val
+		tech_label.tooltip_text = setup_tooltip.call("Nauka")
 	
 	if tech_tree_menu and tech_tree_menu.tech_tree_window and tech_tree_menu.tech_tree_window.visible: tech_tree_menu.refresh_technology_tree_view()
 
@@ -1446,21 +1477,36 @@ func _style_alert_dialog(dialog: AcceptDialog) -> void:
 	# klimacie "dark fantasy" spójnym z resztą HUD-u — domyślny, jasny
 	# systemowy wygląd Godota mocno odstawał od reszty interfejsu.
 	var style = StyleBoxFlat.new()
-	style.bg_color = DF_BG
-	style.set_corner_radius_all(10)
-	style.set_border_width_all(2)
-	style.border_color = DF_GOLD
-	style.set_content_margin_all(18)
-	style.shadow_color = Color(0, 0, 0, 0.6)
-	style.shadow_size = 8
+	style.bg_color = Color.TRANSPARENT
+	style.draw_center = false
+	style.set_content_margin_all(24)
+	
+	var border_style = StyleBoxFlat.new()
+	border_style.bg_color = DF_BG
+	border_style.set_corner_radius_all(12)
+	border_style.set_border_width_all(2)
+	border_style.border_color = DF_GOLD
+	border_style.expand_margin_top = 48
+	border_style.expand_margin_left = 2
+	border_style.expand_margin_right = 2
+	border_style.expand_margin_bottom = 2
+	border_style.shadow_color = Color(0, 0, 0, 0.7)
+	border_style.shadow_size = 12
+
+	dialog.transparent_bg = true
 	dialog.add_theme_stylebox_override("panel", style)
+	dialog.add_theme_stylebox_override("embedded_border", border_style)
+	dialog.add_theme_stylebox_override("embedded_unfocused_border", border_style)
 	dialog.add_theme_color_override("title_color", DF_GOLD_TEXT)
-	dialog.add_theme_font_size_override("title_font_size", 18)
+	dialog.add_theme_font_size_override("title_font_size", 20)
+	dialog.min_size = Vector2i(450, 180)
 
 	var label = dialog.get_label()
 	if label:
 		label.add_theme_color_override("font_color", DF_TEXT)
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
 	var ok_btn = dialog.get_ok_button()
 	if ok_btn:
@@ -1474,10 +1520,13 @@ func _style_alert_dialog(dialog: AcceptDialog) -> void:
 func _style_df_button(btn: Button) -> void:
 	var normal = StyleBoxFlat.new()
 	normal.bg_color = DF_BG_LIGHT
-	normal.set_corner_radius_all(6)
-	normal.set_border_width_all(1)
+	normal.set_corner_radius_all(8)
+	normal.set_border_width_all(2)
 	normal.border_color = DF_GOLD
-	normal.set_content_margin_all(8)
+	normal.content_margin_left = 24
+	normal.content_margin_right = 24
+	normal.content_margin_top = 10
+	normal.content_margin_bottom = 10
 
 	var hover = normal.duplicate() as StyleBoxFlat
 	hover.bg_color = Color(0.18, 0.15, 0.12, 0.96)
@@ -1485,4 +1534,6 @@ func _style_df_button(btn: Button) -> void:
 
 	btn.add_theme_stylebox_override("normal", normal)
 	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_stylebox_override("pressed", hover)
+	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	btn.add_theme_color_override("font_color", DF_TEXT)
