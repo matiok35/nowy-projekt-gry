@@ -201,7 +201,7 @@ var technology_tree: Dictionary = {
 		"research_cost": 30, "research_time": 6, "req": ["Płodozmian", "Tartak Mechaniczny"], "unlocked": false, "desc": "Farma/Pastwisko Lvl 3.", "grid_coords": Vector2(3, 1), "icon": "🚜"
 	},
 	"Warsztat": {
-		"research_cost": 30, "research_time": 6, "req": ["Płodozmian", "Górnictwo"], "unlocked": false, "desc": "Budowa Warsztatu.", "grid_coords": Vector2(2, 3), "icon": "⚒️"
+		"research_cost": 30, "research_time": 6, "req": ["Hodowla bydła", "Górnictwo"], "unlocked": false, "desc": "Budowa Warsztatu.", "grid_coords": Vector2(2, 3), "icon": "⚒️"
 	},
 	"Głębokie Szyby": {
 		"research_cost": 30, "research_time": 6, "req": ["Górnictwo"], "unlocked": false, "desc": "Kopalnie Lvl 2.", "grid_coords": Vector2(3, 5), "icon": "🗻"
@@ -557,11 +557,12 @@ func next_turn(active_buildings_data: Array) -> void:
 				resources["Jedzenie"] += int(2 * b_level * temple_multiplier)
 				resources["Drewno"] += int(2 * b_level * temple_multiplier)
 			"Chata Drwala":
-				resources["Drewno"] += int(8 * size_modifier * b_level * wood_multiplier * temple_multiplier)
+				# Dochodowość drewna zmniejszona o ~100% (8 -> 4 bazowego surowca/turę).
+				resources["Drewno"] += int(4 * size_modifier * b_level * wood_multiplier * temple_multiplier)
 				if culture_tree["Złoto z drwala"]["unlocked"]:
 					resources["Złoto"] += int(1 * b_level * temple_multiplier)
 			"Kopalnia Żelaza":
-				var iron_yield = 5
+				var iron_yield = 2
 				var produced_iron = int(iron_yield * size_modifier * b_level * iron_coal_multiplier * temple_multiplier)
 				var coal_consumed = int(3 * size_modifier * b_level)
 				var gold_cost = 2 * b_level
@@ -576,7 +577,8 @@ func next_turn(active_buildings_data: Array) -> void:
 					if not turn_warnings.has("Brak węgla! Kopalnie żelaza wstrzymały produkcję."):
 						turn_warnings.append("Brak węgla! Kopalnie żelaza wstrzymały produkcję.")
 			"Kopalnia Węgla":
-				var coal_yield = 4
+				# Dochodowość węgla zmniejszona o ~100% (4 -> 2 bazowego surowca/turę).
+				var coal_yield = 2
 				var gold_cost = 2 * b_level
 				if resources.get("Złoto", 0) < gold_cost:
 					if not turn_warnings.has("Brak złota! Kopalnie wstrzymały produkcję."):
@@ -588,7 +590,8 @@ func next_turn(active_buildings_data: Array) -> void:
 				var farm_yield = 6
 				resources["Jedzenie"] += int(farm_yield * size_modifier * b_level * food_multiplier * temple_multiplier)
 			"Pastwisko":
-				resources["Jedzenie"] += int(8 * size_modifier * b_level * food_multiplier * temple_multiplier)
+				# Dochodowość jedzenia zmniejszona o ~100% (8 -> 4 bazowego surowca/turę).
+				resources["Jedzenie"] += int(4 * size_modifier * b_level * food_multiplier * temple_multiplier)
 			"Laboratorium":
 				turn_science += 3 * b_level
 			"Warsztat":
@@ -846,8 +849,11 @@ func reset() -> void:
 		"Głoduje": false
 	}
 	
-	max_tech_points = 350.0
-	max_culture_points = 350.0
+	# Limity punktów zwiększone, ponieważ przy dotychczasowej wartości 350
+	# nie dało się zbadać wszystkich węzłów na końcu drzew (np. wymagających
+	# 420 pkt Kultury lub kosztów Technologii sięgających blisko 500 pkt).
+	max_tech_points = 500.0
+	max_culture_points = 420.0
 	
 	current_research = ""
 	research_turns_left = 0
