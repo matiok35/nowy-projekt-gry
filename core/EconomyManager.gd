@@ -813,6 +813,8 @@ func next_turn(active_buildings_data: Array) -> void:
 		if research_turns_left <= 0:
 			technology_tree[current_research]["unlocked"] = true
 			current_research = ""
+			var completed_tech = current_research
+			research_completed.emit(completed_tech)
 			
 	if current_culture_research != "":
 		culture_turns_left -= 1
@@ -822,6 +824,8 @@ func next_turn(active_buildings_data: Array) -> void:
 				"Renesans":
 					max_culture_points += 25
 			current_culture_research = ""
+			var completed_culture = current_culture_research
+			culture_research_completed.emit(completed_culture)
 
 	# Odliczanie czasu aktywnego błogosławieństwa Świątyni oraz jego cooldownu.
 	if temple_blessing_turns_left > 0:
