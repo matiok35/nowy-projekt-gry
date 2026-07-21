@@ -4,6 +4,7 @@ extends RefCounted
 var hud: Control
 var temple_window: PanelContainer
 var status_label: Label
+var desc_label: Label
 var activate_button: Button
 
 func _init(_hud: Control):
@@ -53,8 +54,7 @@ func setup_temple_window():
 	main_vbox.add_child(sep)
 
 	# OPIS
-	var desc_label = Label.new()
-	desc_label.text = "Aktywuj błogosławieństwo, aby zwiększyć produkcję wszystkich surowców o 10%% przez %d tur.\nOdnowienie (cooldown): %d tur od aktywacji." % [EconomyManager.TEMPLE_BLESSING_DURATION, EconomyManager.TEMPLE_BLESSING_COOLDOWN]
+	desc_label = Label.new()
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	desc_label.add_theme_font_size_override("font_size", 14)
 	desc_label.add_theme_color_override("font_color", hud.DF_TEXT)
@@ -101,15 +101,27 @@ func _on_activate_pressed() -> void:
 	if EconomyManager.activate_temple_blessing():
 		_refresh_status()
 
+# Aktualny bonus (%) zależy od poziomu najlepiej rozwiniętej Świątyni gracza —
+# im wyższy poziom, tym silniejsze błogosławieństwo (patrz
+# EconomyManager.get_temple_blessing_bonus_percent).
+func _get_current_bonus_percent() -> int:
+	if hud.world_ref and hud.world_ref.has_method("get_active_buildings_list"):
+		return EconomyManager.get_temple_blessing_bonus_percent(hud.world_ref.get_active_buildings_list())
+	return 10
+
 func _refresh_status() -> void:
+	var bonus_percent = _get_current_bonus_percent()
+
+	desc_label.text = "Aktywuj błogosławieństwo, aby zwiększyć produkcję wszystkich surowców o %d%% przez %d tur.\nOdnowienie (cooldown): %d tur od aktywacji.\nUlepszanie Świątyni zwiększa siłę błogosławieństwa (+10%% za poziom)." % [bonus_percent, EconomyManager.TEMPLE_BLESSING_DURATION, EconomyManager.TEMPLE_BLESSING_COOLDOWN]
+
 	if EconomyManager.temple_blessing_turns_left > 0:
-		status_label.text = "✅ Błogosławieństwo aktywne jeszcze przez %d tur." % EconomyManager.temple_blessing_turns_left
+		status_label.text = "✅ Błogosławieństwo aktywne (+%d%%) jeszcze przez %d tur." % [bonus_percent, EconomyManager.temple_blessing_turns_left]
 		status_label.add_theme_color_override("font_color", Color(0.55, 0.85, 0.55))
 	elif EconomyManager.temple_blessing_cooldown_left > 0:
 		status_label.text = "⏳ Odnowienie za %d tur." % EconomyManager.temple_blessing_cooldown_left
 		status_label.add_theme_color_override("font_color", Color(0.85, 0.75, 0.4))
 	else:
-		status_label.text = "Błogosławieństwo gotowe do aktywacji."
+		status_label.text = "Błogosławieństwo gotowe do aktywacji (+%d%%)." % bonus_percent
 		status_label.add_theme_color_override("font_color", hud.DF_GOLD_TEXT)
 
 	activate_button.disabled = not EconomyManager.can_activate_temple_blessing()
@@ -120,4 +132,5 @@ func show_temple_menu() -> void:
 	var viewport_size = hud.get_viewport_rect().size
 	temple_window.reset_size()
 	_refresh_status()
+	temple_window.reset_size()
 	temple_window.position = ((viewport_size - temple_window.size) / 2.0).round()

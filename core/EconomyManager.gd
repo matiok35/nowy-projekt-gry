@@ -545,9 +545,14 @@ func get_turn_preview(active_buildings_data: Array) -> Dictionary:
 	var flat_wood_bonus = 0
 	if culture_tree["Drewno +2"]["unlocked"]: flat_wood_bonus = 2
 
+	var max_temple_level = 1
+	for b_data_scan in active_buildings_data:
+		if b_data_scan["name"] == "Świątynia":
+			max_temple_level = max(max_temple_level, b_data_scan.get("level", 1))
+
 	var temple_multiplier = 1.0
 	if temple_blessing_turns_left > 0:
-		temple_multiplier = 1.1
+		temple_multiplier = 1.0 + 0.1 * max_temple_level
 
 	for b_data in active_buildings_data:
 		var b_name = b_data["name"]
@@ -571,7 +576,8 @@ func get_turn_preview(active_buildings_data: Array) -> Dictionary:
 				add_res.call("Jedzenie", int(2 * b_level * temple_multiplier))
 				add_res.call("Drewno", int(2 * b_level * temple_multiplier))
 			"Chata Drwala":
-				add_res.call("Drewno", int(4 * size_modifier * b_level * temple_multiplier) + flat_wood_bonus * b_level)
+				var wood_yield = 2
+				add_res.call("Drewno", int(wood_yield * size_modifier * b_level * temple_multiplier) + flat_wood_bonus * b_level)
 				if culture_tree["Złoto z drwala"]["unlocked"]:
 					add_res.call("Złoto", int(1 * b_level * temple_multiplier))
 			"Kopalnia Żelaza":
@@ -604,7 +610,7 @@ func get_turn_preview(active_buildings_data: Array) -> Dictionary:
 				add_res.call("Nauka", 2 * b_level)
 				add_res.call("Kultura", 1 * b_level)
 			"Świątynia":
-				add_res.call("Kultura", 3 * b_level)
+				add_res.call("Kultura", 2 * b_level)
 				if culture_tree["Złoto za świątynie"]["unlocked"]:
 					add_res.call("Złoto", int(2 * b_level * temple_multiplier))
 			"Baraki":
@@ -674,10 +680,17 @@ func next_turn(active_buildings_data: Array) -> void:
 	if culture_tree["Drewno +2"]["unlocked"]: flat_wood_bonus = 2
 
 	# Mnożnik z aktywnego błogosławieństwa Świątyni (+10% produkcji surowców
-	# materialnych, dopóki temple_blessing_turns_left > 0).
+	# materialnych za każdy poziom najlepiej rozwiniętej Świątyni, dopóki
+	# temple_blessing_turns_left > 0). Skalowanie z poziomem sprawia, że
+	# ulepszenie Świątyni realnie wzmacnia błogosławieństwo.
+	var max_temple_level = 1
+	for b_data_scan in active_buildings_data:
+		if b_data_scan["name"] == "Świątynia":
+			max_temple_level = max(max_temple_level, b_data_scan.get("level", 1))
+
 	var temple_multiplier = 1.0
 	if temple_blessing_turns_left > 0:
-		temple_multiplier = 1.1
+		temple_multiplier = 1.0 + 0.1 * max_temple_level
 
 	for b_data in active_buildings_data:
 		var b_name = b_data["name"]
@@ -702,7 +715,8 @@ func next_turn(active_buildings_data: Array) -> void:
 				resources["Jedzenie"] += int(2 * b_level * temple_multiplier)
 				resources["Drewno"] += int(2 * b_level * temple_multiplier)
 			"Chata Drwala":
-				resources["Drewno"] += int(4 * size_modifier * b_level * temple_multiplier) + flat_wood_bonus * b_level
+				var wood_yield = 2
+				resources["Drewno"] += int(wood_yield * size_modifier * b_level * temple_multiplier) + flat_wood_bonus * b_level
 				if culture_tree["Złoto z drwala"]["unlocked"]:
 					resources["Złoto"] += int(1 * b_level * temple_multiplier)
 			"Kopalnia Żelaza":
@@ -744,7 +758,7 @@ func next_turn(active_buildings_data: Array) -> void:
 				turn_science += 2 * b_level
 				turn_culture += 1 * b_level
 			"Świątynia":
-				turn_culture += 3 * b_level
+				turn_culture += 2 * b_level
 				if culture_tree["Złoto za świątynie"]["unlocked"]:
 					resources["Złoto"] += int(2 * b_level * temple_multiplier)
 			"Baraki":
@@ -1100,6 +1114,16 @@ func activate_temple_blessing() -> bool:
 	temple_blessing_cooldown_left = TEMPLE_BLESSING_COOLDOWN
 	notify_change()
 	return true
+
+# Siła błogosławieństwa zależy teraz od poziomu najlepiej rozwiniętej
+# Świątyni gracza (+10% za poziom), zamiast być zawsze sztywnym +10%.
+# Dzięki temu ulepszenie Świątyni ma realny, odczuwalny efekt.
+func get_temple_blessing_bonus_percent(active_buildings_data: Array) -> int:
+	var max_temple_level = 1
+	for b_data in active_buildings_data:
+		if b_data["name"] == "Świątynia":
+			max_temple_level = max(max_temple_level, b_data.get("level", 1))
+	return 10 * max_temple_level
 
 # --- WARSZTAT: LECZENIE ARMII -----------------------------------------------
 
