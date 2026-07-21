@@ -271,14 +271,14 @@ var technology_tree: Dictionary = {
 
 # Koszty badań kultury podniesione o ~20% względem wartości bazowych.
 var culture_tree: Dictionary = {
-	"Kultura +2/tura": {
-		"research_cost": 12, "research_time": 1, "req": [], "unlocked": false, "desc": "+2 Kultury/turę.", "grid_coords": Vector2(0, 3), "icon": "🏛️"
+	"Kultura +1/tura": {
+		"research_cost": 12, "research_time": 1, "req": [], "unlocked": false, "desc": "+1 Kultury/turę.", "grid_coords": Vector2(0, 3), "icon": "🎭"
 	},
 	"Jedzenie +2": {
-		"research_cost": 36, "research_time": 3, "req": ["Kultura +2/tura"], "unlocked": false, "desc": "+2 Jedzenia/turę z Farm.", "grid_coords": Vector2(1, 1), "icon": "🌾"
+		"research_cost": 36, "research_time": 3, "req": ["Kultura +1/tura"], "unlocked": false, "desc": "+2 Jedzenia/turę z Farm.", "grid_coords": Vector2(1, 1), "icon": "🍞"
 	},
 	"Więcej surowców": {
-		"research_cost": 36, "research_time": 3, "req": ["Kultura +2/tura"], "unlocked": false, "desc": "+1 Żelaza/Węgla z Kopalń.", "grid_coords": Vector2(1, 5), "icon": "⛏️"
+		"research_cost": 36, "research_time": 3, "req": ["Kultura +1/tura"], "unlocked": false, "desc": "+1 Żelaza/Węgla z Kopalń.", "grid_coords": Vector2(1, 5), "icon": "⛏"
 	},
 	"Złoto z domów": {
 		"research_cost": 48, "research_time": 4, "req": ["Jedzenie +2"], "unlocked": false, "desc": "+2 Złota z domów.", "grid_coords": Vector2(2, 1), "icon": "💰"
@@ -619,8 +619,8 @@ func get_turn_preview(active_buildings_data: Array) -> Dictionary:
 				if culture_tree["Złoto z baraków"]["unlocked"]:
 					add_res.call("Złoto", int(1 * b_level * temple_multiplier))
 
-	if culture_tree["Kultura +2/tura"]["unlocked"]:
-		add_res.call("Kultura", 2)
+	if culture_tree["Kultura +1/tura"]["unlocked"]:
+		add_res.call("Kultura", 1)
 	if culture_tree["Złoto za mieszkańca"]["unlocked"]:
 		add_res.call("Złoto", int(resources.get("Populacja", 0) * 1 * temple_multiplier))
 	if culture_tree["Złoto co turę"]["unlocked"]:
@@ -767,8 +767,8 @@ func next_turn(active_buildings_data: Array) -> void:
 				if culture_tree["Złoto z baraków"]["unlocked"]:
 					resources["Złoto"] += int(1 * b_level * temple_multiplier)
 
-	if culture_tree["Kultura +2/tura"]["unlocked"]:
-		turn_culture += 2
+	if culture_tree["Kultura +1/tura"]["unlocked"]:
+		turn_culture += 1
 	if culture_tree["Złoto za mieszkańca"]["unlocked"]:
 		resources["Złoto"] += int(resources["Populacja"] * 1 * temple_multiplier)
 	if culture_tree["Złoto co turę"]["unlocked"]:
@@ -1154,3 +1154,39 @@ func research_skill(skill_id: String) -> bool:
 
 func is_skill_unlocked(skill_id: String) -> bool:
 	return skill_tree.has(skill_id) and skill_tree[skill_id]["unlocked"]
+
+func can_research_any_technology() -> bool:
+	if current_research != "": return false
+	for tech_name in technology_tree:
+		var tech = technology_tree[tech_name]
+		if tech["unlocked"]: continue
+		
+		var can_research = true
+		for req in tech["req"]:
+			if not technology_tree[req]["unlocked"]:
+				can_research = false
+				break
+				
+		if can_research:
+			var cost = get_tech_cost(tech_name)
+			if resources["Nauka"] >= cost:
+				return true
+	return false
+
+func can_research_any_culture() -> bool:
+	if current_culture_research != "": return false
+	for tech_name in culture_tree:
+		var tech = culture_tree[tech_name]
+		if tech["unlocked"]: continue
+		
+		var can_research = true
+		for req in tech["req"]:
+			if not culture_tree[req]["unlocked"]:
+				can_research = false
+				break
+				
+		if can_research:
+			var cost = tech["research_cost"]
+			if resources["Kultura"] >= cost:
+				return true
+	return false
