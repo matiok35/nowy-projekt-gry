@@ -174,11 +174,11 @@ func _populate_barracks_units(faction: Dictionary):
 			if EconomyManager.can_recruit_unit(unit):
 				btn_recruit.pressed.connect(func():
 					var unit_name = unit.get("name", "")
-					if unit_name == "Konnica" and EconomyManager.technology_tree.has("Konnica") and not EconomyManager.technology_tree["Konnica"]["unlocked"]:
+					if "Konnica" in unit_name and EconomyManager.technology_tree.has("Konnica") and not EconomyManager.technology_tree["Konnica"]["unlocked"]:
 						hud.tech_warning_dialog.dialog_text = "Aby zwerbować tę jednostkę, musisz najpierw odkryć technologię:\nKonnica"
 						hud.tech_warning_dialog.popup_centered()
 						return
-					elif unit_name == "Magowie" and EconomyManager.technology_tree.has("Mag") and not EconomyManager.technology_tree["Mag"]["unlocked"]:
+					elif "Magowie" in unit_name and EconomyManager.technology_tree.has("Mag") and not EconomyManager.technology_tree["Mag"]["unlocked"]:
 						hud.tech_warning_dialog.dialog_text = "Aby zwerbować tę jednostkę, musisz najpierw odkryć technologię:\nMag"
 						hud.tech_warning_dialog.popup_centered()
 						return
