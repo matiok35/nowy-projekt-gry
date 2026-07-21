@@ -43,6 +43,8 @@ var confirm_dialog: ConfirmationDialog
 var wood_warning_dialog: ConfirmationDialog
 var tech_warning_dialog: AcceptDialog
 var turn_warning_dialog: AcceptDialog
+var research_unlocked_dialog: AcceptDialog
+var _last_unlocked_tree_type: String = ""
 var pending_building: String = ""
 
 var active_building_name: String = ""
@@ -119,6 +121,8 @@ func _ready():
 		world_ref = get_tree().root.find_child("GameWorld", true, false)
 		
 	EconomyManager.economy_updated.connect(_on_economy_updated)
+	EconomyManager.research_completed.connect(_on_tech_research_completed)
+	EconomyManager.culture_research_completed.connect(_on_culture_research_completed)
 	
 	turn_button.pressed.connect(_on_turn_pressed)
 	build_chata.pressed.connect(func(): execute_build("Chata Drwala"))
@@ -932,6 +936,15 @@ func setup_custom_popups():
 	turn_warning_dialog.ok_button_text = "Zrozumiałem"
 	_style_alert_dialog(turn_warning_dialog)
 	add_child(turn_warning_dialog)
+	
+	research_unlocked_dialog = AcceptDialog.new()
+	research_unlocked_dialog.title = "Osiągnięcie odblokowane"
+	research_unlocked_dialog.dialog_text = ""
+	research_unlocked_dialog.ok_button_text = "Przejdź do drzewka"
+	research_unlocked_dialog.confirmed.connect(_on_research_unlocked_confirmed)
+	_style_alert_dialog(research_unlocked_dialog)
+	add_child(research_unlocked_dialog)
+
 func _format_cost_dict(cost: Dictionary) -> String:
 	var parts: Array = []
 	for res in cost:
@@ -1480,29 +1493,62 @@ func _style_alert_dialog(dialog: AcceptDialog) -> void:
 	# klimacie "dark fantasy" spójnym z resztą HUD-u — domyślny, jasny
 	# systemowy wygląd Godota mocno odstawał od reszty interfejsu.
 	var style = StyleBoxFlat.new()
-	style.bg_color = Color.TRANSPARENT
-	style.draw_center = false
+	style.bg_color = DF_BG
+	style.set_corner_radius_all(12)
+	style.set_border_width_all(2)
+	style.border_color = DF_GOLD
 	style.set_content_margin_all(24)
-	
-	var border_style = StyleBoxFlat.new()
-	border_style.bg_color = DF_BG
-	border_style.set_corner_radius_all(12)
-	border_style.set_border_width_all(2)
-	border_style.border_color = DF_GOLD
-	border_style.expand_margin_top = 48
-	border_style.expand_margin_left = 2
-	border_style.expand_margin_right = 2
-	border_style.expand_margin_bottom = 2
-	border_style.shadow_color = Color(0, 0, 0, 0.7)
-	border_style.shadow_size = 12
+	style.content_margin_top = 70 # Miejsce na własny tytuł i przycisk X
+	style.shadow_color = Color(0, 0, 0, 0.7)
+	style.shadow_size = 12
 
 	dialog.transparent_bg = true
 	dialog.add_theme_stylebox_override("panel", style)
-	dialog.add_theme_stylebox_override("embedded_border", border_style)
-	dialog.add_theme_stylebox_override("embedded_unfocused_border", border_style)
-	dialog.add_theme_color_override("title_color", DF_GOLD_TEXT)
-	dialog.add_theme_font_size_override("title_font_size", 20)
+	dialog.add_theme_stylebox_override("embedded_border", StyleBoxEmpty.new())
+	dialog.add_theme_stylebox_override("embedded_unfocused_border", StyleBoxEmpty.new())
+	dialog.set_flag(Window.FLAG_BORDERLESS, true)
 	dialog.min_size = Vector2i(450, 180)
+
+	var custom_title = Label.new()
+	custom_title.add_theme_color_override("font_color", DF_GOLD_TEXT)
+	custom_title.add_theme_font_size_override("font_size", 20)
+	custom_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	var custom_close = Button.new()
+	custom_close.text = "X"
+	custom_close.custom_minimum_size = Vector2(35, 35)
+	_style_df_button(custom_close)
+
+	var anchor = Control.new()
+	anchor.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dialog.add_child(anchor)
+	anchor.add_child(custom_title)
+	anchor.add_child(custom_close)
+	
+	custom_close.pressed.connect(func(): dialog.hide())
+	
+	var update_layout = func():
+		custom_title.text = dialog.title
+		var btn_width = custom_close.get_combined_minimum_size().x
+		
+		# Ustawiamy pozycję absolutną względem okna (0, 0 to lewy górny róg okna),
+		# a następnie odejmujemy przesunięcie, by zniwelować wpływ marginesów wewnętrznych okna.
+		# Zamiast anchor.position używamy sztywnego Vector2(24, 70), bo anchor.position może
+		# wynosić (0,0) przy pierwszym wywołaniu zanim Godot przeliczy layout!
+		var anchor_offset = Vector2(24, 70)
+		
+		# Tytuł: wyśrodkowany, 20px od górnej krawędzi okna
+		custom_title.size = Vector2(dialog.size.x, 30)
+		custom_title.position = Vector2(0, 20) - anchor_offset
+		
+		# Przycisk X: 15px od prawej krawędzi okna, 15px od górnej krawędzi okna
+		var margin_right = 15
+		var margin_top = 15
+		custom_close.position = Vector2(dialog.size.x - btn_width - margin_right, margin_top) - anchor_offset
+		
+	dialog.size_changed.connect(update_layout)
+	dialog.about_to_popup.connect(update_layout)
+	update_layout.call()
 
 	var label = dialog.get_label()
 	if label:
@@ -1540,3 +1586,26 @@ func _style_df_button(btn: Button) -> void:
 	btn.add_theme_stylebox_override("pressed", hover)
 	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	btn.add_theme_color_override("font_color", DF_TEXT)
+	btn.add_theme_color_override("font_hover_color", DF_GOLD_TEXT)
+
+func _on_tech_research_completed(tech_name: String):
+	_last_unlocked_tree_type = "tech"
+	research_unlocked_dialog.title = "Technologia Odblokowana"
+	research_unlocked_dialog.dialog_text = "Oczekiwanie zakończone.\nOdblokowano technologię: " + tech_name
+	research_unlocked_dialog.ok_button_text = "Przejdź do Drzewka Technologii"
+	research_unlocked_dialog.popup_centered()
+
+func _on_culture_research_completed(culture_name: String):
+	_last_unlocked_tree_type = "culture"
+	research_unlocked_dialog.title = "Kultura Odblokowana"
+	research_unlocked_dialog.dialog_text = "Oczekiwanie zakończone.\nOdblokowano osiągnięcie kulturowe: " + culture_name
+	research_unlocked_dialog.ok_button_text = "Przejdź do Drzewka Kultury"
+	research_unlocked_dialog.popup_centered()
+
+func _on_research_unlocked_confirmed():
+	if _last_unlocked_tree_type == "tech":
+		if tech_tree_menu and tech_tree_menu.tech_tree_button:
+			tech_tree_menu.tech_tree_button.pressed.emit()
+	elif _last_unlocked_tree_type == "culture":
+		if culture_tree_button:
+			culture_tree_button.pressed.emit()
