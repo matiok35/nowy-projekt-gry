@@ -205,11 +205,6 @@ var technology_tree: Dictionary = {
 		"research_cost": 30, "research_time": 6, "req": ["Płodozmian", "Tartak Mechaniczny"], "unlocked": false, "desc": "Farma/Pastwisko Lvl 3.", "grid_coords": Vector2(3, 1), "icon": "🚜"
 	},
 	"Warsztat": {
-		# POPRAWKA: Warsztat wizualnie leży pomiędzy ścieżką Piły Dwuręcznej
-		# i Hodowli bydła (patrz grid_coords poniżej), ale logicznie
-		# wymagał Górnictwa, które znajduje się zupełnie gdzie indziej w
-		# drzewie. Teraz Piła Dwuręczna i Hodowla bydła faktycznie
-		# odblokowują Warsztat, zgodnie z tym, jak drzewo wygląda na ekranie.
 		"research_cost": 30, "research_time": 6, "req": ["Piła Dwuręczna", "Hodowla bydła"], "unlocked": false, "desc": "Budowa Warsztatu.", "grid_coords": Vector2(2, 3), "icon": "⚒️"
 	},
 	"Głębokie Szyby": {
@@ -267,10 +262,10 @@ var technology_tree: Dictionary = {
 		"research_cost": 450, "research_time": 10, "req": ["Urbanizacja"], "unlocked": false, "desc": "Baraki Lvl 3.", "grid_coords": Vector2(11, 5), "icon": "🏰"
 	},
 	"Mag": {
-		"research_cost": 525, "research_time": 12, "req": ["Akademia Nauk", "Wielkie Archiwum"], "unlocked": false, "desc": "Rekrutacja Magów.", "grid_coords": Vector2(12, 2), "icon": "🧙"
+		"research_cost": 500, "research_time": 12, "req": ["Akademia Nauk", "Wielkie Archiwum"], "unlocked": false, "desc": "Rekrutacja Magów.", "grid_coords": Vector2(12, 2), "icon": "🧙"
 	},
 	"Metropolia": {
-		"research_cost": 525, "research_time": 12, "req": ["Wielkie Archiwum", "Twierdza"], "unlocked": false, "desc": "Domy Lvl 3.", "grid_coords": Vector2(12, 4), "icon": "🏙️"
+		"research_cost": 500, "research_time": 12, "req": ["Wielkie Archiwum", "Twierdza"], "unlocked": false, "desc": "Domy Lvl 3.", "grid_coords": Vector2(12, 4), "icon": "🏙️"
 	}
 }
 
@@ -301,55 +296,55 @@ var culture_tree: Dictionary = {
 		"research_cost": 96, "research_time": 8, "req": ["Złoto za mieszkańca", "Drewno +2"], "unlocked": false, "desc": "+2 Złota/świątynię.", "grid_coords": Vector2(4, 3), "icon": "🕍"
 	},
 	"Szybsze badania": {
-		"research_cost": 100, "research_time": 10, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "-5 koszt badań, -1 Tura.", "grid_coords": Vector2(5, 1), "icon": "⏳"
+		"research_cost": 100, "research_time": 9, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "-5 koszt badań, -1 Tura.", "grid_coords": Vector2(5, 1), "icon": "⏳"
 	},
 	"Nauka z warsztatu": {
-		"research_cost": 120, "research_time": 10, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "+1 pkt tech./warsztat.", "grid_coords": Vector2(5, 3), "icon": "🧪"
+		"research_cost": 120, "research_time": 9, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "+1 pkt tech./warsztat.", "grid_coords": Vector2(5, 3), "icon": "🧪"
 	},
 	"Szybsza rekrutacja": {
-		"research_cost": 120, "research_time": 10, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "-1 Tura rekrutacji.", "grid_coords": Vector2(5, 5), "icon": "⚔️"
+		"research_cost": 120, "research_time": 9, "req": ["Złoto za świątynie"], "unlocked": false, "desc": "-1 Tura rekrutacji.", "grid_coords": Vector2(5, 5), "icon": "⚔️"
 	},
 	"Tańsze domy": {
-		"research_cost": 144, "research_time": 12, "req": ["Szybsze badania", "Nauka z warsztatu"], "unlocked": false, "desc": "-10 Złota za Dom.", "grid_coords": Vector2(6, 2), "icon": "🏠"
+		"research_cost": 144, "research_time": 9, "req": ["Szybsze badania", "Nauka z warsztatu"], "unlocked": false, "desc": "-10 Złota za Dom.", "grid_coords": Vector2(6, 2), "icon": "🏠"
 	},
 	"Tańsze farmy": {
-		"research_cost": 144, "research_time": 12, "req": ["Nauka z warsztatu", "Szybsza rekrutacja"], "unlocked": false, "desc": "-10 Złota za Farmę.", "grid_coords": Vector2(6, 4), "icon": "🚜"
+		"research_cost": 144, "research_time": 9, "req": ["Nauka z warsztatu", "Szybsza rekrutacja"], "unlocked": false, "desc": "-10 Złota za Farmę.", "grid_coords": Vector2(6, 4), "icon": "🚜"
 	},
 	"Tańsze bud. naukowe": {
-		"research_cost": 180, "research_time": 15, "req": ["Tańsze domy"], "unlocked": false, "desc": "-20 Złota za b. nauk.", "grid_coords": Vector2(7, 1), "icon": "🔬"
+		"research_cost": 180, "research_time": 10, "req": ["Tańsze domy"], "unlocked": false, "desc": "-20 Złota za b. nauk.", "grid_coords": Vector2(7, 1), "icon": "🔬"
 	},
 	"Ruch generała II": {
-		"research_cost": 180, "research_time": 15, "req": ["Tańsze domy", "Tańsze farmy"], "unlocked": false, "desc": "+1 Ruch generała.", "grid_coords": Vector2(7, 3), "icon": "🐎"
+		"research_cost": 180, "research_time": 10, "req": ["Tańsze domy", "Tańsze farmy"], "unlocked": false, "desc": "+1 Ruch generała.", "grid_coords": Vector2(7, 3), "icon": "🐎"
 	},
 	"Tańsze bud. kulturowe": {
-		"research_cost": 180, "research_time": 15, "req": ["Tańsze farmy"], "unlocked": false, "desc": "-20 Złota za b. kult.", "grid_coords": Vector2(7, 5), "icon": "🎭"
+		"research_cost": 180, "research_time": 10, "req": ["Tańsze farmy"], "unlocked": false, "desc": "-20 Złota za b. kult.", "grid_coords": Vector2(7, 5), "icon": "🎭"
 	},
 	"Tańsza rekrutacja": {
-		"research_cost": 216, "research_time": 18, "req": ["Tańsze bud. naukowe"], "unlocked": false, "desc": "-10 Złota, -2 Żelaza (rekr.).", "grid_coords": Vector2(8, 1), "icon": "🛡️"
+		"research_cost": 216, "research_time": 10, "req": ["Tańsze bud. naukowe"], "unlocked": false, "desc": "-10 Złota, -2 Żelaza (rekr.).", "grid_coords": Vector2(8, 1), "icon": "🛡️"
 	},
 	"Kultura z domów": {
-		"research_cost": 216, "research_time": 18, "req": ["Tańsze bud. kulturowe"], "unlocked": false, "desc": "+1 Kultury/dom.", "grid_coords": Vector2(8, 5), "icon": "🏘️"
+		"research_cost": 216, "research_time": 12, "req": ["Tańsze bud. kulturowe"], "unlocked": false, "desc": "+1 Kultury/dom.", "grid_coords": Vector2(8, 5), "icon": "🏘️"
 	},
 	"Złoto co turę": {
-		"research_cost": 264, "research_time": 14, "req": ["Tańsza rekrutacja"], "unlocked": false, "desc": "+1 Złoto/turę.", "grid_coords": Vector2(9, 1), "icon": "💸"
+		"research_cost": 264, "research_time": 12, "req": ["Tańsza rekrutacja"], "unlocked": false, "desc": "+1 Złoto/turę.", "grid_coords": Vector2(9, 1), "icon": "💸"
 	},
 	"Tech z baraków": {
-		"research_cost": 264, "research_time": 14, "req": ["Kultura z domów"], "unlocked": false, "desc": "+1 pkt tech./barak.", "grid_coords": Vector2(9, 5), "icon": "⚙️"
+		"research_cost": 264, "research_time": 12, "req": ["Kultura z domów"], "unlocked": false, "desc": "+1 pkt tech./barak.", "grid_coords": Vector2(9, 5), "icon": "⚙️"
 	},
 	"Złoto z drwala": {
-		"research_cost": 312, "research_time": 16, "req": ["Złoto co turę", "Tech z baraków"], "unlocked": false, "desc": "+1 Złoto/drwala.", "grid_coords": Vector2(10, 3), "icon": "🪓"
+		"research_cost": 312, "research_time": 12, "req": ["Złoto co turę", "Tech z baraków"], "unlocked": false, "desc": "+1 Złoto/drwala.", "grid_coords": Vector2(10, 3), "icon": "🪓"
 	},
 	"Tańsza chata drwala": {
-		"research_cost": 360, "research_time": 18, "req": ["Złoto z drwala"], "unlocked": false, "desc": "-10 Złota za drwala.", "grid_coords": Vector2(11, 1), "icon": "📉"
+		"research_cost": 360, "research_time": 12, "req": ["Złoto z drwala"], "unlocked": false, "desc": "-10 Złota za drwala.", "grid_coords": Vector2(11, 1), "icon": "📉"
 	},
 	"Tańsze baraki": {
-		"research_cost": 360, "research_time": 18, "req": ["Złoto z drwala"], "unlocked": false, "desc": "-20 Złota za baraki.", "grid_coords": Vector2(11, 3), "icon": "🏯"
+		"research_cost": 360, "research_time": 12, "req": ["Złoto z drwala"], "unlocked": false, "desc": "-20 Złota za baraki.", "grid_coords": Vector2(11, 3), "icon": "🏯"
 	},
 	"Ruch generała III": {
-		"research_cost": 360, "research_time": 18, "req": ["Złoto z drwala"], "unlocked": false, "desc": "+1 Ruch generała.", "grid_coords": Vector2(11, 5), "icon": "🏇"
+		"research_cost": 360, "research_time": 12, "req": ["Złoto z drwala"], "unlocked": false, "desc": "+1 Ruch generała.", "grid_coords": Vector2(11, 5), "icon": "🏇"
 	},
 	"Złoto z baraków": {
-		"research_cost": 420, "research_time": 20, "req": ["Tańsza chata drwala", "Tańsze baraki", "Ruch generała III"], "unlocked": false, "desc": "+1 Złoto/barak.", "grid_coords": Vector2(12, 3), "icon": "🤑"
+		"research_cost": 420, "research_time": 12, "req": ["Tańsza chata drwala", "Tańsze baraki", "Ruch generała III"], "unlocked": false, "desc": "+1 Złoto/barak.", "grid_coords": Vector2(12, 3), "icon": "🤑"
 	}
 }
 
@@ -448,7 +443,7 @@ func deduct_costs(building_name: String) -> void:
 func get_tech_cost(tech_name: String) -> int:
 	var base_cost = technology_tree[tech_name]["research_cost"]
 	if culture_tree["Szybsze badania"]["unlocked"]:
-		return max(1, base_cost - 25)
+		return max(1, base_cost - 5)  
 	return base_cost
 
 func start_research(tech_name: String) -> bool:

@@ -498,8 +498,6 @@ func create_city_at(pos: Vector2) -> void:
 
 func claim_tile(pos: Vector2) -> void:
 	if owned_tiles.has(pos): return
-	# Zabezpieczenie: pole obozowiska wroga lub jego terytorium nigdy nie może
-	# zostać automatycznie (ani ręcznie) przyznane graczowi.
 	if camps.has(pos) or camp_owned_tiles.has(pos): return
 	owned_tiles[pos] = true
 	var tile_area = tile_nodes[pos]
@@ -511,6 +509,7 @@ func claim_tile(pos: Vector2) -> void:
 		overlay.z_index = 1
 		tile_area.add_child(overlay)
 		territory_overlays[pos] = overlay
+	update_fog_of_war()
 
 func destroy_camp(pos: Vector2) -> void:
 	if not camps.has(pos):
@@ -947,27 +946,37 @@ func update_fog_of_war() -> void:
 	var char_cell = world_to_nearest_cell(character.global_position)
 	for pos in tile_nodes:
 		var dist = HexUtils.get_distance(pos, char_cell)
+
+		# Pole należące do gracza (lub sąsiadujące z jego terytorium) ma być
+		# w pełni odsłonięte, tak jak w promieniu generała.
+		var near_territory = owned_tiles.has(pos)
+		if not near_territory:
+			for n in HexUtils.get_neighbors(pos):
+				if owned_tiles.has(n):
+					near_territory = true
+					break
+
 		var tile_area = tile_nodes[pos]
-		tile_area.modulate = Color(1.0, 1.0, 1.0, 1.0) # Resetujemy modulate
-		
+		tile_area.modulate = Color(1.0, 1.0, 1.0, 1.0)
+
 		var fog = fog_overlays.get(pos)
 		if not fog: continue
-		
+
 		var is_explored = false
-		if dist <= 4:
+		if dist <= 4 or near_territory:
 			explored_tiles[pos] = true
 			fog.visible = false
 			is_explored = true
 		elif explored_tiles.has(pos):
 			fog.visible = true
-			fog.color = Color(0.5, 0.5, 0.5, 0.45) # Częściowo przezroczysty szary
+			fog.color = Color(0.5, 0.5, 0.5, 0.45)
 			is_explored = true
 		else:
 			fog.visible = true
-			fog.color = Color(0.5, 0.5, 0.5, 0.85) # Mocno nieprzezroczysty szary
-			
+			fog.color = Color(0.5, 0.5, 0.5, 0.85)
+
 		if label_nodes.has(pos) and map_data.has(pos) and map_data[pos].get("building", "Brak") != "Brak":
 			label_nodes[pos].visible = is_explored
-			
+
 		if camp_territory_overlays.has(pos):
 			camp_territory_overlays[pos].visible = is_explored

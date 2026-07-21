@@ -1054,25 +1054,28 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 		
 	_reposition_menu(tile_info_menu, mouse_pos)
 
+func _is_building_researched(b_name: String) -> bool:
+	return EconomyManager.get_missing_tech_for_building(b_name) == ""
+
 func _show_building_category(category: String):
 	var is_zasobowe = (category == "zasobowe")
-	build_chata.visible = is_zasobowe
-	build_iron.visible = is_zasobowe
-	build_coal.visible = is_zasobowe
-	build_farma.visible = is_zasobowe
-	build_pastwisko.visible = is_zasobowe
-	build_dom.visible = is_zasobowe
-	
+	build_chata.visible = is_zasobowe and _is_building_researched("Chata Drwala")
+	build_iron.visible = is_zasobowe and _is_building_researched("Kopalnia Żelaza")
+	build_coal.visible = is_zasobowe and _is_building_researched("Kopalnia Węgla")
+	build_farma.visible = is_zasobowe and _is_building_researched("Farma")
+	build_pastwisko.visible = is_zasobowe and _is_building_researched("Pastwisko")
+	build_dom.visible = is_zasobowe and _is_building_researched("Dom mieszkalny")
+
 	var is_tech = (category == "tech")
-	btn_tech_1.visible = is_tech
-	btn_tech_2.visible = is_tech
-	
+	btn_tech_1.visible = is_tech and _is_building_researched("Laboratorium")
+	btn_tech_2.visible = is_tech and _is_building_researched("Warsztat")
+
 	var is_naukowe = (category == "naukowe")
-	btn_naukowy_1.visible = is_naukowe
-	btn_naukowy_2.visible = is_naukowe
+	btn_naukowy_1.visible = is_naukowe and _is_building_researched("Biblioteka")
+	btn_naukowy_2.visible = is_naukowe and _is_building_researched("Świątynia")
 
 	var is_wojskowe = (category == "wojskowe")
-	build_baraki.visible = is_wojskowe
+	build_baraki.visible = is_wojskowe and _is_building_researched("Baraki")
 	
 	var selected_color = Color(0.75, 0.65, 0.5)
 	var unselected_color = Color(0.65, 0.55, 0.4)
