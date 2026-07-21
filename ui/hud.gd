@@ -17,6 +17,7 @@ var menu_zalozenia_miasta: PopupPanel
 var zaloz_miasto_button: Button
 var kup_pole_button: Button
 var upgrade_button: Button
+var destroy_button: Button
 var tile_info_menu: PanelContainer
 
 var cat_zasobowe: Button
@@ -40,6 +41,7 @@ var active_tile_pos: Vector2 = Vector2.ZERO
 var active_tile_type: String = ""
 var last_mouse_pos: Vector2 = Vector2.ZERO
 var confirm_dialog: ConfirmationDialog
+var destroy_confirm_dialog: ConfirmationDialog
 var wood_warning_dialog: ConfirmationDialog
 var tech_warning_dialog: AcceptDialog
 var turn_warning_dialog: AcceptDialog
@@ -69,8 +71,10 @@ var resource_labels: Dictionary = {}
 var points_panel: PanelContainer
 var culture_label: Label
 var culture_bar: ProgressBar
+var culture_research_ready_label: Label
 var tech_label: Label
 var tech_bar: ProgressBar
+var tech_research_ready_label: Label
 
 var hunger_label: Label
 
@@ -454,6 +458,14 @@ func setup_points_panel():
 	culture_tree_button.add_theme_stylebox_override("hover", culture_hover)
 	culture_tree_button.add_theme_color_override("font_color", DF_TEXT)
 	culture_vbox.add_child(culture_tree_button)
+	
+	culture_research_ready_label = Label.new()
+	culture_research_ready_label.text = "💡 Badanie dostępne!"
+	culture_research_ready_label.add_theme_font_size_override("font_size", 12)
+	culture_research_ready_label.add_theme_color_override("font_color", Color(0.6, 0.9, 0.6))
+	culture_research_ready_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	culture_research_ready_label.visible = false
+	culture_vbox.add_child(culture_research_ready_label)
 
 	vbox.add_child(culture_vbox)
 	
@@ -498,6 +510,15 @@ func setup_points_panel():
 	tech_hbox.add_child(t_icon)
 	tech_hbox.add_child(t_info_vbox)
 	tech_vbox.add_child(tech_hbox)
+	
+	tech_research_ready_label = Label.new()
+	tech_research_ready_label.text = "💡 Badanie dostępne!"
+	tech_research_ready_label.add_theme_font_size_override("font_size", 12)
+	tech_research_ready_label.add_theme_color_override("font_color", Color(0.6, 0.9, 0.6))
+	tech_research_ready_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tech_research_ready_label.visible = false
+	tech_vbox.add_child(tech_research_ready_label)
+	
 	vbox.add_child(tech_vbox)
 	
 	add_child(points_panel)
@@ -658,6 +679,24 @@ func setup_custom_popups():
 	info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	info_label.add_theme_color_override("font_color", DF_GOLD_TEXT)
 	
+	destroy_button = Button.new()
+	destroy_button.text = "💥 Zniszcz budynek"
+	destroy_button.pressed.connect(func():
+		var costs = EconomyManager.get_modified_building_costs(active_building_name)
+		var destroy_cost = int(costs.get("Złoto", 0) * 0.5)
+		destroy_confirm_dialog.dialog_text = "Czy na pewno chcesz zniszczyć ten budynek?\nBędzie się to wiązać z zabraniem %d złota ze skarbca (50%% ceny budynku)." % destroy_cost
+		destroy_confirm_dialog.popup_centered()
+		hide_all_menus()
+	)
+	var style_destroy = StyleBoxFlat.new()
+	style_destroy.bg_color = Color(0.6, 0.1, 0.1, 0.95)
+	style_destroy.set_border_width_all(1)
+	style_destroy.border_color = DF_GOLD
+	style_destroy.set_corner_radius_all(6)
+	style_destroy.set_content_margin_all(12)
+	destroy_button.add_theme_stylebox_override("normal", style_destroy)
+	destroy_button.add_theme_color_override("font_color", DF_TEXT)
+
 	upgrade_button = Button.new()
 	upgrade_button.text = "⬆️ Ulepsz budynek"
 	upgrade_button.pressed.connect(func(): 
@@ -717,6 +756,7 @@ func setup_custom_popups():
 
 	tile_info_vbox.add_child(info_label)
 	tile_info_vbox.add_child(upgrade_button)
+	tile_info_vbox.add_child(destroy_button)
 	tile_info_vbox.add_child(army_button)
 	tile_info_vbox.add_child(recruit_button)
 	
@@ -914,6 +954,14 @@ func setup_custom_popups():
 	_style_alert_dialog(confirm_dialog)
 	add_child(confirm_dialog)
 	
+	destroy_confirm_dialog = ConfirmationDialog.new()
+	destroy_confirm_dialog.title = "Zniszczenie Budynku"
+	destroy_confirm_dialog.ok_button_text = "Zniszcz"
+	destroy_confirm_dialog.cancel_button_text = "Anuluj"
+	destroy_confirm_dialog.confirmed.connect(_on_confirm_destroy_building)
+	_style_alert_dialog(destroy_confirm_dialog)
+	add_child(destroy_confirm_dialog)
+	
 	wood_warning_dialog = ConfirmationDialog.new()
 	wood_warning_dialog.title = "Uwaga: Mało drewna!"
 	wood_warning_dialog.dialog_text = "Wybudowanie tego budynku obniży Twój zapas drewna poniżej 10.\nBędziesz polegał tylko na powolnym, pasywnym przychodzie z Centrum Miasta.\nCzy na pewno chcesz kontynuować?"
@@ -938,6 +986,7 @@ func setup_custom_popups():
 	add_child(turn_warning_dialog)
 	
 	research_unlocked_dialog = AcceptDialog.new()
+	research_unlocked_dialog.exclusive = false
 	research_unlocked_dialog.title = "Osiągnięcie odblokowane"
 	research_unlocked_dialog.dialog_text = ""
 	research_unlocked_dialog.ok_button_text = "Przejdź do drzewka"
@@ -1018,6 +1067,7 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 			kup_pole_button.tooltip_text = ""
 
 	upgrade_button.visible = show_upgrade
+	destroy_button.visible = is_owned and has_building and building_name != "Centrum Miasta"
 	recruit_button.visible = (has_building and building_name == "Baraki" and is_owned)
 	army_button.visible = (has_building and building_name == "Baraki" and is_owned)
 	camp_details_btn.visible = (has_building and building_name.begins_with("Obóz"))
@@ -1135,9 +1185,10 @@ func hide_all_menus():
 	if temple_menu and temple_menu.temple_window: temple_menu.temple_window.visible = false
 	if workshop_menu and workshop_menu.workshop_window: workshop_menu.workshop_window.visible = false
 	if library_research_menu and library_research_menu.library_window: library_research_menu.library_window.visible = false
+	if research_unlocked_dialog: research_unlocked_dialog.hide()
 
 func any_menu_visible() -> bool:
-	return menu_budowania.visible or (tile_info_menu and tile_info_menu.visible) or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) or (tech_tree_menu and tech_tree_menu.tech_tree_window and tech_tree_menu.tech_tree_window.visible) or (culture_tree_menu and culture_tree_menu.culture_tree_window and culture_tree_menu.culture_tree_window.visible) or (barracks_menu and barracks_menu.barracks_window and barracks_menu.barracks_window.visible) or (army_menu and army_menu.army_window and army_menu.army_window.visible) or (help_menu and help_menu.help_window and help_menu.help_window.visible) or (camp_menu and camp_menu.camp_details_window and camp_menu.camp_details_window.visible) or (camp_menu and camp_menu.camp_army_window and camp_menu.camp_army_window.visible) or (settings_menu and settings_menu.settings_window and settings_menu.settings_window.visible) or (tutorial_menu and tutorial_menu.tutorial_window and tutorial_menu.tutorial_window.visible) or (admin_menu and admin_menu.admin_window and admin_menu.admin_window.visible) or (temple_menu and temple_menu.temple_window and temple_menu.temple_window.visible) or (workshop_menu and workshop_menu.workshop_window and workshop_menu.workshop_window.visible) or (library_research_menu and library_research_menu.library_window and library_research_menu.library_window.visible) or (potions_menu and ((potions_menu.my_potions_window and potions_menu.my_potions_window.visible) or (potions_menu.buy_potions_window and potions_menu.buy_potions_window.visible)))
+	return menu_budowania.visible or (tile_info_menu and tile_info_menu.visible) or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) or (tech_tree_menu and tech_tree_menu.tech_tree_window and tech_tree_menu.tech_tree_window.visible) or (culture_tree_menu and culture_tree_menu.culture_tree_window and culture_tree_menu.culture_tree_window.visible) or (barracks_menu and barracks_menu.barracks_window and barracks_menu.barracks_window.visible) or (army_menu and army_menu.army_window and army_menu.army_window.visible) or (help_menu and help_menu.help_window and help_menu.help_window.visible) or (camp_menu and camp_menu.camp_details_window and camp_menu.camp_details_window.visible) or (camp_menu and camp_menu.camp_army_window and camp_menu.camp_army_window.visible) or (settings_menu and settings_menu.settings_window and settings_menu.settings_window.visible) or (tutorial_menu and tutorial_menu.tutorial_window and tutorial_menu.tutorial_window.visible) or (admin_menu and admin_menu.admin_window and admin_menu.admin_window.visible) or (temple_menu and temple_menu.temple_window and temple_menu.temple_window.visible) or (workshop_menu and workshop_menu.workshop_window and workshop_menu.workshop_window.visible) or (library_research_menu and library_research_menu.library_window and library_research_menu.library_window.visible) or (potions_menu and ((potions_menu.my_potions_window and potions_menu.my_potions_window.visible) or (potions_menu.buy_potions_window and potions_menu.buy_potions_window.visible))) or (research_unlocked_dialog and research_unlocked_dialog.visible)
 
 func _reposition_menu(menu: Control, base_pos: Vector2):
 	var vbox = menu.get_node_or_null("VBoxContainer") as VBoxContainer
@@ -1224,6 +1275,22 @@ func _on_confirm_build_on_resource() -> void:
 		_do_execute_build(pending_building)
 		pending_building = ""
 
+func _on_confirm_destroy_building() -> void:
+	if active_building_name == "Brak" or active_building_name == "Centrum Miasta": return
+	var costs = EconomyManager.get_modified_building_costs(active_building_name)
+	var destroy_cost = int(costs.get("Złoto", 0) * 0.5)
+	
+	if EconomyManager.resources.get("Złoto", 0) < destroy_cost:
+		turn_warning_dialog.dialog_text = "Nie masz wystarczająco złota, aby zniszczyć ten budynek (potrzeba %d)!" % destroy_cost
+		turn_warning_dialog.popup_centered()
+		return
+		
+	EconomyManager.resources["Złoto"] -= destroy_cost
+	if world_ref and world_ref.has_method("destroy_building"):
+		world_ref.destroy_building(active_tile_pos)
+	EconomyManager.notify_change()
+	hide_all_menus()
+
 func _do_execute_build(building_name: String) -> void:
 	if world_ref and world_ref.has_method("build_on_tile"):
 		world_ref.build_on_tile(active_tile_pos, building_name)
@@ -1282,6 +1349,11 @@ func _on_economy_updated(balances: Dictionary, turn: int, _selected_build: Strin
 		tech_bar.max_value = t_max
 		tech_bar.value = t_val
 		tech_label.tooltip_text = setup_tooltip.call("Nauka")
+		
+		if culture_research_ready_label:
+			culture_research_ready_label.visible = EconomyManager.can_research_any_culture()
+		if tech_research_ready_label:
+			tech_research_ready_label.visible = EconomyManager.can_research_any_technology()
 	
 	if tech_tree_menu and tech_tree_menu.tech_tree_window and tech_tree_menu.tech_tree_window.visible: tech_tree_menu.refresh_technology_tree_view()
 

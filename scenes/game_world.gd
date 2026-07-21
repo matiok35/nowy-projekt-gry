@@ -660,6 +660,70 @@ func upgrade_building(pos: Vector2) -> void:
 		if b_name == "Baraki" and hud_node:
 			EconomyManager.upgrade_units_from_barracks(pos, tile["level"], hud_node.unit_data_json)
 
+func destroy_building(pos: Vector2) -> void:
+	if not map_data.has(pos): return
+	var tile = map_data[pos]
+	var b_name = tile["building"]
+	if b_name == "Brak" or b_name == "Centrum Miasta": return
+	
+	tile["building"] = "Brak"
+	tile["level"] = 1
+	
+	_update_tile_texture_for_terrain(pos, tile["type"])
+	
+	_update_building_label(pos, "Brak", 1)
+
+func _update_tile_texture_for_terrain(pos: Vector2, type: String) -> void:
+	var polygon = tile_nodes[pos].get_child(0) as Polygon2D
+	if not polygon: return
+	
+	for child in polygon.get_children():
+		if child is Sprite2D:
+			child.queue_free()
+			
+	if type in ["Trawa", "Drewno", "Pszenica", "Żelazo", "Bydło", "Węgiel"]:
+		polygon.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
+		polygon.color = Color(1, 1, 1, 1)
+		
+		var sprite_bg = Sprite2D.new()
+		var zoom_factor = 1.0
+		var stretch_y = 1.0
+		if type == "Trawa":
+			sprite_bg.texture = load("res://assets/tiles/hex_grass.png")
+			zoom_factor = 1.0
+			stretch_y = 1.05
+		elif type == "Drewno":
+			sprite_bg.texture = load("res://assets/tiles/forest.png")
+			zoom_factor = 0.85
+		elif type == "Pszenica":
+			sprite_bg.texture = load("res://assets/tiles/wheat.png")
+			zoom_factor = 0.85
+		elif type == "Żelazo":
+			sprite_bg.texture = load("res://assets/tiles/iron.png")
+			zoom_factor = 0.85
+		elif type == "Bydło":
+			sprite_bg.texture = load("res://assets/tiles/cows.png")
+			zoom_factor = 0.85
+		elif type == "Węgiel":
+			sprite_bg.texture = load("res://assets/tiles/coal.png")
+			zoom_factor = 0.85
+			
+		if sprite_bg.texture:
+			var tex_size = sprite_bg.texture.get_size()
+			var s = max(hex_width / tex_size.x, hex_height / tex_size.y) * zoom_factor
+			sprite_bg.scale = Vector2(s, s * stretch_y)
+			
+			if type in ["Drewno", "Pszenica", "Żelazo", "Bydło", "Węgiel"]:
+				var grass_bg = Sprite2D.new()
+				grass_bg.texture = load("res://assets/tiles/hex_grass.png")
+				var grass_s = max(hex_width / grass_bg.texture.get_size().x, hex_height / grass_bg.texture.get_size().y) * 1.0
+				grass_bg.scale = Vector2(grass_s, grass_s * 1.05)
+				polygon.add_child(grass_bg)
+				
+			polygon.add_child(sprite_bg)
+	else:
+		polygon.clip_children = CanvasItem.CLIP_CHILDREN_DISABLED
+		polygon.color = _get_tile_color(type)
 
 func _get_building_color(building_name: String) -> Color:
 	match building_name:
