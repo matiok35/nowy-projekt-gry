@@ -56,6 +56,7 @@ func setup_temple_window():
 	# OPIS
 	desc_label = Label.new()
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	desc_label.custom_minimum_size = Vector2(370, 0)
 	desc_label.add_theme_font_size_override("font_size", 14)
 	desc_label.add_theme_color_override("font_color", hud.DF_TEXT)
 	main_vbox.add_child(desc_label)
@@ -63,6 +64,7 @@ func setup_temple_window():
 	# STATUS
 	status_label = Label.new()
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	status_label.custom_minimum_size = Vector2(370, 0)
 	status_label.add_theme_font_size_override("font_size", 15)
 	status_label.add_theme_color_override("font_color", hud.DF_GOLD_TEXT)
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

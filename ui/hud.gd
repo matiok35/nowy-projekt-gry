@@ -13,13 +13,14 @@ var build_farma: Button
 var build_pastwisko: Button
 var build_dom: Button 
 var build_spichlerz: Button
-var info_label: Label
+var info_label: RichTextLabel
 var menu_zalozenia_miasta: PopupPanel
 var zaloz_miasto_button: Button
 var kup_pole_button: Button
 var upgrade_button: Button
 var destroy_button: Button
 var tile_info_menu: PanelContainer
+var skip_button: Button
 
 var cat_zasobowe: Button
 var cat_tech: Button
@@ -130,6 +131,50 @@ func _ready():
 	EconomyManager.culture_research_completed.connect(_on_culture_research_completed)
 	
 	turn_button.pressed.connect(_on_turn_pressed)
+	
+	skip_button = Button.new()
+	skip_button.text = "Przemiń 5 Tur >>"
+	var skip_style = StyleBoxFlat.new()
+	skip_style.bg_color = DF_BLOOD
+	skip_style.set_corner_radius_all(12)
+	skip_style.set_border_width_all(2)
+	skip_style.border_color = DF_GOLD
+	skip_button.add_theme_stylebox_override("normal", skip_style)
+	skip_button.add_theme_stylebox_override("hover", skip_style)
+	skip_button.add_theme_font_size_override("font_size", 16)
+	skip_button.add_theme_color_override("font_color", DF_GOLD_TEXT)
+	skip_button.custom_minimum_size = Vector2(160, 54)
+	skip_button.anchor_left = 1.0
+	skip_button.anchor_right = 1.0
+	skip_button.anchor_top = 1.0
+	skip_button.anchor_bottom = 1.0
+	skip_button.offset_left = -175
+	skip_button.offset_right = -15
+	skip_button.offset_top = -78
+	skip_button.offset_bottom = -24
+	skip_button.pressed.connect(func():
+		if skip_button.disabled: return
+		hide_all_menus()
+		for i in range(5):
+			if world_ref and world_ref.has_method("get_active_buildings_list"):
+				var buildings = world_ref.get_active_buildings_list()
+				EconomyManager.next_turn(buildings)
+		if EconomyManager.turn_warnings.size() > 0:
+			var warning_text = ""
+			for w in EconomyManager.turn_warnings:
+				warning_text += w + "\n"
+			turn_warning_dialog.dialog_text = warning_text.strip_edges()
+			turn_warning_dialog.popup_centered()
+		
+		if not GameSettings.skip_turn_button_delay:
+			_turn_button_cooldown = true
+			await get_tree().create_timer(TURN_BUTTON_DELAY).timeout
+			_turn_button_cooldown = false
+	)
+	var parent = turn_button.get_parent()
+	parent.add_child(skip_button)
+	parent.move_child.call_deferred(skip_button, turn_button.get_index() + 1)
+	
 	build_chata.pressed.connect(func(): execute_build("Chata Drwala"))
 	build_iron.pressed.connect(func(): execute_build("Kopalnia Żelaza"))
 	build_coal.pressed.connect(func(): execute_build("Kopalnia Węgla"))
@@ -143,8 +188,6 @@ func _ready():
 	culture_tree_menu = CultureTreeMenu.new(self)
 	culture_tree_menu.setup_culture_tree_ui()
 	load_unit_data()
-	setup_seed_label()
-
 	barracks_menu = BarracksMenu.new(self)
 	barracks_menu.setup_barracks_window()
 	army_menu = ArmyMenu.new(self)
@@ -192,27 +235,6 @@ func apply_emoji_fallback() -> void:
 	
 	self.theme.default_font = var_font
 
-func setup_seed_label():
-	var seed_lbl = Label.new()
-	seed_lbl.name = "SeedLabel"
-	if GameSettings.use_custom_seed:
-		seed_lbl.text = "Seed: " + str(GameSettings.current_seed)
-	else:
-		seed_lbl.text = "Seed: Losowy" # Fallback if started directly
-	seed_lbl.add_theme_font_size_override("font_size", 14)
-	seed_lbl.add_theme_color_override("font_color", Color(DF_GOLD_TEXT.r, DF_GOLD_TEXT.g, DF_GOLD_TEXT.b, 0.75))
-	seed_lbl.anchor_left = 1.0
-	seed_lbl.anchor_right = 1.0
-	seed_lbl.anchor_top = 1.0
-	seed_lbl.anchor_bottom = 1.0
-	seed_lbl.offset_left = -200
-	seed_lbl.offset_top = -30
-	seed_lbl.offset_right = -10
-	seed_lbl.offset_bottom = -10
-	seed_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	seed_lbl.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-	seed_lbl.tooltip_text = "Naciśnij ESC, aby otworzyć ustawienia i skopiować seed"
-	add_child(seed_lbl)
 
 func setup_admin_button():
 	# POPRAWKA: Panel administratora zależał wcześniej od "hacka" (seed == 0
@@ -250,6 +272,10 @@ func _process(_delta: float) -> void:
 		culture_tree_button.disabled = menu_open
 	if turn_button:
 		turn_button.disabled = menu_open or _turn_button_cooldown
+		turn_button.modulate.a = 0.5 if turn_button.disabled else 1.0
+	if skip_button:
+		skip_button.disabled = menu_open or _turn_button_cooldown
+		skip_button.modulate.a = 0.5 if skip_button.disabled else 1.0
 	# POPRAWKA: Przyciski kategorii (Surowce/Kultura/Technologia/Wojskowe) są
 	# dziećmi menu_budowania, więc nie wolno ich blokować na podstawie
 	# any_menu_visible() — menu_budowania samo w sobie powoduje, że ta
@@ -676,9 +702,11 @@ func setup_custom_popups():
 	tile_info_vbox.add_theme_constant_override("separation", 6)
 	tile_info_menu.add_child(tile_info_vbox)
 	
-	info_label = Label.new()
-	info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	info_label.add_theme_color_override("font_color", DF_GOLD_TEXT)
+	info_label = RichTextLabel.new()
+	info_label.bbcode_enabled = true
+	info_label.fit_content = true
+	info_label.custom_minimum_size = Vector2(300, 0)
+	info_label.add_theme_color_override("default_color", DF_GOLD_TEXT)
 	
 	destroy_button = Button.new()
 	destroy_button.text = "💥 Zniszcz budynek"
@@ -1017,6 +1045,19 @@ func _format_delta(value: int) -> String:
 	else:
 		return "+0/turę"
 
+func _wrap_text(text: String, line_length: int = 50) -> String:
+	var words = text.split(" ")
+	var result = ""
+	var current_line_len = 0
+	for word in words:
+		if current_line_len + word.length() > line_length:
+			result += "\n" + word + " "
+			current_line_len = word.length() + 1
+		else:
+			result += word + " "
+			current_line_len += word.length() + 1
+	return result.strip_edges()
+
 func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String, building_name: String, building_level: int, is_owned: bool, borders_owned: bool, deposit_size: String = "") -> void:
 	hide_all_menus()
 	active_tile_pos = tile_pos
@@ -1048,19 +1089,27 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 			if camp_data.has("resources"):
 				res_text = "🪙 %d | 🪵 %d | ⛏️ %d" % [camp_data["resources"]["gold"], camp_data["resources"]["wood"], camp_data["resources"]["iron"]]
 				
-			info_label.text = "⛺ %s (Lvl %d)\n⚔️ Nacja: %s\n📦 Surowce: %s\n🛡️ Armia: %s" % [building_name, building_level, camp_data.get("faction_name", "Nieznana"), res_text, army_text]
+			info_label.text = "[center]⛺ %s (Lvl %d)\n⚔️ Nacja: %s\n📦 Surowce: %s\n🛡️ Armia: %s[/center]" % [building_name, building_level, camp_data.get("faction_name", "Nieznana"), res_text, army_text]
 		else:
-			info_label.text = "🏢 Budynek: %s (Lvl %d)\nPodłoże: %s" % [building_name, building_level, tile_type]
-			if show_upgrade:
-				var preview_cost = EconomyManager.get_upgrade_cost(building_name, building_level)
-				info_label.text += "\n⬆️ Koszt ulepszenia: %s" % _format_cost_dict(preview_cost)
-				var preview_effect = EconomyManager.get_building_effect_description(building_name)
-				if preview_effect != "":
-					info_label.text += "\n💡 %s" % preview_effect
+			var t_text = ""
+			if building_name == "Centrum Miasta":
+				t_text = "[center]🏢 Budynek: %s\nPodłoże: %s" % [building_name, tile_type]
+			else:
+				t_text = "[center]🏢 Budynek: %s (Lvl %d)\nPodłoże: %s" % [building_name, building_level, tile_type]
+			if deposit_size != "":
+				t_text += "\n📦 Wielkość: %s" % deposit_size
+			var active_buildings = []
+			if world_ref and world_ref.has_method("get_active_buildings_list"):
+				active_buildings = world_ref.get_active_buildings_list()
+			t_text += EconomyManager.get_building_production_info(building_name, building_level, deposit_size, active_buildings)
+			t_text += "[/center]"
+			info_label.text = t_text
+			
+
 	elif tile_type == "Trawa":
-		info_label.text = "🌱 Typ: %s" % [tile_type]
+		info_label.text = "[center]🌱 Typ: %s[/center]" % [tile_type]
 	else:
-		info_label.text = "⛰️ Typ: Złoże %s\n📦 Wielkość: %s" % [tile_type, deposit_size]
+		info_label.text = "[center]⛰️ Typ: Złoże %s\n📦 Wielkość: %s[/center]" % [tile_type, deposit_size]
 
 	if is_owned or has_building:
 		kup_pole_button.visible = false
@@ -1071,6 +1120,7 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 		var can_buy = can_afford and borders_owned and not is_camp_territory
 		kup_pole_button.disabled = not can_buy
 		kup_pole_button.modulate.a = 1.0 if can_buy else 0.35
+		
 		if is_camp_territory:
 			kup_pole_button.tooltip_text = "To pole należy do wrogiego obozowiska!"
 		else:
@@ -1092,9 +1142,21 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 		upgrade_button.modulate.a = 1.0 if can_upgrade else 0.35
 		var up_cost = EconomyManager.get_upgrade_cost(building_name, building_level)
 		var effect_desc = EconomyManager.get_building_effect_description(building_name)
-		upgrade_button.tooltip_text = "Koszt ulepszenia:\n%s" % _format_cost_dict(up_cost)
+		var tooltip = "Koszt ulepszenia:\n%s" % _format_cost_dict(up_cost)
 		if effect_desc != "":
-			upgrade_button.tooltip_text += "\n\nEfekt: %s" % effect_desc
+			tooltip += "\n\nEfekt:\n%s" % _wrap_text(effect_desc, 60)
+			
+		var active_buildings = []
+		if world_ref and world_ref.has_method("get_active_buildings_list"):
+			active_buildings = world_ref.get_active_buildings_list()
+			
+		var future_prod = EconomyManager.get_building_production_info(building_name, building_level + 1, deposit_size, active_buildings, false)
+		if future_prod != "":
+			tooltip += "\n\nPrzewidywana produkcja (Lvl %d):%s" % [building_level + 1, future_prod]
+		else:
+			tooltip += "\n\nPrzewidywana produkcja (Lvl %d):\nBrak zmian w produkcji na turę." % [building_level + 1]
+			
+		upgrade_button.tooltip_text = tooltip
 	
 	cat_zasobowe.visible = show_buildings
 	cat_tech.visible = show_buildings
@@ -1551,6 +1613,7 @@ func _get_icon_for_building(b_name: String) -> Texture2D:
 		"Biblioteka": path = "res://assets/tiles/library.png"
 		"Świątynia": path = "res://assets/tiles/temple.png"
 		"Baraki": path = "res://assets/tiles/barracks.png"
+		"Spichlerz": path = "res://assets/tiles/spichlerz.png"
 	if path != "": return load(path)
 	return null
 

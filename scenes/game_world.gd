@@ -647,6 +647,11 @@ func build_on_tile(pos: Vector2, building_name: String) -> void:
 	tile["building"] = building_name
 	tile["level"] = 1
 
+	if building_name == "Dom mieszkalny":
+		EconomyManager.resources["Maks_Populacja"] += 5
+		EconomyManager.resources["Populacja"] += 5
+		EconomyManager.notify_change()
+
 	_update_tile_texture_for_building(pos, building_name)
 
 	_update_building_label(pos, building_name, 1)
@@ -658,6 +663,12 @@ func upgrade_building(pos: Vector2) -> void:
 	if EconomyManager.can_afford_upgrade(b_name, tile["level"]):
 		EconomyManager.deduct_upgrade_costs(b_name, tile["level"])
 		tile["level"] += 1
+		
+		if b_name == "Dom mieszkalny":
+			EconomyManager.resources["Maks_Populacja"] += 5
+			EconomyManager.resources["Populacja"] += 5
+			EconomyManager.notify_change()
+			
 		_update_building_label(pos, b_name, tile["level"])
 		if b_name == "Baraki" and hud_node:
 			EconomyManager.upgrade_units_from_barracks(pos, tile["level"], hud_node.unit_data_json)
@@ -668,8 +679,16 @@ func destroy_building(pos: Vector2) -> void:
 	var b_name = tile["building"]
 	if b_name == "Brak" or b_name == "Centrum Miasta": return
 	
+	var b_level = tile["level"]
+	
 	tile["building"] = "Brak"
 	tile["level"] = 1
+	
+	if b_name == "Dom mieszkalny":
+		EconomyManager.resources["Maks_Populacja"] -= 5 * b_level
+		if EconomyManager.resources["Populacja"] > EconomyManager.resources["Maks_Populacja"]:
+			EconomyManager.resources["Populacja"] = max(1, EconomyManager.resources["Maks_Populacja"])
+		EconomyManager.notify_change()
 	
 	_update_tile_texture_for_terrain(pos, tile["type"])
 	
@@ -785,6 +804,9 @@ func _update_tile_texture_for_building(pos: Vector2, building_name: String) -> v
 		"Baraki": 
 			texture_path = "res://assets/tiles/barracks.png"
 			zoom_factor = 0.85
+		"Spichlerz":
+			texture_path = "res://assets/tiles/spichlerz.png"
+			zoom_factor = 0.85
 	
 	if texture_path != "":
 		poly.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
@@ -794,7 +816,7 @@ func _update_tile_texture_for_building(pos: Vector2, building_name: String) -> v
 			if child is Sprite2D:
 				child.queue_free()
 				
-		var overlay_buildings = ["Chata Drwala", "Kopalnia Węgla", "Kopalnia Żelaza", "Świątynia", "Baraki", "Centrum Miasta", "Farma", "Pastwisko", "Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka"]
+		var overlay_buildings = ["Chata Drwala", "Kopalnia Węgla", "Kopalnia Żelaza", "Świątynia", "Baraki", "Centrum Miasta", "Farma", "Pastwisko", "Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Spichlerz"]
 		if building_name in overlay_buildings:
 			var grass_bg = Sprite2D.new()
 			grass_bg.texture = load("res://assets/tiles/hex_grass.png")

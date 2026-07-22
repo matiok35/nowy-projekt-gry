@@ -565,6 +565,111 @@ func get_missing_tech_for_upgrade(building_name: String, target_level: int) -> S
 	return ""
 
 # --- BILANS ZASOBÓW NA NADCHODZĄCĄ TURĘ ------------------------------------
+func get_building_production_info(b_name: String, b_level: int, deposit_size: String, active_buildings_data: Array, use_bbcode: bool = true) -> String:
+	var flat_food_bonus = 0
+	if culture_tree["Jedzenie +2"]["unlocked"]: flat_food_bonus = 2
+	var flat_iron_coal_bonus = 0
+	if culture_tree["Więcej surowców"]["unlocked"]: flat_iron_coal_bonus = 1
+	var flat_wood_bonus = 0
+	if culture_tree["Drewno +2"]["unlocked"]: flat_wood_bonus = 2
+
+	var max_temple_level = 1
+	for b_data_scan in active_buildings_data:
+		if b_data_scan["name"] == "Świątynia":
+			max_temple_level = max(max_temple_level, b_data_scan.get("level", 1))
+
+	var temple_multiplier = 1.0
+	if temple_blessing_turns_left > 0:
+		temple_multiplier = 1.0 + 0.1 * max_temple_level
+
+	var size_modifier = 1.0
+	match deposit_size:
+		"Małe": size_modifier = 0.5
+		"Średnie": size_modifier = 1.0
+		"Duże": size_modifier = 2.0
+		
+	var produced = []
+	var consumed = []
+	
+	var ic = {}
+	if use_bbcode:
+		ic = {
+			"Złoto": "[img=24]res://assets/resources/gold.png[/img]",
+			"Drewno": "[img=24]res://assets/resources/wood.png[/img]",
+			"Żelazo": "[img=24]res://assets/resources/iron.png[/img]",
+			"Węgiel": "[img=24]res://assets/resources/coal.png[/img]",
+			"Jedzenie": "[img=24]res://assets/resources/food.png[/img]",
+			"Nauka": "[img=24]res://assets/resources/technology.png[/img]",
+			"Kultura": "[img=24]res://assets/resources/cultural.png[/img]"
+		}
+	else:
+		ic = {
+			"Złoto": "Złoto",
+			"Drewno": "Drewno",
+			"Żelazo": "Żelazo",
+			"Węgiel": "Węgiel",
+			"Jedzenie": "Jedzenie",
+			"Nauka": "Nauka",
+			"Kultura": "Kultura"
+		}
+	
+	match b_name:
+		"Dom mieszkalny":
+			if culture_tree["Złoto z domów"]["unlocked"]:
+				produced.append("+%d %s" % [int(2 * b_level * temple_multiplier), ic["Złoto"]])
+			if culture_tree["Kultura z domów"]["unlocked"]:
+				produced.append("+%d %s" % [1 * b_level, ic["Kultura"]])
+		"Centrum Miasta":
+			produced.append("+%d %s" % [int(10 * b_level * temple_multiplier), ic["Złoto"]])
+			produced.append("+%d %s" % [int(2 * b_level * temple_multiplier), ic["Jedzenie"]])
+			produced.append("+%d %s" % [int(2 * b_level * temple_multiplier), ic["Drewno"]])
+		"Chata Drwala":
+			var wood_yield = 2
+			produced.append("+%d %s" % [int(wood_yield * size_modifier * b_level * temple_multiplier) + flat_wood_bonus * b_level, ic["Drewno"]])
+			if culture_tree["Złoto z drwala"]["unlocked"]:
+				produced.append("+%d %s" % [int(1 * b_level * temple_multiplier), ic["Złoto"]])
+		"Kopalnia Żelaza":
+			var iron_yield = 2
+			produced.append("+%d %s" % [int(iron_yield * size_modifier * b_level * temple_multiplier) + flat_iron_coal_bonus * b_level, ic["Żelazo"]])
+			consumed.append("-%d %s" % [int(3 * size_modifier * b_level), ic["Węgiel"]])
+			consumed.append("-%d %s" % [2 * b_level, ic["Złoto"]])
+		"Kopalnia Węgla":
+			var coal_yield = 2
+			produced.append("+%d %s" % [int(coal_yield * size_modifier * b_level * temple_multiplier) + flat_iron_coal_bonus * b_level, ic["Węgiel"]])
+			consumed.append("-%d %s" % [2 * b_level, ic["Złoto"]])
+		"Farma":
+			var farm_yield = 6
+			produced.append("+%d %s" % [int(farm_yield * size_modifier * b_level * temple_multiplier) + flat_food_bonus * b_level, ic["Jedzenie"]])
+		"Pastwisko":
+			produced.append("+%d %s" % [int(4 * size_modifier * b_level * temple_multiplier) + flat_food_bonus * b_level, ic["Jedzenie"]])
+		"Laboratorium":
+			produced.append("+%d %s" % [3 * b_level, ic["Nauka"]])
+		"Warsztat":
+			var nauka = 1 * b_level
+			if culture_tree["Nauka z warsztatu"]["unlocked"]:
+				nauka += 1 * b_level
+			produced.append("+%d %s" % [nauka, ic["Nauka"]])
+		"Biblioteka":
+			produced.append("+%d %s" % [2 * b_level, ic["Nauka"]])
+			produced.append("+%d %s" % [1 * b_level, ic["Kultura"]])
+		"Świątynia":
+			produced.append("+%d %s" % [2 * b_level, ic["Kultura"]])
+			if culture_tree["Złoto za świątynie"]["unlocked"]:
+				produced.append("+%d %s" % [int(2 * b_level * temple_multiplier), ic["Złoto"]])
+		"Baraki":
+			if culture_tree["Tech z baraków"]["unlocked"]:
+				produced.append("+%d %s" % [1 * b_level, ic["Nauka"]])
+			if culture_tree["Złoto z baraków"]["unlocked"]:
+				produced.append("+%d %s" % [int(1 * b_level * temple_multiplier), ic["Złoto"]])
+
+	var info_str = ""
+	if produced.size() > 0:
+		info_str += "\nProdukcja: " + " | ".join(produced)
+	if consumed.size() > 0:
+		info_str += "\nZużycie: " + " | ".join(consumed)
+		
+	return info_str
+
 # Zwraca przewidywany bilans zasobów, jaki zostanie naliczony przy
 # najbliższym wywołaniu next_turn(), na podstawie aktualnego stanu budynków
 # i odkrytych technologii/kultur. Funkcja NIE modyfikuje żadnego stanu gry —
