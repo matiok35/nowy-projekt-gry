@@ -219,8 +219,14 @@ func refresh_technology_tree_view():
 func _on_scroll_gui_input(event: InputEvent, node: Control, scroll: ScrollContainer):
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			scroll.scroll_horizontal -= 60
+			if event.shift_pressed:
+				scroll.scroll_horizontal -= 60
+			else:
+				scroll.scroll_vertical -= 60
 			node.accept_event()
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			scroll.scroll_horizontal += 60
+			if event.shift_pressed:
+				scroll.scroll_horizontal += 60
+			else:
+				scroll.scroll_vertical += 60
 			node.accept_event()
