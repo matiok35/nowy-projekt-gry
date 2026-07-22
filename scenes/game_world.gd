@@ -31,7 +31,7 @@ var astar: AStar2D = AStar2D.new()
 var cell_to_id: Dictionary = {}
 var cell_to_world: Dictionary = {}
 
-const BUILDINGS_RESET_TILE_TO_GRASS = ["Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia", "Baraki"]
+const BUILDINGS_RESET_TILE_TO_GRASS = ["Dom mieszkalny", "Spichlerz", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia", "Baraki"]
 
 func _ready() -> void:
 	hud_node = get_tree().current_scene.find_child("UI", true, false)
@@ -434,6 +434,7 @@ func _get_building_icon(building_name: String) -> String:
 		"Kopalnia Węgla": return "🪨"
 		"Farma": return "🌾"
 		"Pastwisko": return "🐄"
+		"Spichlerz": return "📦"
 		"Laboratorium": return "🔬"
 		"Warsztat": return "🔧"
 		"Biblioteka": return "📚"
@@ -451,6 +452,7 @@ func _get_building_accent_color(building_name: String) -> Color:
 		"Kopalnia Węgla": return Color(0.55, 0.55, 0.6, 0.9)
 		"Farma": return Color(0.85, 0.75, 0.3, 0.9)
 		"Pastwisko": return Color(0.78, 0.62, 0.38, 0.9)
+		"Spichlerz": return Color(0.65, 0.5, 0.25, 0.9)
 		"Laboratorium": return Color(0.4, 0.68, 0.95, 0.9)
 		"Warsztat": return Color(0.72, 0.52, 0.3, 0.9)
 		"Biblioteka": return Color(0.72, 0.46, 0.85, 0.9)
@@ -729,6 +731,7 @@ func _get_building_color(building_name: String) -> Color:
 	match building_name:
 		"Farma": return Color(0.7, 0.6, 0.2)
 		"Pastwisko": return Color(0.6, 0.5, 0.15)
+		"Spichlerz": return Color(0.55, 0.4, 0.2)
 		"Dom mieszkalny": return Color(0.65, 0.45, 0.35)
 		"Laboratorium": return Color(0.2, 0.5, 0.8)
 		"Warsztat": return Color(0.5, 0.4, 0.2)
@@ -1032,8 +1035,11 @@ func update_fog_of_war() -> void:
 			fog.visible = false
 			is_explored = true
 		elif explored_tiles.has(pos):
-			fog.visible = true
-			fog.color = Color(0.5, 0.5, 0.5, 0.45)
+			# POPRAWKA: wcześniej odkryte pola (poza aktualnym zasięgiem) były
+			# przyciemniane szarym overlayem (0.45 alpha). Gracz zgłosił, że
+			# odkryte tereny nie powinny być wyszarzone - raz odkryte pole
+			# zostaje więc w pełni odsłonięte, tak jak pola w bieżącym zasięgu.
+			fog.visible = false
 			is_explored = true
 		else:
 			fog.visible = true

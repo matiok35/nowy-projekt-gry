@@ -115,7 +115,12 @@ func _help_tab_text(key: String) -> String:
 				+ "2. W otwartym „Menu Budowy” wybierz kategorię u góry: [b]Surowce[/b], [b]Kultura[/b], [b]Technologia[/b] lub [b]Wojskowe[/b].\n" \
 				+ "3. Kliknij przycisk wybranego budynku — jeśli masz wystarczająco surowców, budynek zostanie postawiony na tym polu. Koszt budowy sprawdzisz najeżdżając kursorem na przycisk wybranego budynku.\n\n" \
 				+ "[b][color=#8fdc8f]Ulepszanie budynków[/color][/b]\n" \
-				+ "• Kliknij [b]PPM[/b] na pole z istniejącym budynkiem i wybierz [b]„⬆️ Ulepsz budynek”[/b], aby zwiększyć jego poziom (jeśli stać Cię na koszt ulepszenia).\n\n" \
+				+ "• Kliknij [b]PPM[/b] na pole z istniejącym budynkiem i wybierz [b]„⬆️ Ulepsz budynek”[/b], aby zwiększyć jego poziom (jeśli stać Cię na koszt ulepszenia). Budynki mają maksymalnie 3 poziomy.\n" \
+				+ "• Każdy poziom podnosi produkcję (lub inny efekt) budynku — najedź kursorem na przycisk „Ulepsz budynek”, aby zobaczyć dokładny koszt i opis efektu tego konkretnego budynku.\n\n" \
+				+ "[b][color=#8fdc8f]Niszczenie budynków[/color][/b]\n" \
+				+ "• Przycisk [b]„💥 Zniszcz budynek”[/b] usuwa budynek z pola i zwraca do skarbca [b]50% złota[/b] wydanego na jego budowę (Centrum Miasta nie można zniszczyć).\n\n" \
+				+ "[b][color=#8fdc8f]Spichlerz i limit Jedzenia[/color][/b]\n" \
+				+ "• Jedzenie ma [b]limit magazynu[/b] — nadwyżka ponad ten limit psuje się na koniec każdej tury i przepada. Bazowy limit jest niewielki, więc warto zbudować [b]Spichlerz[/b] (dostępny do budowy od samego początku gry, jak Farma czy Dom mieszkalny) i ulepszać go, aby zwiększyć pojemność magazynu.\n\n" \
 				+ "[color=#e0b060][b]Uwaga:[/b] postawienie budynku na polu ze złożem surowca (np. żelaza, węgla) bezpowrotnie zniszczy złoże i zamieni pole w zwykłą trawę — gra poprosi o potwierdzenie tej decyzji.[/color]"
 		"miasto":
 			return "[b][color=#8fdc8f]Zakładanie miasta[/color][/b]\n" \
@@ -123,7 +128,9 @@ func _help_tab_text(key: String) -> String:
 				+ "[b][color=#8fdc8f]Kupowanie pól[/color][/b]\n" \
 				+ "• Aby powiększyć terytorium, kliknij [b]PPM[/b] na pole [b]sąsiadujące[/b] z polem, które już posiadasz.\n" \
 				+ "• Wybierz [b]„🪙 Kup to pole (50 złota)”[/b] — pole zostanie dołączone do Twojego terytorium, jeśli masz wystarczająco złota.\n\n" \
-				+ "[color=#a0a0a0]Tylko pola graniczące z posiadanym terenem mogą zostać zakupione lub zabudowane.[/color]"
+				+ "[color=#a0a0a0]Tylko pola graniczące z posiadanym terenem mogą zostać zakupione lub zabudowane.[/color]\n\n" \
+				+ "[b][color=#8fdc8f]Mgła wojny[/color][/b]\n" \
+				+ "• Pola w zasięgu Twojego generała lub terytorium są w pełni widoczne. Pole, które choć raz odkryjesz, pozostaje odsłonięte na stałe — nie wraca do niego szary cień, nawet gdy oddalisz się z tego rejonu."
 		"wojsko":
 			return "[b][color=#8fdc8f]Rekrutacja jednostek[/color][/b]\n" \
 				+ "• Zbuduj [b]Baraki[/b] (kategoria „Wojskowe” w menu budowy).\n" \

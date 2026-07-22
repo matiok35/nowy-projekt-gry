@@ -124,8 +124,26 @@ var resources: Dictionary = {
 	"Kultura": 10,
 	"Populacja": 1,
 	"Maks_Populacja": 5,
+	"Maks_Jedzenie": 20,
 	"Głoduje": false
 }
+
+# --- SPICHLERZ: LIMIT PRZECHOWYWANEGO JEDZENIA -----------------------------
+# Bez żadnego Spichlerza gracz ma niewielki, bazowy magazyn żywności - już
+# od startu gry (Spichlerz jest budowlą odblokowaną od razu, podobnie jak
+# Farma czy Dom mieszkalny). Nadwyżka Jedzenia ponad limit jest tracona
+# (psuje się) na koniec tury, więc samo produkowanie coraz więcej jedzenia
+# bez budowy/ulepszania Spichlerza przestaje się opłacać.
+const BASE_FOOD_STORAGE: int = 20
+const SPICHLERZ_CAPACITY_BY_LEVEL: Dictionary = {1: 30, 2: 70, 3: 130}
+
+func get_max_food_storage(active_buildings_data: Array) -> int:
+	var cap = BASE_FOOD_STORAGE
+	for b_data in active_buildings_data:
+		if b_data["name"] == "Spichlerz":
+			var lvl = b_data.get("level", 1)
+			cap += SPICHLERZ_CAPACITY_BY_LEVEL.get(lvl, SPICHLERZ_CAPACITY_BY_LEVEL[1])
+	return cap
 
 var turn_warnings: Array = []
 
@@ -142,6 +160,7 @@ var building_costs: Dictionary = {
 	"Farma": {"Złoto": 75, "Drewno": 30},
 	"Pastwisko": {"Złoto": 90, "Drewno": 30},
 	"Dom mieszkalny": {"Złoto": 120, "Drewno": 40},
+	"Spichlerz": {"Złoto": 60, "Drewno": 50},
 	"Laboratorium": {"Złoto": 300, "Drewno": 100, "Żelazo": 20},
 	"Warsztat": {"Złoto": 240, "Drewno": 80, "Żelazo": 10},
 	"Biblioteka": {"Złoto": 210, "Drewno": 60},
@@ -178,7 +197,8 @@ var upgrade_tech_requirements: Dictionary = {
 	"Baraki": {2: "Musztra", 3: "Twierdza"},
 	"Laboratorium": {2: "Alchemia", 3: "Akademia Nauk"},
 	"Biblioteka": {2: "Archiwa", 3: "Wielkie Archiwum"},
-	"Dom mieszkalny": {2: "Urbanizacja", 3: "Metropolia"}
+	"Dom mieszkalny": {2: "Urbanizacja", 3: "Metropolia"},
+	"Spichlerz": {2: "Chłodne Piwnice", 3: "Wielkie Spichlerze"}
 }
 
 # SKRÓCONE OPISY ("desc") DLA ZAPEWNIENIA MAŁYCH KAFELKÓW
@@ -195,77 +215,83 @@ var technology_tree: Dictionary = {
 	"Hodowla bydła": {
 		"research_cost": 10, "research_time": 2, "req": ["Chata drwala"], "unlocked": false, "desc": "Budowa Pastwiska.", "grid_coords": Vector2(1, 4), "icon": "🐄"
 	},
-	"Płodozmian": {
-		"research_cost": 20, "research_time": 4, "req": ["Warsztat"], "unlocked": false, "desc": "Farma/Pastwisko Lvl 2.", "grid_coords": Vector2(3, 3), "icon": "🌾"
+	"Chłodne Piwnice": {
+		"research_cost": 15, "research_time": 3, "req": ["Chata drwala"], "unlocked": false, "desc": "Spichlerz Lvl 2.", "grid_coords": Vector2(1, 6), "icon": "🧊"
+	},
+	"Baraki": {
+		"research_cost": 30, "research_time": 6, "req": ["Piła Dwuręczna", "Hodowla bydła"], "unlocked": false, "desc": "Budowa Baraków.", "grid_coords": Vector2(2, 3), "icon": "⚔️"
 	},
 	"Górnictwo": {
 		"research_cost": 20, "research_time": 4, "req": ["Hodowla bydła"], "unlocked": false, "desc": "Kopalnie Żelaza i Węgla.", "grid_coords": Vector2(2, 5), "icon": "⛏️"
 	},
-	"Agronomia": {
-		"research_cost": 30, "research_time": 6, "req": ["Płodozmian", "Tartak Mechaniczny"], "unlocked": false, "desc": "Farma/Pastwisko Lvl 3.", "grid_coords": Vector2(3, 1), "icon": "🚜"
+	"Wielkie Spichlerze": {
+		"research_cost": 30, "research_time": 5, "req": ["Chłodne Piwnice", "Hodowla bydła"], "unlocked": false, "desc": "Spichlerz Lvl 3.", "grid_coords": Vector2(2, 7), "icon": "🏚️"
 	},
 	"Warsztat": {
-		"research_cost": 30, "research_time": 6, "req": ["Piła Dwuręczna", "Hodowla bydła"], "unlocked": false, "desc": "Budowa Warsztatu.", "grid_coords": Vector2(2, 3), "icon": "⚒️"
-	},
-	"Głębokie Szyby": {
-		"research_cost": 30, "research_time": 6, "req": ["Górnictwo"], "unlocked": false, "desc": "Kopalnie Lvl 2.", "grid_coords": Vector2(3, 5), "icon": "🗻"
-	},
-	"Precyzyjne Narzędzia": {
-		"research_cost": 40, "research_time": 8, "req": ["Agronomia", "Warsztat"], "unlocked": false, "desc": "Warsztat Lvl 2.", "grid_coords": Vector2(4, 2), "icon": "⚙️"
-	},
-	"Świątynia": {
-		"research_cost": 40, "research_time": 8, "req": ["Warsztat", "Głębokie Szyby"], "unlocked": false, "desc": "Budowa Świątyni.", "grid_coords": Vector2(4, 4), "icon": "🕍"
-	},
-	"Manufaktura": {
-		"research_cost": 50, "research_time": 10, "req": ["Precyzyjne Narzędzia"], "unlocked": false, "desc": "Warsztat Lvl 3.", "grid_coords": Vector2(5, 2), "icon": "🏭"
-	},
-	"Odnowa Wiary": {
-		"research_cost": 50, "research_time": 10, "req": ["Świątynia"], "unlocked": false, "desc": "Świątynia Lvl 2.", "grid_coords": Vector2(5, 4), "icon": "🛕"
-	},
-	"Baraki": {
-		"research_cost": 120, "research_time": 12, "req": ["Manufaktura", "Odnowa Wiary"], "unlocked": false, "desc": "Budowa Baraków.", "grid_coords": Vector2(6, 3), "icon": "⚔️"
-	},
-	"Sanktuarium": {
-		"research_cost": 225, "research_time": 6, "req": ["Baraki"], "unlocked": false, "desc": "Świątynia Lvl 3.", "grid_coords": Vector2(7, 1), "icon": "⛪"
+		"research_cost": 45, "research_time": 5, "req": ["Baraki"], "unlocked": false, "desc": "Budowa Warsztatu.", "grid_coords": Vector2(3, 2), "icon": "⚒️"
 	},
 	"Musztra": {
-		"research_cost": 225, "research_time": 6, "req": ["Baraki"], "unlocked": false, "desc": "Baraki Lvl 2.", "grid_coords": Vector2(7, 3), "icon": "🛡️"
+		"research_cost": 225, "research_time": 6, "req": ["Baraki"], "unlocked": false, "desc": "Baraki Lvl 2.", "grid_coords": Vector2(3, 4), "icon": "🛡️"
+	},
+	"Głębokie Szyby": {
+		"research_cost": 30, "research_time": 6, "req": ["Górnictwo"], "unlocked": false, "desc": "Kopalnie Lvl 2.", "grid_coords": Vector2(3, 6), "icon": "🗻"
+	},
+	"Płodozmian": {
+		"research_cost": 20, "research_time": 4, "req": ["Warsztat"], "unlocked": false, "desc": "Farma/Pastwisko Lvl 2.", "grid_coords": Vector2(4, 1), "icon": "🌾"
+	},
+	"Świątynia": {
+		"research_cost": 40, "research_time": 8, "req": ["Warsztat", "Głębokie Szyby"], "unlocked": false, "desc": "Budowa Świątyni.", "grid_coords": Vector2(4, 3), "icon": "🕍"
 	},
 	"Metalurgia": {
-		"research_cost": 225, "research_time": 6, "req": ["Baraki"], "unlocked": false, "desc": "Kopalnie Lvl 3.", "grid_coords": Vector2(7, 5), "icon": "🌋"
+		"research_cost": 225, "research_time": 6, "req": ["Głębokie Szyby"], "unlocked": false, "desc": "Kopalnie Lvl 3.", "grid_coords": Vector2(4, 6), "icon": "🌋"
 	},
-	"Laboratorium": {
-		"research_cost": 270, "research_time": 7, "req": ["Sanktuarium", "Musztra"], "unlocked": false, "desc": "Budowa Laboratorium.", "grid_coords": Vector2(8, 2), "icon": "🧪"
+	"Agronomia": {
+		"research_cost": 30, "research_time": 6, "req": ["Płodozmian", "Tartak Mechaniczny"], "unlocked": false, "desc": "Farma/Pastwisko Lvl 3.", "grid_coords": Vector2(5, 1), "icon": "🚜"
+	},
+	"Odnowa Wiary": {
+		"research_cost": 50, "research_time": 10, "req": ["Świątynia"], "unlocked": false, "desc": "Świątynia Lvl 2.", "grid_coords": Vector2(5, 3), "icon": "🛕"
 	},
 	"Konnica": {
-		"research_cost": 270, "research_time": 7, "req": ["Musztra", "Metalurgia"], "unlocked": false, "desc": "Jednostki konne.", "grid_coords": Vector2(8, 4), "icon": "🐎"
+		"research_cost": 270, "research_time": 7, "req": ["Musztra", "Metalurgia"], "unlocked": false, "desc": "Jednostki konne.", "grid_coords": Vector2(5, 6), "icon": "🐎"
+	},
+	"Precyzyjne Narzędzia": {
+		"research_cost": 40, "research_time": 8, "req": ["Agronomia", "Warsztat"], "unlocked": false, "desc": "Warsztat Lvl 2.", "grid_coords": Vector2(6, 1), "icon": "⚙️"
+	},
+	"Sanktuarium": {
+		"research_cost": 225, "research_time": 6, "req": ["Odnowa Wiary"], "unlocked": false, "desc": "Świątynia Lvl 3.", "grid_coords": Vector2(6, 3), "icon": "⛪"
+	},
+	"Manufaktura": {
+		"research_cost": 50, "research_time": 10, "req": ["Precyzyjne Narzędzia"], "unlocked": false, "desc": "Warsztat Lvl 3.", "grid_coords": Vector2(7, 1), "icon": "🏭"
+	},
+	"Laboratorium": {
+		"research_cost": 270, "research_time": 7, "req": ["Sanktuarium", "Musztra"], "unlocked": false, "desc": "Budowa Laboratorium.", "grid_coords": Vector2(7, 4), "icon": "🧪"
 	},
 	"Biblioteka": {
-		"research_cost": 330, "research_time": 8, "req": ["Laboratorium", "Konnica"], "unlocked": false, "desc": "Budowa Biblioteki.", "grid_coords": Vector2(9, 3), "icon": "📚"
+		"research_cost": 330, "research_time": 8, "req": ["Laboratorium", "Konnica"], "unlocked": false, "desc": "Budowa Biblioteki.", "grid_coords": Vector2(8, 4), "icon": "📚"
 	},
 	"Alchemia": {
-		"research_cost": 390, "research_time": 9, "req": ["Biblioteka"], "unlocked": false, "desc": "Laboratorium Lvl 2.", "grid_coords": Vector2(10, 1), "icon": "🔬"
+		"research_cost": 390, "research_time": 9, "req": ["Biblioteka"], "unlocked": false, "desc": "Laboratorium Lvl 2.", "grid_coords": Vector2(9, 2), "icon": "🔬"
 	},
 	"Archiwa": {
-		"research_cost": 390, "research_time": 9, "req": ["Biblioteka"], "unlocked": false, "desc": "Biblioteka Lvl 2.", "grid_coords": Vector2(10, 3), "icon": "📖"
+		"research_cost": 390, "research_time": 9, "req": ["Biblioteka"], "unlocked": false, "desc": "Biblioteka Lvl 2.", "grid_coords": Vector2(9, 4), "icon": "📖"
 	},
 	"Urbanizacja": {
-		"research_cost": 390, "research_time": 9, "req": ["Biblioteka"], "unlocked": false, "desc": "Domy Lvl 2.", "grid_coords": Vector2(10, 5), "icon": "🏘️"
+		"research_cost": 390, "research_time": 9, "req": ["Biblioteka"], "unlocked": false, "desc": "Domy Lvl 2.", "grid_coords": Vector2(9, 6), "icon": "🏘️"
 	},
 	"Akademia Nauk": {
-		"research_cost": 450, "research_time": 10, "req": ["Alchemia"], "unlocked": false, "desc": "Laboratorium Lvl 3.", "grid_coords": Vector2(11, 1), "icon": "🌌"
+		"research_cost": 450, "research_time": 10, "req": ["Alchemia"], "unlocked": false, "desc": "Laboratorium Lvl 3.", "grid_coords": Vector2(10, 2), "icon": "🌌"
 	},
 	"Wielkie Archiwum": {
-		"research_cost": 450, "research_time": 10, "req": ["Archiwa"], "unlocked": false, "desc": "Biblioteka Lvl 3.", "grid_coords": Vector2(11, 3), "icon": "🏛️"
+		"research_cost": 450, "research_time": 10, "req": ["Archiwa"], "unlocked": false, "desc": "Biblioteka Lvl 3.", "grid_coords": Vector2(10, 4), "icon": "🏛️"
 	},
 	"Twierdza": {
-		"research_cost": 450, "research_time": 10, "req": ["Urbanizacja"], "unlocked": false, "desc": "Baraki Lvl 3.", "grid_coords": Vector2(11, 5), "icon": "🏰"
+		"research_cost": 450, "research_time": 10, "req": ["Urbanizacja"], "unlocked": false, "desc": "Baraki Lvl 3.", "grid_coords": Vector2(10, 6), "icon": "🏰"
 	},
 	"Mag": {
-		"research_cost": 500, "research_time": 12, "req": ["Akademia Nauk", "Wielkie Archiwum"], "unlocked": false, "desc": "Rekrutacja Magów.", "grid_coords": Vector2(12, 2), "icon": "🧙"
+		"research_cost": 500, "research_time": 12, "req": ["Akademia Nauk", "Wielkie Archiwum"], "unlocked": false, "desc": "Rekrutacja Magów.", "grid_coords": Vector2(11, 3), "icon": "🧙"
 	},
 	"Metropolia": {
-		"research_cost": 500, "research_time": 12, "req": ["Wielkie Archiwum", "Twierdza"], "unlocked": false, "desc": "Domy Lvl 3.", "grid_coords": Vector2(12, 4), "icon": "🏙️"
+		"research_cost": 500, "research_time": 12, "req": ["Wielkie Archiwum", "Twierdza"], "unlocked": false, "desc": "Domy Lvl 3.", "grid_coords": Vector2(11, 5), "icon": "🏙️"
 	}
 }
 
@@ -359,14 +385,51 @@ func get_building_tooltip(building_name: String) -> String:
 		"Kopalnia Węgla": text += "• Wymaga: Węgiel\n"
 		"Farma": text += "• Wymaga: Pszenica\n"
 		"Pastwisko": text += "• Wymaga: Bydło\n"
-		"Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia", "Baraki":
+		"Dom mieszkalny", "Spichlerz", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia", "Baraki":
 			text += "• Wymaga: Trawa (lub nadpisanie dowolnego złoża)\n"
 
 	var mod_costs = get_modified_building_costs(building_name)
 	text += "\nKoszt poziomu 1\n"
 	for resource in mod_costs:
 		text += "• %s: %d\n" % [resource, mod_costs[resource]]
+
+	var effect_desc = get_building_effect_description(building_name)
+	if effect_desc != "":
+		text += "\nEfekt / rozwój poziomów\n• %s" % effect_desc
+
 	return text
+
+func get_building_effect_description(building_name: String) -> String:
+	# Krótki opis tego, co realnie zmienia poziom/ulepszenie budynku -
+	# wyświetlany w tooltipach obok kosztów, żeby mechaniki gry były
+	# jaśniejsze dla gracza (który wcześniej widział tylko cenę).
+	match building_name:
+		"Chata Drwala":
+			return "Produkcja Drewna skaluje się z poziomem budynku."
+		"Kopalnia Żelaza":
+			return "Produkcja Żelaza rośnie z poziomem, ale rośnie też zużycie Węgla i Złota na turę."
+		"Kopalnia Węgla":
+			return "Produkcja Węgla rośnie z poziomem, ale rośnie też koszt Złota na turę."
+		"Farma":
+			return "Produkcja Jedzenia skaluje się z poziomem budynku."
+		"Pastwisko":
+			return "Produkcja Jedzenia skaluje się z poziomem budynku."
+		"Dom mieszkalny":
+			return "Każdy poziom zwiększa maksymalną Populację o +5."
+		"Laboratorium":
+			return "Punkty Nauki/turę rosną o +3 za każdy poziom."
+		"Warsztat":
+			return "Punkty Nauki/turę rosną o +1 za każdy poziom; umożliwia leczenie armii."
+		"Biblioteka":
+			return "Punkty Nauki i Kultury/turę rosną z poziomem; odblokowuje badanie umiejętności jednostek."
+		"Świątynia":
+			return "Punkty Kultury/turę rosną z poziomem, a Błogosławieństwo Świątyni jest silniejsze (+10% produkcji surowców za każdy poziom, na czas trwania)."
+		"Baraki":
+			return "Wyższy poziom odblokowuje ulepszone (silniejsze) warianty jednostek do rekrutacji."
+		"Spichlerz":
+			return "Zwiększa maksymalny limit przechowywanego Jedzenia (Lvl 1: +30, Lvl 2: +70, Lvl 3: +130 ponad bazowy limit). Nadwyżka Jedzenia ponad limit magazynu psuje się na koniec tury."
+		_:
+			return ""
 
 func get_modified_building_costs(building_name: String) -> Dictionary:
 	if not building_costs.has(building_name): return {}
@@ -650,6 +713,9 @@ func get_turn_preview(active_buildings_data: Array) -> Dictionary:
 		if gold_loss > 0:
 			add_res.call("Złoto", -gold_loss)
 
+	# Podgląd limitu magazynu Jedzenia (Spichlerz) - do wyświetlenia w tooltipie.
+	preview["Jedzenie"]["max"] = get_max_food_storage(active_buildings_data)
+
 	return preview
 
 func next_turn(active_buildings_data: Array) -> void:
@@ -790,6 +856,15 @@ func next_turn(active_buildings_data: Array) -> void:
 	# Flaga "Głoduje" oraz kara za brak jedzenia muszą używać tego samego
 	# progu (<=0), inaczej gracz widzi ostrzeżenie o karze, która jeszcze
 	# faktycznie nie działa (np. przy jedzeniu dokładnie równym 0).
+	# POPRAWKA: Jedzenie jest teraz ograniczone limitem magazynu (bazowo +
+	# Spichlerze). Nadwyżka ponad limit psuje się/jest tracona na koniec
+	# tury - liczone PRZED sprawdzeniem głodu, żeby oba mechanizmy używały
+	# tej samej, już ograniczonej wartości.
+	var max_food = get_max_food_storage(active_buildings_data)
+	resources["Maks_Jedzenie"] = max_food
+	if resources["Jedzenie"] > max_food:
+		resources["Jedzenie"] = max_food
+
 	resources["Głoduje"] = resources["Jedzenie"] <= 0
 
 	if resources["Jedzenie"] <= 0:
@@ -1040,6 +1115,7 @@ func reset() -> void:
 		"Kultura": 10,
 		"Populacja": 1,
 		"Maks_Populacja": 5,
+		"Maks_Jedzenie": BASE_FOOD_STORAGE,
 		"Głoduje": false
 	}
 	

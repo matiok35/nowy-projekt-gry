@@ -12,6 +12,7 @@ extends Control
 var build_farma: Button
 var build_pastwisko: Button
 var build_dom: Button 
+var build_spichlerz: Button
 var info_label: Label
 var menu_zalozenia_miasta: PopupPanel
 var zaloz_miasto_button: Button
@@ -683,11 +684,12 @@ func setup_custom_popups():
 	destroy_button.text = "💥 Zniszcz budynek"
 	destroy_button.pressed.connect(func():
 		var costs = EconomyManager.get_modified_building_costs(active_building_name)
-		var destroy_cost = int(costs.get("Złoto", 0) * 0.5)
-		destroy_confirm_dialog.dialog_text = "Czy na pewno chcesz zniszczyć ten budynek?\nBędzie się to wiązać z zabraniem %d złota ze skarbca (50%% ceny budynku)." % destroy_cost
+		var refund_gold = int(costs.get("Złoto", 0) * 0.5)
+		destroy_confirm_dialog.dialog_text = "Czy na pewno chcesz zniszczyć ten budynek?\nOtrzymasz zwrot %d złota do skarbca (50%% ceny budynku)." % refund_gold
 		destroy_confirm_dialog.popup_centered()
 		hide_all_menus()
 	)
+	destroy_button.tooltip_text = "Zniszczenie budynku zwraca do skarbca 50% złota wydanego na jego budowę."
 	var style_destroy = StyleBoxFlat.new()
 	style_destroy.bg_color = Color(0.6, 0.1, 0.1, 0.95)
 	style_destroy.set_border_width_all(1)
@@ -896,6 +898,11 @@ func setup_custom_popups():
 	build_grid.add_child(build_dom)
 	build_dom.pressed.connect(func(): execute_build("Dom mieszkalny"))
 	
+	build_spichlerz = Button.new()
+	build_grid.add_child(build_spichlerz)
+	build_spichlerz.pressed.connect(func(): execute_build("Spichlerz"))
+	style_single_button(build_spichlerz, "Spichlerz", "Spichlerz")
+	
 	btn_tech_1 = Button.new()
 	btn_tech_2 = Button.new()
 	build_grid.add_child(btn_tech_1)
@@ -1047,6 +1054,9 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 			if show_upgrade:
 				var preview_cost = EconomyManager.get_upgrade_cost(building_name, building_level)
 				info_label.text += "\n⬆️ Koszt ulepszenia: %s" % _format_cost_dict(preview_cost)
+				var preview_effect = EconomyManager.get_building_effect_description(building_name)
+				if preview_effect != "":
+					info_label.text += "\n💡 %s" % preview_effect
 	elif tile_type == "Trawa":
 		info_label.text = "🌱 Typ: %s" % [tile_type]
 	else:
@@ -1081,7 +1091,10 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 		upgrade_button.disabled = not can_upgrade
 		upgrade_button.modulate.a = 1.0 if can_upgrade else 0.35
 		var up_cost = EconomyManager.get_upgrade_cost(building_name, building_level)
+		var effect_desc = EconomyManager.get_building_effect_description(building_name)
 		upgrade_button.tooltip_text = "Koszt ulepszenia:\n%s" % _format_cost_dict(up_cost)
+		if effect_desc != "":
+			upgrade_button.tooltip_text += "\n\nEfekt: %s" % effect_desc
 	
 	cat_zasobowe.visible = show_buildings
 	cat_tech.visible = show_buildings
@@ -1094,6 +1107,7 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 	build_farma.visible = false
 	build_pastwisko.visible = false
 	build_dom.visible = false
+	build_spichlerz.visible = false
 	btn_tech_1.visible = false
 	btn_tech_2.visible = false
 	btn_naukowy_1.visible = false
@@ -1107,6 +1121,7 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 		update_button_state(build_farma, "Farma", tile_type)
 		update_button_state(build_pastwisko, "Pastwisko", tile_type)
 		update_button_state(build_dom, "Dom mieszkalny", tile_type)
+		update_button_state(build_spichlerz, "Spichlerz", tile_type)
 		update_button_state(btn_tech_1, "Laboratorium", tile_type)
 		update_button_state(btn_tech_2, "Warsztat", tile_type)
 		update_button_state(btn_naukowy_1, "Biblioteka", tile_type)
@@ -1128,6 +1143,7 @@ func _show_building_category(category: String):
 	build_farma.visible = is_zasobowe and _is_building_researched("Farma")
 	build_pastwisko.visible = is_zasobowe and _is_building_researched("Pastwisko")
 	build_dom.visible = is_zasobowe and _is_building_researched("Dom mieszkalny")
+	build_spichlerz.visible = is_zasobowe and _is_building_researched("Spichlerz")
 
 	var is_tech = (category == "tech")
 	btn_tech_1.visible = is_tech and _is_building_researched("Laboratorium")
@@ -1255,7 +1271,7 @@ func execute_build(building_name: String) -> void:
 		hide_all_menus()
 		return
 
-	if active_tile_type != "Trawa" and building_name in ["Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia", "Baraki"]:
+	if active_tile_type != "Trawa" and building_name in ["Dom mieszkalny", "Spichlerz", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia", "Baraki"]:
 		pending_building = building_name
 		confirm_dialog.popup_centered()
 		hide_all_menus()
@@ -1264,7 +1280,7 @@ func execute_build(building_name: String) -> void:
 
 func _on_confirm_wood_warning() -> void:
 	if pending_building != "":
-		if active_tile_type != "Trawa" and pending_building in ["Dom mieszkalny", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia", "Baraki"]:
+		if active_tile_type != "Trawa" and pending_building in ["Dom mieszkalny", "Spichlerz", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia", "Baraki"]:
 			confirm_dialog.popup_centered()
 		else:
 			_do_execute_build(pending_building)
@@ -1278,14 +1294,11 @@ func _on_confirm_build_on_resource() -> void:
 func _on_confirm_destroy_building() -> void:
 	if active_building_name == "Brak" or active_building_name == "Centrum Miasta": return
 	var costs = EconomyManager.get_modified_building_costs(active_building_name)
-	var destroy_cost = int(costs.get("Złoto", 0) * 0.5)
+	# POPRAWKA: zniszczenie budynku zwraca 50% jego kosztu w złocie do
+	# skarbca, zamiast dodatkowo obciążać gracza opłatą za zniszczenie.
+	var refund_gold = int(costs.get("Złoto", 0) * 0.5)
 	
-	if EconomyManager.resources.get("Złoto", 0) < destroy_cost:
-		turn_warning_dialog.dialog_text = "Nie masz wystarczająco złota, aby zniszczyć ten budynek (potrzeba %d)!" % destroy_cost
-		turn_warning_dialog.popup_centered()
-		return
-		
-	EconomyManager.resources["Złoto"] -= destroy_cost
+	EconomyManager.resources["Złoto"] += refund_gold
 	if world_ref and world_ref.has_method("destroy_building"):
 		world_ref.destroy_building(active_tile_pos)
 	EconomyManager.notify_change()
@@ -1309,8 +1322,11 @@ func _on_economy_updated(balances: Dictionary, turn: int, _selected_build: Strin
 	var setup_tooltip = func(res_name: String) -> String:
 		if preview.has(res_name):
 			var p = preview[res_name]
-			return "Zasób: %s\nProdukcja: +%d\nPobieranie: -%d\nBilans: %s" % [
-				res_name, p.get("produced", 0), p.get("consumed", 0), _format_delta(p.get("balance", 0))
+			var extra = ""
+			if res_name == "Jedzenie" and p.has("max"):
+				extra = "\nLimit magazynu (Spichlerz): %d" % p["max"]
+			return "Zasób: %s\nProdukcja: +%d\nPobieranie: -%d\nBilans: %s%s" % [
+				res_name, p.get("produced", 0), p.get("consumed", 0), _format_delta(p.get("balance", 0)), extra
 			]
 		return ""
 
@@ -1321,15 +1337,15 @@ func _on_economy_updated(balances: Dictionary, turn: int, _selected_build: Strin
 		resource_labels["Żelazo"].tooltip_text = setup_tooltip.call("Żelazo")
 		resource_labels["Węgiel"].text = "Węgiel: %d" % [balances["Węgiel"]]
 		resource_labels["Węgiel"].tooltip_text = setup_tooltip.call("Węgiel")
-		resource_labels["Jedzenie"].text = "Jedzenie: %d" % [balances["Jedzenie"]]
+		resource_labels["Jedzenie"].text = "Jedzenie: %d/%d" % [balances["Jedzenie"], balances.get("Maks_Jedzenie", 20)]
 		resource_labels["Jedzenie"].tooltip_text = setup_tooltip.call("Jedzenie")
 		resource_labels["Złoto"].text = "Złoto: %d" % [balances["Złoto"]]
 		resource_labels["Złoto"].tooltip_text = setup_tooltip.call("Złoto")
 		resource_labels["Populacja"].text = "Pop: %d/%d" % [balances.get("Populacja", 1), balances.get("Maks_Populacja", 5)]
 		resource_labels["Populacja"].tooltip_text = "Twoja obecna populacja.\nJedzenie na turę: -%d" % [balances.get("Populacja", 1) * 1]
 	else:
-		resources_label.text = "🪵 Drewno: %d      ⛓️ Żelazo: %d      🌋 Węgiel: %d      🌾 Jedzenie: %d      🪙 Złoto: %d      👥 Pop: %d/%d" % [
-			balances["Drewno"], balances["Żelazo"], balances["Węgiel"], balances["Jedzenie"], balances["Złoto"], balances.get("Populacja", 1), balances.get("Maks_Populacja", 5)
+		resources_label.text = "🪵 Drewno: %d      ⛓️ Żelazo: %d      🌋 Węgiel: %d      🌾 Jedzenie: %d/%d      🪙 Złoto: %d      👥 Pop: %d/%d" % [
+			balances["Drewno"], balances["Żelazo"], balances["Węgiel"], balances["Jedzenie"], balances.get("Maks_Jedzenie", 20), balances["Złoto"], balances.get("Populacja", 1), balances.get("Maks_Populacja", 5)
 		]
 	turn_button.text = "Następna tura (%d)" % turn
 
