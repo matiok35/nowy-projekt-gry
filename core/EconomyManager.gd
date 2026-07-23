@@ -395,39 +395,36 @@ func get_building_tooltip(building_name: String) -> String:
 
 	var effect_desc = get_building_effect_description(building_name)
 	if effect_desc != "":
-		text += "\nEfekt / rozwój poziomów\n• %s" % effect_desc
+		text += "\nOpis i zastosowanie\n• %s" % effect_desc
 
 	return text
 
 func get_building_effect_description(building_name: String) -> String:
-	# Krótki opis tego, co realnie zmienia poziom/ulepszenie budynku -
-	# wyświetlany w tooltipach obok kosztów, żeby mechaniki gry były
-	# jaśniejsze dla gracza (który wcześniej widział tylko cenę).
 	match building_name:
 		"Chata Drwala":
-			return "Produkcja Drewna skaluje się z poziomem budynku."
+			return "Służy do pozyskiwania Drewna, niezbędnego do wznoszenia konstrukcji. Produkcja Drewna rośnie z każdym poziomem budynku."
 		"Kopalnia Żelaza":
-			return "Produkcja Żelaza rośnie z poziomem, ale rośnie też zużycie Węgla i Złota na turę."
+			return "Dostarcza Żelazo używane do szkolenia armii. Wyższe poziomy zwiększają produkcję Żelaza, ale wymagają większego zużycia Węgla i Złota na turę."
 		"Kopalnia Węgla":
-			return "Produkcja Węgla rośnie z poziomem, ale rośnie też koszt Złota na turę."
+			return "Wydobywa Węgiel, który jest wymagany do utrzymania Kopalni Żelaza. Ulepszanie zwiększa produkcję Węgla, ale też zwiększa koszt Złota na turę."
 		"Farma":
-			return "Produkcja Jedzenia skaluje się z poziomem budynku."
+			return "Główne źródło Jedzenia, pozwalające utrzymać populację i armię. Z każdym ulepszeniem Farma produkuje więcej Jedzenia na turę."
 		"Pastwisko":
-			return "Produkcja Jedzenia skaluje się z poziomem budynku."
+			return "Alternatywne źródło Jedzenia na terenach z bydłem. Ulepszanie budynku zwiększa produkcję Jedzenia na turę."
 		"Dom mieszkalny":
-			return "Każdy poziom zwiększa maksymalną Populację o +5."
+			return "Zwiększa limit Populacji w mieście, co jest kluczowe do rozwoju i rekrutacji wojska. Każdy kolejny poziom zwiększa maksymalną Populację o +5."
 		"Laboratorium":
-			return "Punkty Nauki/turę rosną o +3 za każdy poziom."
+			return "Generuje punkty Nauki, potrzebne do odblokowywania technologii. Wybudowanie Laboratorium odblokowuje dostęp do sklepu z Potkami, które mogą wzmocnić twoją armię. Z każdym ulepszeniem, punkty Nauki generowane na turę rosną o +3."
 		"Warsztat":
-			return "Punkty Nauki/turę rosną o +1 za każdy poziom; umożliwia leczenie armii."
+			return "Stanowi wsparcie dla armii i nauki. Generuje punkty Nauki (+1/turę za poziom) i umożliwia leczenie jednostek w armii."
 		"Biblioteka":
-			return "Punkty Nauki i Kultury/turę rosną z poziomem; odblokowuje badanie umiejętności jednostek."
+			return "Centrum wiedzy, generujące punkty Nauki i Kultury. Wybudowanie Biblioteki daje możliwość badania potężnych umiejętności dla jednostek wojskowych. Ulepszanie zwiększa produkcję Nauki i Kultury na turę."
 		"Świątynia":
-			return "Punkty Kultury/turę rosną z poziomem, a Błogosławieństwo Świątyni jest silniejsze (+10% produkcji surowców za każdy poziom, na czas trwania)."
+			return "Generuje punkty Kultury do rozwoju drzewka kulturowego. Wyższy poziom to więcej Kultury na turę, a Błogosławieństwo Świątyni daje większą premię (+10% do produkcji za każdy poziom)."
 		"Baraki":
-			return "Wyższy poziom odblokowuje ulepszone (silniejsze) warianty jednostek do rekrutacji."
+			return "Pozwalają na rekrutację i szkolenie jednostek bojowych. Ulepszanie na wyższe poziomy odblokowuje nowe, silniejsze warianty jednostek."
 		"Spichlerz":
-			return "Zwiększa maksymalny limit przechowywanego Jedzenia (Lvl 1: +30, Lvl 2: +70, Lvl 3: +130 ponad bazowy limit). Nadwyżka Jedzenia ponad limit magazynu psuje się na koniec tury."
+			return "Chroni zgromadzone Jedzenie przed zepsuciem. Ulepszanie zwiększa limit bezpiecznego magazynowania (Lvl 1: +30, Lvl 2: +70, Lvl 3: +130 ponad bazowy limit)."
 		_:
 			return ""
 

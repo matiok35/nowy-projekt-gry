@@ -113,10 +113,11 @@ func _help_tab_text(key: String) -> String:
 			return "[b][color=#8fdc8f]Jak wybudować budynek[/color][/b]\n" \
 				+ "1. Kliknij [b]PPM[/b] na pole, które [b]należy do Ciebie[/b] (posiadane pola).\n" \
 				+ "2. W otwartym „Menu Budowy” wybierz kategorię u góry: [b]Surowce[/b], [b]Kultura[/b], [b]Technologia[/b] lub [b]Wojskowe[/b].\n" \
-				+ "3. Kliknij przycisk wybranego budynku — jeśli masz wystarczająco surowców, budynek zostanie postawiony na tym polu. Koszt budowy sprawdzisz najeżdżając kursorem na przycisk wybranego budynku.\n\n" \
+				+ "3. Kliknij przycisk wybranego budynku — jeśli masz wystarczająco surowców, budynek zostanie postawiony na tym polu.\n" \
+				+ "• [b]Wskazówka:[/b] Informacje o zastosowaniu i kosztach każdego budynku znajdziesz po najechaniu na niego w menu budowy.\n\n" \
 				+ "[b][color=#8fdc8f]Ulepszanie budynków[/color][/b]\n" \
 				+ "• Kliknij [b]PPM[/b] na pole z istniejącym budynkiem i wybierz [b]„⬆️ Ulepsz budynek”[/b], aby zwiększyć jego poziom (jeśli stać Cię na koszt ulepszenia). Budynki mają maksymalnie 3 poziomy.\n" \
-				+ "• Każdy poziom podnosi produkcję (lub inny efekt) budynku — najedź kursorem na przycisk „Ulepsz budynek”, aby zobaczyć dokładny koszt i opis efektu tego konkretnego budynku.\n\n" \
+				+ "• [b]Wskazówka:[/b] Koszty ulepszenia budynku (oraz opis rozwoju) znajdziesz po najechaniu na przycisk „Ulepsz budynek” w menu budynku.\n\n" \
 				+ "[b][color=#8fdc8f]Niszczenie budynków[/color][/b]\n" \
 				+ "• Przycisk [b]„💥 Zniszcz budynek”[/b] usuwa budynek z pola i zwraca do skarbca [b]50% złota[/b] wydanego na jego budowę (Centrum Miasta nie można zniszczyć).\n\n" \
 				+ "[b][color=#8fdc8f]Spichlerz i limit Jedzenia[/color][/b]\n" \
