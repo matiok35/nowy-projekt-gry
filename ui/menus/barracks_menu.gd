@@ -171,27 +171,32 @@ func _populate_barracks_units(faction: Dictionary):
 				btn_recruit.tooltip_text = "Koszt:\n%d Złota\n%d Żelaza\n%d Jedzenia\n%d Populacji" % [cost.get("Złoto", 0), cost.get("Żelazo", 0), cost.get("Jedzenie", 0), cost.get("Populacja", 0)]
 			btn_recruit.custom_minimum_size = Vector2(150, 40)
 			btn_recruit.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			if EconomyManager.can_recruit_unit(unit):
-				btn_recruit.pressed.connect(func():
-					var unit_name = unit.get("name", "")
-					if "Konnica" in unit_name and EconomyManager.technology_tree.has("Konnica") and not EconomyManager.technology_tree["Konnica"]["unlocked"]:
-						hud.tech_warning_dialog.dialog_text = "Aby zwerbować tę jednostkę, musisz najpierw odkryć technologię:\nKonnica"
-						hud.tech_warning_dialog.popup_centered()
-						return
-					elif "Magowie" in unit_name and EconomyManager.technology_tree.has("Mag") and not EconomyManager.technology_tree["Mag"]["unlocked"]:
-						hud.tech_warning_dialog.dialog_text = "Aby zwerbować tę jednostkę, musisz najpierw odkryć technologię:\nMag"
-						hud.tech_warning_dialog.popup_centered()
-						return
+			btn_recruit.pressed.connect(func():
+				if not EconomyManager.can_recruit_unit(unit):
+					if AudioManager: AudioManager.play_error()
+					return
+					
+				var unit_name = unit.get("name", "")
+				if "Konnica" in unit_name and EconomyManager.technology_tree.has("Konnica") and not EconomyManager.technology_tree["Konnica"]["unlocked"]:
+					hud.tech_warning_dialog.dialog_text = "Aby zwerbować tę jednostkę, musisz najpierw odkryć technologię:\nKonnica"
+					hud.tech_warning_dialog.popup_centered()
+					return
+				elif "Magowie" in unit_name and EconomyManager.technology_tree.has("Mag") and not EconomyManager.technology_tree["Mag"]["unlocked"]:
+					hud.tech_warning_dialog.dialog_text = "Aby zwerbować tę jednostkę, musisz najpierw odkryć technologię:\nMag"
+					hud.tech_warning_dialog.popup_centered()
+					return
 
-					EconomyManager.recruit_unit(unit, active_source_pos)
-					_populate_barracks_units(faction)
-				)
+				EconomyManager.recruit_unit(unit, active_source_pos)
+				if AudioManager: AudioManager.play_recruit()
+				_populate_barracks_units(faction)
+			)
+			if EconomyManager.can_recruit_unit(unit):
 				var style_ok = StyleBoxFlat.new()
 				style_ok.bg_color = Color(0.2, 0.6, 0.2)
 				style_ok.set_corner_radius_all(4)
 				btn_recruit.add_theme_stylebox_override("normal", style_ok)
 			else:
-				btn_recruit.disabled = true
+				btn_recruit.modulate.a = 0.5
 			
 			hbox.add_child(btn_recruit)
 			vbox.add_child(panel)

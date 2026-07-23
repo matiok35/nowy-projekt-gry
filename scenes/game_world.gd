@@ -44,6 +44,7 @@ var cell_to_world: Dictionary = {}
 const BUILDINGS_RESET_TILE_TO_GRASS = ["Dom mieszkalny", "Spichlerz", "Laboratorium", "Warsztat", "Biblioteka", "Świątynia", "Baraki"]
 
 func _ready() -> void:
+	if AudioManager: AudioManager.play_bg_music()
 	hud_node = get_tree().current_scene.find_child("UI", true, false)
 	if hud_node == null: hud_node = get_tree().current_scene.find_child("HUD", true, false)
 	map_container = get_node_or_null("MapContainer")

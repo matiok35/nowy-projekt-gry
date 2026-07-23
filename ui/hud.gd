@@ -397,9 +397,11 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		if settings_menu and settings_menu.settings_window and settings_menu.settings_window.visible:
 			settings_menu.settings_window.visible = false
+			if AudioManager: AudioManager.resume_bg_music()
 		else:
 			hide_all_menus()
 			settings_menu.show_settings_menu()
+			if AudioManager: AudioManager.pause_bg_music()
 
 func setup_points_panel():
 	points_panel = PanelContainer.new()
@@ -732,12 +734,18 @@ func setup_custom_popups():
 	upgrade_button.pressed.connect(func(): 
 		var missing_tech = EconomyManager.get_missing_tech_for_upgrade(active_building_name, active_building_level + 1)
 		if missing_tech != "":
+			if AudioManager: AudioManager.play_error()
 			tech_warning_dialog.dialog_text = "Aby ulepszyć ten budynek, musisz najpierw odkryć technologię:\n" + missing_tech
 			tech_warning_dialog.popup_centered()
 			return
 
+		if not EconomyManager.can_afford_upgrade(active_building_name, active_building_level):
+			if AudioManager: AudioManager.play_error()
+			return
+
 		if world_ref and world_ref.has_method("upgrade_building"):
 			world_ref.upgrade_building(active_tile_pos)
+			if AudioManager: AudioManager.play_buy()
 		hide_all_menus()
 	)
 	var style_upg = StyleBoxFlat.new()
@@ -1139,8 +1147,8 @@ func show_context_menu(mouse_pos: Vector2, tile_pos: Vector2, tile_type: String,
 	library_research_button.visible = (has_building and building_name == "Biblioteka" and is_owned)
 	if show_upgrade:
 		var can_upgrade = EconomyManager.can_afford_upgrade(building_name, building_level)
-		upgrade_button.disabled = not can_upgrade
-		upgrade_button.modulate.a = 1.0 if can_upgrade else 0.35
+		upgrade_button.disabled = false
+		upgrade_button.modulate.a = 1.0 if can_upgrade else 0.5
 		var up_cost = EconomyManager.get_upgrade_cost(building_name, building_level)
 		var effect_desc = EconomyManager.get_building_effect_description(building_name)
 		var tooltip = "Koszt ulepszenia:\n%s" % _format_cost_dict(up_cost)
@@ -1265,6 +1273,7 @@ func hide_all_menus():
 	if workshop_menu and workshop_menu.workshop_window: workshop_menu.workshop_window.visible = false
 	if library_research_menu and library_research_menu.library_window: library_research_menu.library_window.visible = false
 	if research_unlocked_dialog: research_unlocked_dialog.hide()
+	if AudioManager: AudioManager.resume_bg_music()
 
 func any_menu_visible() -> bool:
 	return menu_budowania.visible or (tile_info_menu and tile_info_menu.visible) or (menu_zalozenia_miasta and menu_zalozenia_miasta.visible) or (tech_tree_menu and tech_tree_menu.tech_tree_window and tech_tree_menu.tech_tree_window.visible) or (culture_tree_menu and culture_tree_menu.culture_tree_window and culture_tree_menu.culture_tree_window.visible) or (barracks_menu and barracks_menu.barracks_window and barracks_menu.barracks_window.visible) or (army_menu and army_menu.army_window and army_menu.army_window.visible) or (help_menu and help_menu.help_window and help_menu.help_window.visible) or (camp_menu and camp_menu.camp_details_window and camp_menu.camp_details_window.visible) or (camp_menu and camp_menu.camp_army_window and camp_menu.camp_army_window.visible) or (settings_menu and settings_menu.settings_window and settings_menu.settings_window.visible) or (tutorial_menu and tutorial_menu.tutorial_window and tutorial_menu.tutorial_window.visible) or (admin_menu and admin_menu.admin_window and admin_menu.admin_window.visible) or (temple_menu and temple_menu.temple_window and temple_menu.temple_window.visible) or (workshop_menu and workshop_menu.workshop_window and workshop_menu.workshop_window.visible) or (library_research_menu and library_research_menu.library_window and library_research_menu.library_window.visible) or (potions_menu and ((potions_menu.my_potions_window and potions_menu.my_potions_window.visible) or (potions_menu.buy_potions_window and potions_menu.buy_potions_window.visible))) or (research_unlocked_dialog and research_unlocked_dialog.visible)
@@ -1306,10 +1315,13 @@ func _reposition_menu(menu: Control, base_pos: Vector2):
 
 func update_button_state(btn: Button, b_name: String, tile_type: String):
 	var can_place = EconomyManager.can_afford_and_place(b_name, tile_type)
-	btn.disabled = not can_place
 	btn.modulate.a = 1.0 if can_place else 0.35
 
 func execute_build(building_name: String) -> void:
+	if not EconomyManager.can_afford_and_place(building_name, active_tile_type):
+		if AudioManager: AudioManager.play_error()
+		return
+
 	var missing_tech = EconomyManager.get_missing_tech_for_building(building_name)
 	if missing_tech != "":
 		tech_warning_dialog.dialog_text = "Aby postawić ten budynek, musisz najpierw odkryć technologię:\n" + missing_tech
@@ -1370,6 +1382,7 @@ func _on_confirm_destroy_building() -> void:
 func _do_execute_build(building_name: String) -> void:
 	if world_ref and world_ref.has_method("build_on_tile"):
 		world_ref.build_on_tile(active_tile_pos, building_name)
+		if AudioManager: AudioManager.play_build()
 	hide_all_menus()
 
 func _on_economy_updated(balances: Dictionary, turn: int, _selected_build: String):

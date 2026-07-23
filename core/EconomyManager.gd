@@ -998,6 +998,7 @@ func next_turn(active_buildings_data: Array) -> void:
 		research_turns_left -= 1
 		if research_turns_left <= 0:
 			technology_tree[current_research]["unlocked"] = true
+			if AudioManager: AudioManager.play_tree()
 			var completed_tech = current_research
 			current_research = ""
 			research_completed.emit(completed_tech)
@@ -1006,6 +1007,7 @@ func next_turn(active_buildings_data: Array) -> void:
 		culture_turns_left -= 1
 		if culture_turns_left <= 0:
 			culture_tree[current_culture_research]["unlocked"] = true
+			if AudioManager: AudioManager.play_tree()
 			match current_culture_research:
 				"Renesans":
 					max_culture_points += 25

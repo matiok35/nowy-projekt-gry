@@ -20,6 +20,7 @@ config/icon="res://icon.svg"
 EconomyManager="*res://core/EconomyManager.gd"
 GameSettings="*res://core/GameSettings.gd"
 SaveManager="*res://core/SaveManager.gd"
+AudioManager="*res://core/AudioManager.gd"
 
 [display]
 

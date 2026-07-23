@@ -43,7 +43,10 @@ func setup_settings_window():
 	var close_btn = Button.new()
 	close_btn.text = "X"
 	close_btn.custom_minimum_size = Vector2(30, 30)
-	close_btn.pressed.connect(func(): settings_window.visible = false)
+	close_btn.pressed.connect(func():
+		settings_window.visible = false
+		if AudioManager: AudioManager.resume_bg_music()
+	)
 	hud._style_df_button(close_btn)
 	header_hbox.add_child(title_label)
 	header_hbox.add_child(close_btn)
@@ -118,7 +121,10 @@ func setup_settings_window():
 	resume_btn.text = "▶️ Wróć do gry"
 	resume_btn.custom_minimum_size = Vector2(0, 42)
 	hud._style_df_button(resume_btn)
-	resume_btn.pressed.connect(func(): settings_window.visible = false)
+	resume_btn.pressed.connect(func():
+		settings_window.visible = false
+		if AudioManager: AudioManager.resume_bg_music()
+	)
 	main_vbox.add_child(resume_btn)
 
 	var save_btn = Button.new()
@@ -151,6 +157,7 @@ func setup_settings_window():
 	menu_btn.custom_minimum_size = Vector2(0, 42)
 	hud._style_df_button(menu_btn)
 	menu_btn.pressed.connect(func():
+		if AudioManager: AudioManager.stop_bg_music()
 		hud.get_tree().change_scene_to_file("res://ui/main_menu.tscn")
 	)
 	main_vbox.add_child(menu_btn)
