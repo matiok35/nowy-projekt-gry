@@ -10,6 +10,7 @@ var tree_sound: AudioStreamPlayer
 var bg_music: AudioStreamPlayer
 var steps_sound: AudioStreamPlayer
 var buy_sound: AudioStreamPlayer
+var upgrade_sound: AudioStreamPlayer
 
 func _ready() -> void:
 	build_sound = _create_player("res://assets/sounds/builded.mp3")
@@ -22,6 +23,7 @@ func _ready() -> void:
 	
 	steps_sound = _create_player("res://assets/sounds/steps.mp3")
 	buy_sound = _create_player("res://assets/sounds/buy.mp3")
+	upgrade_sound = _create_player("res://assets/sounds/upgrade.mp3")
 	
 	bg_music = _create_player("res://assets/sounds/bg3.mp3")
 	if bg_music and bg_music.stream:
@@ -54,3 +56,4 @@ func stop_bg_music() -> void: if bg_music and bg_music.playing: bg_music.stop()
 func pause_bg_music() -> void: if bg_music: bg_music.stream_paused = true
 func resume_bg_music() -> void: if bg_music: bg_music.stream_paused = false
 func play_buy() -> void: if buy_sound: buy_sound.play()
+func play_upgrade() -> void: if upgrade_sound: upgrade_sound.play()
