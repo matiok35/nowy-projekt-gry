@@ -50,6 +50,8 @@ func show_camp_details_menu(pos: Vector2):
 	var header_hbox = HBoxContainer.new()
 	var title_lbl = Label.new()
 	title_lbl.text = "Obozowisko: " + camp_data.get("faction_name", "Nieznana") + " (Poziom " + str(camp_data.get("level", 1)) + ")"
+	if camp_data.get("is_boss", false):
+		title_lbl.text = "👑 OSTATECZNY BOSS 👑\n" + title_lbl.text
 	title_lbl.add_theme_font_size_override("font_size", 24)
 	title_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var close_btn = Button.new()
@@ -84,7 +86,16 @@ func show_camp_details_menu(pos: Vector2):
 	t_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	
 	var tiles_owned = []
-	if hud.world_ref and hud.world_ref.get("camp_owned_tiles"):
+	if hud.world_ref and hud.world_ref.get("camp_tile_owner") and not hud.world_ref.camp_tile_owner.is_empty():
+		# Dokładna lista pól faktycznie należących do TEGO obozowiska
+		# (uwzględnia też pola zdobyte później przez powolną ekspansję).
+		for t in hud.world_ref.camp_tile_owner.keys():
+			if hud.world_ref.camp_tile_owner[t] == pos:
+				if hud.world_ref.map_data.has(t) and not tiles_owned.has(t):
+					tiles_owned.append(hud.world_ref.map_data[t]["type"])
+	elif hud.world_ref and hud.world_ref.get("camp_owned_tiles"):
+		# Fallback dla starszych zapisów bez camp_tile_owner - przybliżenie
+		# po dystansie od centrum obozowiska, tak jak wcześniej.
 		for t in hud.world_ref.camp_owned_tiles:
 			var center_dist = HexUtils.get_distance(t, pos)
 			if center_dist <= camp_data.get("level", 1) + 1:

@@ -16,11 +16,21 @@ var city_centers: Array[Vector2] = []
 var camps: Dictionary = {}
 var camp_owned_tiles: Dictionary = {}
 var camp_territory_overlays: Dictionary = {}
+# Mapa pole -> pozycja obozowiska, do którego ono należy. Dzięki temu
+# potrafimy poprawnie pokolorować/zwolnić dokładnie te pola, które dany
+# obóz faktycznie zajął (także te zdobyte później przez powolną ekspansję),
+# zamiast zgadywać na podstawie samego poziomu obozowiska.
+var camp_tile_owner: Dictionary = {}
 var fraction_data: Dictionary = {}
 var territory_overlays: Dictionary = {}
 var fog_overlays: Dictionary = {}
 var explored_tiles: Dictionary = {}
 var last_expansion_turn: int = 1
+var last_camp_expansion_turn: int = 1
+# Obozowiska wroga zagarniają nowe pola dużo rzadziej niż gracz (gracz robi
+# to co 5 tur - patrz last_expansion_turn), żeby ich ekspansja terytorialna
+# była zauważalna, ale wyraźnie wolniejsza.
+const CAMP_EXPANSION_INTERVAL: int = 20
 
 var map_container: Node2D
 var hud_node: Control
@@ -158,7 +168,11 @@ func generate_camps(count: int) -> void:
 		var faction_id = faction_keys[randi() % faction_keys.size()]
 		var faction_info = fraction_data[faction_id]
 		
-		var camp_level = randi_range(1, 3)
+		# POPRAWKA: obozowiska startują od poziomu o JEDEN wyższego niż
+		# aktualny "poziom siły" gracza (patrz get_player_power_level),
+		# zamiast czysto losowego poziomu 1-3.
+		var camp_level = get_player_power_level() + 1
+		var camp_color = _generate_camp_color(spawned_count)
 		var army = []
 		if faction_info.has("units") and faction_info["units"].size() > 0:
 			var units = faction_info["units"]
@@ -177,7 +191,9 @@ func generate_camps(count: int) -> void:
 				"wood": randi_range(20, 80) * camp_level,
 				"iron": randi_range(10, 50) * camp_level
 			},
-			"level": camp_level
+			"level": camp_level,
+			"color": camp_color,
+			"is_boss": false
 		}
 		camps[pos] = camp_data
 		var building_name = "Obóz " + camp_data["faction_name"]
@@ -186,11 +202,102 @@ func generate_camps(count: int) -> void:
 		_update_building_label(pos, building_name, camp_level)
 		
 		# Claim territory for camp
-		_claim_camp_territory(pos, camp_level)
+		_claim_camp_territory(pos, camp_level, camp_color)
 		
 		spawned_count += 1
 
-func _claim_camp_territory(center_pos: Vector2, level: int) -> void:
+	generate_boss_camp()
+
+# Kolor unikalny dla każdego obozowiska - rotacja odcienia o "złoty kąt"
+# zapewnia wizualnie dobrze rozróżnialne, równomiernie rozłożone kolory
+# terytorium dla kolejnych obozowisk (zamiast jednego uniwersalnego czerwonego).
+func _generate_camp_color(index: int) -> Color:
+	var hue = fmod(index * 0.618033988749895, 1.0)
+	return Color.from_hsv(hue, 0.75, 0.85, 0.28)
+
+# Przybliżony "poziom siły" gracza - średni poziom posiadanych budynków
+# plus bonus za wielkość armii. Służy do skalowania trudności (poziomu i
+# wielkości armii) obozowisk wrogów na bieżąco w trakcie gry.
+func get_player_power_level() -> int:
+	var total_level = 0
+	var count = 0
+	for pos in owned_tiles:
+		if map_data.has(pos) and map_data[pos]["building"] != "Brak":
+			total_level += map_data[pos]["level"]
+			count += 1
+	var avg_level = 1.0
+	if count > 0:
+		avg_level = float(total_level) / count
+	var army_factor = EconomyManager.player_army.size() / 6.0
+	return int(ceil(avg_level + army_factor))
+
+# Obozowisko "Ostatecznego Bossa" - stawiane daleko od startu gracza, ze
+# stałą (bardzo silną) armią liczącą ok. 50 wymaxowanych jednostek. Nie
+# podlega bieżącemu skalowaniu ani powolnej ekspansji terytorialnej - to
+# stały, docelowy przeciwnik "końcowy" mapy.
+func generate_boss_camp() -> void:
+	if fraction_data.is_empty(): return
+	for c in camps.values():
+		if c.get("is_boss", false):
+			return # boss już istnieje
+
+	var start_pos = Vector2(MAP_SIZE / 2, MAP_SIZE / 2)
+	var far_positions = []
+	for pos in map_data.keys():
+		if map_data[pos]["building"] == "Brak" and HexUtils.get_distance(pos, start_pos) >= int(MAP_SIZE * 0.4):
+			if pos.x >= 3 and pos.x < MAP_SIZE - 3 and pos.y >= 3 and pos.y < MAP_SIZE - 3:
+				var too_close = false
+				for existing_camp_pos in camps.keys():
+					if HexUtils.get_distance(pos, existing_camp_pos) < 4:
+						too_close = true
+						break
+				if not too_close:
+					far_positions.append(pos)
+
+	if far_positions.is_empty(): return
+	far_positions.shuffle()
+	var pos: Vector2 = far_positions[0]
+
+	var faction_keys = fraction_data.keys()
+	var faction_id = faction_keys[randi() % faction_keys.size()]
+	var faction_info = fraction_data[faction_id]
+
+	var army = []
+	if faction_info.has("units") and faction_info["units"].size() > 0:
+		var units = faction_info["units"]
+		var target_size = 50
+		for i in range(target_size):
+			var base_unit = units[randi() % units.size()]
+			var boss_unit = base_unit.duplicate(true)
+			# Jednostki "wymaxowane" - znacznie silniejsze niż standardowe.
+			boss_unit["hp"] = int(boss_unit.get("hp", 10) * 3.0)
+			boss_unit["dmg"] = int(boss_unit.get("dmg", 5) * 3.0)
+			boss_unit["def"] = int(boss_unit.get("def", 2) * 3.0)
+			army.append(boss_unit)
+
+	var boss_color = Color(0.05, 0.02, 0.05, 0.4)
+	var camp_data = {
+		"faction": faction_id,
+		"faction_name": "Ostateczny Władca (" + faction_info.get("name", faction_id) + ")",
+		"army": army,
+		"resources": {
+			"gold": 5000,
+			"wood": 2000,
+			"iron": 2000
+		},
+		"level": 3,
+		"color": boss_color,
+		"is_boss": true
+	}
+	camps[pos] = camp_data
+	var building_name = "Obóz " + camp_data["faction_name"]
+	map_data[pos]["building"] = building_name
+	map_data[pos]["level"] = 3
+	_update_building_label(pos, building_name, 3)
+
+	_claim_camp_territory(pos, 3, boss_color)
+
+func _claim_camp_territory(center_pos: Vector2, level: int, color: Color = Color(0.8, 0.1, 0.1, 0.25)) -> void:
 	var to_claim = [center_pos]
 	if level >= 2:
 		for n in HexUtils.get_neighbors(center_pos):
@@ -204,15 +311,91 @@ func _claim_camp_territory(center_pos: Vector2, level: int) -> void:
 	for tile in to_claim:
 		if map_data.has(tile) and not owned_tiles.has(tile) and not camp_owned_tiles.has(tile):
 			camp_owned_tiles[tile] = true
+			camp_tile_owner[tile] = center_pos
 			var tile_area = tile_nodes[tile]
 			var base_poly = tile_area.get_child(0) as Polygon2D
 			if base_poly:
 				var overlay = Polygon2D.new()
 				overlay.polygon = base_poly.polygon
-				overlay.color = Color(0.8, 0.1, 0.1, 0.25)
+				overlay.color = color
 				overlay.z_index = 1
 				tile_area.add_child(overlay)
 				camp_territory_overlays[tile] = overlay
+
+# Obozowiska wroga powoli zagarniają nowe, sąsiadujące ze swoim terytorium
+# pola - dokładnie tak jak gracz (expand_territory_by_single_tile), ale
+# znacznie rzadziej (patrz CAMP_EXPANSION_INTERVAL). Boss jest pomijany -
+# jego terytorium jest stałe.
+func expand_camp_territories() -> void:
+	for camp_pos in camps.keys():
+		var camp_data = camps[camp_pos]
+		if camp_data.get("is_boss", false):
+			continue
+
+		var candidates: Array[Vector2] = []
+		for tile in camp_tile_owner.keys():
+			if camp_tile_owner[tile] != camp_pos:
+				continue
+			for n in HexUtils.get_neighbors(tile):
+				if map_data.has(n) and not owned_tiles.has(n) and not camp_owned_tiles.has(n):
+					if not candidates.has(n):
+						candidates.append(n)
+
+		if candidates.is_empty():
+			continue
+
+		var pick: Vector2 = candidates[randi() % candidates.size()]
+		var color: Color = camp_data.get("color", Color(0.8, 0.1, 0.1, 0.25))
+		camp_owned_tiles[pick] = true
+		camp_tile_owner[pick] = camp_pos
+		if tile_nodes.has(pick):
+			var tile_area = tile_nodes[pick]
+			var base_poly = tile_area.get_child(0) as Polygon2D
+			if base_poly:
+				var overlay = Polygon2D.new()
+				overlay.polygon = base_poly.polygon
+				overlay.color = color
+				overlay.z_index = 1
+				tile_area.add_child(overlay)
+				camp_territory_overlays[pick] = overlay
+
+	update_fog_of_war()
+
+# Aktualizuje na bieżąco poziom i skład armii każdego (nie-bossowego)
+# obozowiska tak, by zawsze był o jeden poziom wyżej niż gracz, a
+# liczebność armii rosła razem z liczebnością armii gracza.
+func update_camp_scaling() -> void:
+	var target_level = clamp(get_player_power_level() + 1, 1, 12)
+	var player_army_size = EconomyManager.player_army.size()
+
+	for camp_pos in camps.keys():
+		var camp_data = camps[camp_pos]
+		if camp_data.get("is_boss", false):
+			continue
+
+		var faction_id = camp_data.get("faction", "")
+		if not fraction_data.has(faction_id):
+			continue
+		var faction_info = fraction_data[faction_id]
+		if not faction_info.has("units") or faction_info["units"].is_empty():
+			continue
+
+		camp_data["level"] = target_level
+		if map_data.has(camp_pos):
+			map_data[camp_pos]["level"] = target_level
+
+		var units = faction_info["units"]
+		var min_units = max(target_level * 2 - 1, int(player_army_size * 0.6))
+		var max_units = max(target_level * 3, int(player_army_size * 0.9) + 3)
+		min_units = min(min_units, max_units)
+
+		var army = []
+		for u in range(randi_range(min_units, max_units)):
+			var random_unit = units[randi() % units.size()]
+			army.append(random_unit["id"])
+		camp_data["army"] = army
+
+		_update_building_label(camp_pos, "Obóz " + camp_data["faction_name"], target_level)
 
 func create_procedural_hex(pos: Vector2, type: String, deposit_size: String) -> void:
 	var area = Area2D.new()
@@ -517,23 +700,24 @@ func destroy_camp(pos: Vector2) -> void:
 	if not camps.has(pos):
 		return
 	var camp_data = camps[pos]
-	var level = camp_data.get("level", 1)
 
-	# Zwalniamy dokładnie ten sam zestaw pól, który obóz zajął w
-	# _claim_camp_territory przy swoim powstaniu.
-	var to_release = [pos]
-	if level >= 2:
-		for n in HexUtils.get_neighbors(pos):
-			to_release.append(n)
-	if level >= 3:
-		for n in HexUtils.get_neighbors(pos):
-			for nn in HexUtils.get_neighbors(n):
-				if not to_release.has(nn):
-					to_release.append(nn)
+	# POPRAWKA: obozowiska mogą teraz rozrastać się o dodatkowe pola dzięki
+	# expand_camp_territories(), więc zestaw pól zajętych przez ten obóz nie
+	# musi już odpowiadać wzorowi z chwili jego powstania (level 1-3). Zamiast
+	# tego zwalniamy WSZYSTKIE pola, które camp_tile_owner przypisuje do tego
+	# konkretnego obozowiska.
+	var to_release = []
+	for tile in camp_tile_owner.keys():
+		if camp_tile_owner[tile] == pos:
+			to_release.append(tile)
+	if not to_release.has(pos):
+		to_release.append(pos)
 
 	for tile in to_release:
 		if camp_owned_tiles.has(tile):
 			camp_owned_tiles.erase(tile)
+		if camp_tile_owner.has(tile):
+			camp_tile_owner.erase(tile)
 		if camp_territory_overlays.has(tile):
 			var overlay = camp_territory_overlays[tile]
 			if is_instance_valid(overlay):
@@ -584,6 +768,13 @@ func _on_economy_turn_changed(_balances: Dictionary, current_turn: int, _selecte
 	if current_turn >= last_expansion_turn + 5:
 		last_expansion_turn = current_turn
 		expand_territory_by_single_tile()
+
+	# Obozowiska wroga skalują się na bieżąco co turę (poziom + armia), ale
+	# zagarniają nowe pola dużo rzadziej niż gracz.
+	update_camp_scaling()
+	if current_turn >= last_camp_expansion_turn + CAMP_EXPANSION_INTERVAL:
+		last_camp_expansion_turn = current_turn
+		expand_camp_territories()
 
 func expand_territory_by_single_tile() -> void:
 	if city_centers.is_empty(): return
@@ -899,8 +1090,10 @@ func _restore_state_from_save() -> void:
 	city_centers = gw.get("city_centers", [])
 	camps = gw.get("camps", {})
 	camp_owned_tiles = gw.get("camp_owned_tiles", {})
+	camp_tile_owner = gw.get("camp_tile_owner", {})
 	explored_tiles = gw.get("explored_tiles", {})
 	last_expansion_turn = gw.get("last_expansion_turn", 1)
+	last_camp_expansion_turn = gw.get("last_camp_expansion_turn", 1)
 	
 	for pos in map_data:
 		var tile = map_data[pos]
@@ -920,6 +1113,20 @@ func _restore_state_from_save() -> void:
 				tile_area.add_child(overlay)
 				territory_overlays[pos] = overlay
 				
+	# Kompatybilność wstecz: starsze zapisy mogą nie mieć camp_tile_owner -
+	# w takim wypadku przypisujemy każde pole do najbliższego obozowiska.
+	if camp_tile_owner.is_empty() and not camp_owned_tiles.is_empty() and not camps.is_empty():
+		for pos in camp_owned_tiles:
+			var closest_camp = null
+			var closest_dist = INF
+			for camp_pos in camps.keys():
+				var d = HexUtils.get_distance(pos, camp_pos)
+				if d < closest_dist:
+					closest_dist = d
+					closest_camp = camp_pos
+			if closest_camp != null:
+				camp_tile_owner[pos] = closest_camp
+
 	for pos in camp_owned_tiles:
 		if tile_nodes.has(pos):
 			var tile_area = tile_nodes[pos]
@@ -927,7 +1134,11 @@ func _restore_state_from_save() -> void:
 			if base_poly:
 				var overlay = Polygon2D.new()
 				overlay.polygon = base_poly.polygon
-				overlay.color = Color(0.8, 0.1, 0.1, 0.25)
+				var overlay_color = Color(0.8, 0.1, 0.1, 0.25)
+				var owner_pos = camp_tile_owner.get(pos, null)
+				if owner_pos != null and camps.has(owner_pos):
+					overlay_color = camps[owner_pos].get("color", overlay_color)
+				overlay.color = overlay_color
 				overlay.z_index = 1
 				tile_area.add_child(overlay)
 				camp_territory_overlays[pos] = overlay
