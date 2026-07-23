@@ -745,7 +745,7 @@ func setup_custom_popups():
 
 		if world_ref and world_ref.has_method("upgrade_building"):
 			world_ref.upgrade_building(active_tile_pos)
-			if AudioManager: AudioManager.play_buy()
+			if AudioManager: AudioManager.play_upgrade()
 		hide_all_menus()
 	)
 	var style_upg = StyleBoxFlat.new()
