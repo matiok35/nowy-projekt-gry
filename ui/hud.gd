@@ -803,7 +803,8 @@ func setup_custom_popups():
 	btn_buy_potions = Button.new()
 	btn_buy_potions.text = "💰 Kup Potki"
 	var style_buy_potions = style_army.duplicate()
-	style_buy_potions.bg_color = DF_BLOOD
+	style_buy_potions.bg_color = Color(0.45, 0.2, 0.55, 0.95) # Wyróżniający się, "magiczny" fioletowy kolor
+	style_buy_potions.border_color = DF_GOLD_BRIGHT
 	btn_buy_potions.add_theme_stylebox_override("normal", style_buy_potions)
 	btn_buy_potions.add_theme_color_override("font_color", DF_TEXT)
 	btn_buy_potions.pressed.connect(func():
@@ -1596,7 +1597,12 @@ func style_single_button(btn: Button, display_name: String, building_name := "")
 	btn.add_theme_color_override("font_disabled_color", Color(0.5, 0.45, 0.35, 0.6))
 	
 	if building_name != "":
-		btn.tooltip_text = EconomyManager.get_building_tooltip(building_name)
+		var raw_tooltip = EconomyManager.get_building_tooltip(building_name)
+		var lines = raw_tooltip.split("\n")
+		var final_tooltip = ""
+		for line in lines:
+			final_tooltip += _wrap_text(line, 60) + "\n"
+		btn.tooltip_text = final_tooltip.strip_edges()
 
 func _get_icon_for_building(b_name: String) -> Texture2D:
 	var path = ""
