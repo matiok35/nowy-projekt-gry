@@ -261,6 +261,7 @@ func _refresh_my_potions_list():
 			
 		btn_use.pressed.connect(func():
 			if EconomyManager.use_potion(p_id):
+				if AudioManager: AudioManager.play_potions()
 				_refresh_my_potions_list()
 				if hud.army_menu and hud.army_menu.army_window.visible:
 					hud.army_menu.show_army_menu()
@@ -332,6 +333,7 @@ func _refresh_buy_potions_list():
 		btn_buy.disabled = not can_afford
 		btn_buy.pressed.connect(func():
 			if EconomyManager.buy_potion(p_id):
+				if AudioManager: AudioManager.play_buy()
 				_refresh_buy_potions_list()
 		)
 		hbox.add_child(btn_buy)

@@ -101,6 +101,7 @@ func setup_temple_window():
 
 func _on_activate_pressed() -> void:
 	if EconomyManager.activate_temple_blessing():
+		if AudioManager: AudioManager.play_temple()
 		_refresh_status()
 
 # Aktualny bonus (%) zależy od poziomu najlepiej rozwiniętej Świątyni gracza —

@@ -104,9 +104,13 @@ func follow_path(new_path: Array[Vector2]) -> void:
 	# jeszcze nie ruszyła.
 	if not path.is_empty() and path[0].distance_to(global_position) < ARRIVAL_THRESHOLD:
 		path.pop_front()
+	
+	if not path.is_empty():
+		if AudioManager: AudioManager.play_steps()
 
 func _physics_process(_delta: float) -> void:
 	if path.is_empty():
+		if AudioManager: AudioManager.stop_steps()
 		return
 		
 	var target: Vector2 = path[0]
@@ -124,6 +128,7 @@ func _physics_process(_delta: float) -> void:
 			get_parent().update_fog_of_war()
 		if path.is_empty():
 			set_selected(false) 
+			if AudioManager: AudioManager.stop_steps()
 	else:
 		global_position += to_target.normalized() * MOVE_SPEED * _delta
 

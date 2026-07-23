@@ -111,6 +111,7 @@ func _on_heal_pressed() -> void:
 	if not _general_with_army_on_tile():
 		return
 	EconomyManager.heal_army_units()
+	if AudioManager: AudioManager.play_heal()
 	_refresh_status()
 
 func _refresh_status() -> void:
